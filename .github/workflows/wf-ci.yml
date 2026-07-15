@@ -16,32 +16,15 @@ defaults:
     shell: bash
 
 jobs:
-  setup-env:
-    runs-on: ubuntu-24.04
-    outputs:
-      dockerhub_id: ${{ steps.env.outputs.dockerhub_id }}
-    steps:
-      - name: Setup environment variables
-        id: env
-        run: |
-          echo "dockerhub_id=$DOCKERHUB_ID" >> "$GITHUB_OUTPUT"
   
   container-build-and-push:
     uses: armckinney/cicd/.github/workflows/rwf-container-build-and-push.yaml@main
-    needs: setup-env
-    with:
-      dockerhub_id: ${{ needs.setup-env.outputs.dockerhub_id }}
-    secrets:
-      DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
   lint:
     runs-on: ubuntu-latest
-    needs: [setup-env, container-build-and-push]
+    needs: [container-build-and-push]
     container:
       image: ${{ needs.container-build-and-push.outputs.container_image }}
-      credentials:
-        username: ${{ needs.setup-env.outputs.dockerhub_id }}
-        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
     steps:
     - name: Checkout repository
@@ -63,12 +46,9 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    needs: [setup-env, container-build-and-push]
+    needs: [container-build-and-push]
     container:
       image: ${{ needs.container-build-and-push.outputs.container_image }}
-      credentials:
-        username: ${{ needs.setup-env.outputs.dockerhub_id }}
-        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
     steps:
     - name: Checkout repository
