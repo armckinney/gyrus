@@ -1,0 +1,27 @@
+services:
+  devcontainer:
+    build:
+      dockerfile: .devcontainer/Dockerfile
+      context: ..
+    volumes:
+      - ..:/workspaces/template-go:cached
+      - ~/.gitconfig:/root/.gitconfig:ro
+      # ai tool persistence
+      - ~/.gemini:/root/.gemini:rw
+    command: sleep infinity
+    depends_on:
+      - devdatabase
+
+  devdatabase:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: templatedb
+    ports:
+      - "5432:5432"
+    volumes:
+      - devpostgres-data:/var/lib/postgresql/data
+
+volumes:
+  devpostgres-data:

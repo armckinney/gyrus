@@ -1,0 +1,58 @@
+# Universal secrets
+*secret*
+*key*
+*local*
+
+# Logs
+*.log
+*.db
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Local History for Visual Studio Code
+.history/
+
+# Binaries and executable files
+*.exe
+*.exe~
+*.dll
+*.so
+*.so.*
+*.dylib
+*.test
+*.out
+
+# Build directories
+/bin/
+/dist/
+build/
+out/
+tmp/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Go tools
+*.prof
+
+# Dependencies
+vendor/
+go.sum.lock
+
+# Coverage
+*.cover
+coverage.out
+
+# Environment variables - exclude test env
+.env
+!.env.test

@@ -1,0 +1,46 @@
+{
+	"name": "template-go",
+	"dockerComposeFile": [
+		"docker-compose.yaml"
+	],
+	"service": "devcontainer",
+	"workspaceFolder": "/workspaces/template-go",
+	"postCreateCommand": "cd $WORKSPACE",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"terminal.integrated.profiles.linux": {
+					"bash": {
+						"path": "bash",
+						"icon": "terminal-bash"
+					}
+				},
+				"files.exclude": {
+					"**/.venv": true,
+					"**/tmp": true
+				},
+				"[go]": {
+					"editor.formatOnSave": true,
+					"editor.codeActionsOnSave": {
+						"source.organizeImports": "explicit"
+					},
+					"editor.defaultFormatter": "golang.go"
+				},
+				"go.formatTool": "goimports",
+				"go.lintTool": "staticcheck",
+				"[dockerfile]": {
+					"editor.defaultFormatter": "ms-azuretools.vscode-docker",
+					"editor.formatOnSave": false
+				}
+			},
+			"extensions": [
+				"ms-azuretools.vscode-docker",
+				"yzhang.markdown-all-in-one",
+				"bierner.markdown-mermaid",
+				"github.vscode-github-actions",
+				"golang.go",
+				"ms-vscode.makefile-tools"
+			]
+		}
+	}
+}

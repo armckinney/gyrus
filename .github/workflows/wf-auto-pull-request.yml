@@ -1,0 +1,9 @@
+name: wf-auto-pull-request 
+
+on:
+  issues:
+    types: [ assigned, closed ]
+  
+jobs:
+  auto-pull-request:
+    uses: armckinney/cicd/.github/workflows/rwf-auto-pull-request.yaml@main
