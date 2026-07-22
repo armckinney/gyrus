@@ -32,6 +32,25 @@ This skill equips AI agents to interact directly with Gyrus codebase memory via 
 
 ---
 
+## 📜 Document Mutability & Lifecycle Rules
+
+Gyrus memory distinguishes between **Living Documents** and **Immutable Decision-Log Documents**:
+
+1. 🌿 **Living Documents (Actively Maintained Context):**
+   - **Document Types:** `prd`, `specification`, `guide`, `standards`, `glossary`, `product`, `technical-reference`, `freeform`.
+   - **Agent Rule:** Living documents capture the **current active state** of the system. When codebase implementation or architecture changes, agents MUST actively update living specifications, guides, and standards to maintain single-source-of-truth context.
+
+2. 📜 **Immutable / Decision-Log Documents (Historical Snapshots):**
+   - **Document Types:** `adr` (Architecture Design Records), `improvement-proposal`, `release-note`.
+   - **Agent Rule:** Once accepted or published (`status: accepted` / `status: active`), these documents are **immutable historical logs**. Agents MUST NOT modify accepted ADRs or proposals. When design choices change in the future:
+     1. Create a NEW ADR or proposal (`gyrus create`).
+     2. Link the new document to supersede the old one (`gyrus link <new-id> <old-id> --rel-type supersedes`).
+     3. Update the old document status to `superseded` or `deprecated` (`gyrus update <old-id> --status superseded`).
+
+3. ⚙️ **Custom Immutable Templates (`immutable: true`):** Users can mark custom document types (e.g. `security-audit`, `compliance-report`, `incident-postmortem`) as immutable by setting `immutable: true` in the YAML frontmatter. Gyrus engine will reject content mutations once the document exits `draft`/`proposed` status.
+
+---
+
 ## 🛠️ Complete CLI Command Reference
 
 ### 1. `gyrus suggest-context`

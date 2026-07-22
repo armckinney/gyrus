@@ -109,3 +109,25 @@ func TestGeneralTransitions(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateMutation(t *testing.T) {
+	// Mutating accepted ADR content should fail (built-in immutable type)
+	if err := lifecycle.ValidateMutation(gyrus.TypeADR, "accepted", false, true); err == nil {
+		t.Error("Expected immutability error for accepted ADR content update, got nil")
+	}
+
+	// Mutating proposed ADR content should succeed
+	if err := lifecycle.ValidateMutation(gyrus.TypeADR, "proposed", false, true); err != nil {
+		t.Errorf("Expected valid mutation for proposed ADR, got error: %v", err)
+	}
+
+	// Mutating active living spec content should succeed (default mutable)
+	if err := lifecycle.ValidateMutation(gyrus.TypeSpecification, "active", false, true); err != nil {
+		t.Errorf("Expected valid mutation for active specification, got error: %v", err)
+	}
+
+	// Mutating active custom doc with immutable: true flag in frontmatter should fail!
+	if err := lifecycle.ValidateMutation(gyrus.TypeFreeform, "active", true, true); err == nil {
+		t.Error("Expected immutability error for custom document with immutable: true flag, got nil")
+	}
+}

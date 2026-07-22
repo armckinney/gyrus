@@ -40,6 +40,7 @@ type Document struct {
 	OwnerGroup     string       `json:"owner_group" yaml:"owner_group"`
 	Version        int          `json:"version" yaml:"version"`
 	Status         string       `json:"status" yaml:"status"`
+	Immutable      bool         `json:"immutable,omitempty" yaml:"immutable,omitempty"`
 	LastModifiedBy string       `json:"last_modified_by" yaml:"last_modified_by"`
 	LastUpdated    time.Time    `json:"last_updated" yaml:"last_updated"`
 	Tags           []string     `json:"tags,omitempty" yaml:"tags,omitempty"`

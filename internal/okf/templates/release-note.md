@@ -6,7 +6,8 @@ type: release-note
 format: markdown
 owner_group: <team-owning-document>
 version: 1
-status: proposed
+status: published
+immutable: true
 last_modified_by: <author-username>
 last_updated: YYYY-MM-DD
 tags: []

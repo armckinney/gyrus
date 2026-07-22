@@ -89,3 +89,47 @@ func ValidateTransition(docType gyrus.DocumentType, currentStatus, newStatus str
 
 	return nil
 }
+
+// ImmutabilityError indicates an illegal attempt to mutate content on a locked/immutable document.
+type ImmutabilityError struct {
+	DocType gyrus.DocumentType
+	Status  string
+}
+
+func (e *ImmutabilityError) Error() string {
+	return fmt.Sprintf("cannot modify content of immutable document type '%s' in status '%s'", e.DocType, e.Status)
+}
+
+// IsImmutableType returns true if the document type is an immutable historical decision log.
+func IsImmutableType(docType gyrus.DocumentType) bool {
+	switch docType {
+	case gyrus.TypeADR, gyrus.TypeImprovementProposal, gyrus.TypeReleaseNote:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsLockedStatus returns true if the document status represents a finalized/locked state.
+func IsLockedStatus(docType gyrus.DocumentType, status string, isExplicitlyImmutable bool) bool {
+	if isExplicitlyImmutable {
+		return status != "draft" && status != "proposed"
+	}
+	switch status {
+	case "accepted", "rejected", "superseded", "deprecated", "approved", "abandoned", "implemented", "published", "archived":
+		return true
+	default:
+		return false
+	}
+}
+
+// ValidateMutation verifies whether content modifications are permitted for the given docType, status, and immutability flag.
+func ValidateMutation(docType gyrus.DocumentType, currentStatus string, isExplicitlyImmutable bool, contentChanged bool) error {
+	if contentChanged && (isExplicitlyImmutable || IsImmutableType(docType)) && IsLockedStatus(docType, currentStatus, isExplicitlyImmutable) {
+		return &ImmutabilityError{
+			DocType: docType,
+			Status:  currentStatus,
+		}
+	}
+	return nil
+}

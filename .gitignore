@@ -57,8 +57,13 @@ coverage.out
 .env
 !.env.test
 
-# Gyrus Artifacts
+# Gyrus Binary Execution Artifacts (anchor to root)
 /gyrus
-gyrus
-bin/gyrus
+/bin/gyrus
+
+# Explicitly preserve codebase packages and skill paths
+!/pkg/gyrus/**
+!/skills/gyrus/**
+!/docs/agents/skills/gyrus/**
+!/.agents/skills/gyrus/**
 !*/.gyrus/**
