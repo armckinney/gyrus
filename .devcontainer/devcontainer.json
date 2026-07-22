@@ -10,12 +10,10 @@
 		"https://github.com/armckinney/containers/releases/download/v1.0.8/devcontainer-feature-vscode-customizations.tgz": {},
 		"https://github.com/armckinney/containers/releases/download/v1.0.8/devcontainer-feature-copilot.tgz": {
 			"rulefilePath": "docs/agents/AGENTS.md",
-			"contextPath": "docs/agents/context",
 			"skillsPath": "docs/agents/skills"
 		},
 		"https://github.com/armckinney/containers/releases/download/v1.0.8/devcontainer-feature-antigravity.tgz": {
 			"rulefilePath": "docs/agents/AGENTS.md",
-			"contextPath": "docs/agents/context",
 			"skillsPath": "docs/agents/skills"
 		}
 	},
