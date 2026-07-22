@@ -1,9 +1,11 @@
 # [GYRUS-402] MCP Resources, Prompts & Open Skill Format Shim
 
-> **Status:** `NOT STARTED`
+> **Status:** `COMPLETED`
 > **Phase:** Phase 4 - MCP Server & Open Skill Format Adapters
-> **Owner:** Unassigned
+> **Owner:** Antigravity Agent
 > **Dependencies:** [GYRUS-401]
+
+
 
 ---
 

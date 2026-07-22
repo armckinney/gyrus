@@ -1,9 +1,10 @@
-# [GYRUS-304] CLI Context Retrieval Commands (search, suggest-context, schema)
+# [GYRUS-304] CLI Context Discovery Commands (search, suggest-context, schema)
 
-> **Status:** `NOT STARTED`
+> **Status:** `COMPLETED`
 > **Phase:** Phase 3 - Gyrus CLI Executable
-> **Owner:** Unassigned
+> **Owner:** Antigravity Agent
 > **Dependencies:** [GYRUS-301], [GYRUS-302]
+
 
 ---
 

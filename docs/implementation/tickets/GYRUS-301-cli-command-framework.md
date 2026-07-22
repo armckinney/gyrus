@@ -1,9 +1,11 @@
 # [GYRUS-301] CLI Command Framework & Exit Code Mapper
 
-> **Status:** `NOT STARTED`
+> **Status:** `COMPLETED`
 > **Phase:** Phase 3 - Gyrus CLI Executable
-> **Owner:** Unassigned
+> **Owner:** Antigravity Agent
 > **Dependencies:** [GYRUS-101], [GYRUS-201]
+
+
 
 ---
 

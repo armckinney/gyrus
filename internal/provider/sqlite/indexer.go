@@ -117,6 +117,21 @@ func (idx *Indexer) Remove(ctx context.Context, id string) error {
 	return tx.Commit()
 }
 
+func sanitizeFTSQuery(raw string) string {
+	f := func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == ' ' || r == '-' || r == '_' {
+			return r
+		}
+		return -1
+	}
+	clean := strings.Map(f, raw)
+	words := strings.Fields(clean)
+	if len(words) == 0 {
+		return ""
+	}
+	return strings.Join(words, " OR ")
+}
+
 func (idx *Indexer) Search(ctx context.Context, q gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
 	idx.mu.RLock()
 	defer idx.mu.RUnlock()
@@ -124,14 +139,15 @@ func (idx *Indexer) Search(ctx context.Context, q gyrus.SearchQuery) ([]gyrus.Se
 	var sqlQuery strings.Builder
 	var args []interface{}
 
-	if q.Query != "" {
+	ftsQuery := sanitizeFTSQuery(q.Query)
+	if ftsQuery != "" {
 		sqlQuery.WriteString(`
 		SELECT i.id, i.title, i.category, i.type, i.format, i.owner_group, i.version, i.status, i.last_modified_by, i.last_updated, i.tags, i.dependencies, fts.rank
 		FROM documents_fts fts
 		JOIN documents_index i ON fts.id = i.id
 		WHERE documents_fts MATCH ?
 		`)
-		args = append(args, q.Query)
+		args = append(args, ftsQuery)
 	} else {
 		sqlQuery.WriteString(`
 		SELECT id, title, category, type, format, owner_group, version, status, last_modified_by, last_updated, tags, dependencies, 0.0 as rank

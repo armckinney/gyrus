@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"github.com/armckinney/gyrus/internal/cli"
 )
 
 func main() {
-	fmt.Println("Gyrus: Unified Context & Memory Engine")
-	os.Exit(0)
+	cli.Execute()
 }

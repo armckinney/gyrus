@@ -17,9 +17,9 @@ The Gyrus codebase is built as a single Go module delivering the **Gyrus Core SD
 | **Phase 0** | Repository Cleanup & Project Scaffolding | `COMPLETED` | Clean Go foundation with working build pipeline |
 | **Phase 1** | Core SDK & OKF Domain Model | `COMPLETED` | Reusable `pkg/gyrus` Go Library for OKF & state machine |
 | **Phase 2** | Local Storage & SQLite Provider Engines | `COMPLETED` | Embedded Storage, FTS5 Search & Relationship Engine |
-| **Phase 3** | Gyrus CLI Executable (`cmd/gyrus`) | `NOT STARTED` | Standalone `gyrus` Terminal Binary for Humans & CLI Agents |
-| **Phase 4** | MCP Server & Open Skill Format Adapters | `NOT STARTED` | Native IDE Integration Server (Cursor, Claude Desktop, Copilot) |
-| **Phase 5** | Test Profiles, CI/CD Pipeline & Packaging | `NOT STARTED` | Multi-Platform Release Binaries (Linux, macOS, Windows) |
+| **Phase 3** | Gyrus CLI Executable (`cmd/gyrus`) | `COMPLETED` | Standalone `gyrus` Terminal Binary for Humans & CLI Agents |
+| **Phase 4** | MCP Server & Open Skill Format Adapters | `COMPLETED` | Native IDE Integration Server (Cursor, Claude Desktop, Copilot) |
+| **Phase 5** | Test Profiles, CI/CD Pipeline & Packaging | `COMPLETED` | Multi-Platform Release Binaries (Linux, macOS, Windows) |
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -89,13 +89,13 @@ All individual task tickets are maintained in the [`tickets/`](file:///workspace
 | **[GYRUS-201](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-201-localfs-storage-provider.md)** | Phase 2 | Localfs Storage Provider & Path Resolution | `COMPLETED` |
 | **[GYRUS-202](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-202-sqlite-index-fts-provider.md)** | Phase 2 | SQLite DDL, Indexing & FTS5 Search Engine | `COMPLETED` |
 | **[GYRUS-203](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-203-sqlite-graph-sync.md)** | Phase 2 | SQLite Edge Graph & Incremental File Sync | `COMPLETED` |
-| **[GYRUS-301](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-301-cli-command-framework.md)** | Phase 3 | CLI Command Framework & Exit Code Mapper | `NOT STARTED` |
-| **[GYRUS-302](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-302-cli-core-crud.md)** | Phase 3 | CLI Core Mutation Commands (`init`, `create`, `get`, `update`) | `NOT STARTED` |
-| **[GYRUS-303](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-303-cli-link-sync-validate.md)** | Phase 3 | CLI Relationship & Maintenance Commands (`link`, `unlink`, `sync`, `validate`) | `NOT STARTED` |
-| **[GYRUS-304](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-304-cli-search-suggest.md)** | Phase 3 | CLI Context Discovery Commands (`search`, `suggest-context`, `schema`) | `NOT STARTED` |
-| **[GYRUS-401](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-401-mcp-server-tools.md)** | Phase 4 | MCP Stdio Server & Memory Tools | `NOT STARTED` |
-| **[GYRUS-402](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-402-mcp-resources-prompts-skill.md)** | Phase 4 | MCP Resources, Prompts & Open Skill Format Shim | `NOT STARTED` |
-| **[GYRUS-501](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-501-testing-packaging.md)** | Phase 5 | Profile Verification Tests & GoReleaser Packaging | `NOT STARTED` |
+| **[GYRUS-301](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-301-cli-command-framework.md)** | Phase 3 | CLI Command Framework & Exit Code Mapper | `COMPLETED` |
+| **[GYRUS-302](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-302-cli-core-crud.md)** | Phase 3 | CLI Core Mutation Commands (`init`, `create`, `get`, `update`) | `COMPLETED` |
+| **[GYRUS-303](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-303-cli-link-sync-validate.md)** | Phase 3 | CLI Relationship & Maintenance Commands (`link`, `unlink`, `sync`, `validate`) | `COMPLETED` |
+| **[GYRUS-304](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-304-cli-search-suggest.md)** | Phase 3 | CLI Context Discovery Commands (`search`, `suggest-context`, `schema`) | `COMPLETED` |
+| **[GYRUS-401](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-401-mcp-server-tools.md)** | Phase 4 | MCP Stdio Server & Memory Tools | `COMPLETED` |
+| **[GYRUS-402](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-402-mcp-resources-prompts-skill.md)** | Phase 4 | MCP Resources, Prompts & Open Skill Format Shim | `COMPLETED` |
+| **[GYRUS-501](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-501-testing-packaging.md)** | Phase 5 | Profile Verification Tests & GoReleaser Packaging | `COMPLETED` |
 
 ---
 

@@ -1,9 +1,11 @@
 # [GYRUS-302] CLI Core Mutation Commands (init, create, get, update)
 
-> **Status:** `NOT STARTED`
+> **Status:** `COMPLETED`
 > **Phase:** Phase 3 - Gyrus CLI Executable
-> **Owner:** Unassigned
+> **Owner:** Antigravity Agent
 > **Dependencies:** [GYRUS-301], [GYRUS-201]
+
+
 
 ---
 
