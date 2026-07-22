@@ -21,42 +21,77 @@ This document details the architectural design, provider abstractions, filesyste
 
 Gyrus is architected as a modular single Go binary delivering four primary runtime layers:
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                          Agentic & Human Clients                                │
-├─────────────────────────┬─────────────────────────┬─────────────────────────────┤
-│   GUI IDEs (Cursor,     │ CLI Agents (Claude      │ Human Developers &          │
-│   Claude Desktop, etc)  │ Code, Aider, Scripts)   │ Internal Services           │
-└────────────┬────────────┴────────────┬────────────┴──────────────┬──────────────┘
-             │                         │                           │
-             ▼                         ▼                           ▼
-┌─────────────────────────┐ ┌────────────────────┐   ┌───────────────────────────┐
-│ MCP Stdio Server        │ │ Open Skill Format  │   │ Gyrus Core SDK            │
-│ (gyrus mcp serve)       │ │ Adapter (SKILL.md) │   │ (pkg/gyrus)               │
-└────────────┬────────────┘ └──────────┬─────────┘   └─────────────┬─────────────┘
-             │                         │ (CLI Exec)                │
-             ▼                         ▼                           │
-┌──────────────────────────────────────────────────┐               │
-│ Gyrus CLI Router (cmd/gyrus & internal/cli)      ├───────────────┘
-└────────────────────────┬─────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│ Gyrus Core SDK Domain Engines                                                   │
-├────────────────────────────────────────┬────────────────────────────────────────┤
-│ OKF Parser & Schema Validator          │ Lifecycle State Machine Engine         │
-│ (internal/okf)                         │ (internal/lifecycle)                   │
-└────────────────────────────────────────┴────────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│ Composability Provider Layer (internal/provider)                                │
-├────────────────────────────────────────┬────────────────────────────────────────┤
-│ Localfs Storage Provider               │ SQLite Indexer, FTS5 & Edge Graph      │
-│ (internal/provider/localfs)            │ (internal/provider/sqlite)             │
-└────────────────────────────────────────┴────────────────────────────────────────┘
+```mermaid
+graph LR
+    subgraph Clients ["Callers & Clients"]
+        CICD["CICD & Scripting"]
+        AgentTools["Agentic Tool(s)"]
+        Humans["Human Users"]
+    end
+
+    subgraph Interface ["Adapters & Application Surfaces"]
+        Skill["Skill (Open Skill Format)"]
+        CLI["Gyrus CLI"]
+        MCP["Gyrus MCP Server"]
+        Apps["Applications\ni.e. Serverless Content Navigator Web App\n- Implements AI Chatbot"]
+    end
+
+    subgraph Core ["Gyrus Core SDK"]
+        CoreSDK["Gyrus Core SDK\n\n# Applies (MVP Provider):\n- Concept Storage Format (OKF)\n- Concept Index Provider (OKF)\n- Knowledge Graph Provider (OKF)\n- Search Provider (None)\n- Concept Persistence Service (localfs)\n- Concept Types (OKF)\n\n# Implements:\n- OKF Standard Metadata & Concepts"]
+    end
+
+    subgraph Services ["Core Services & Provider Drivers"]
+        IndexSvc["Concept Index Service\n\nProviders:\n- OKF\n- SQLite\n- PostgreSQL"]
+        GraphSvc["Knowledge Graph Service\n\nProviders:\n- OKF\n- SQLite\n- PostgreSQL"]
+        SearchSvc["Search Service\n\nProviders:\n- SQLite FTS\n- PostgreSQL full-text search"]
+        PersistSvc["Concept Persistence Service\n\nProviders:\n- localfs\n- SQLite\n- Git Repo (GitHub, Bitbucket)\n- Blob Storage (S3, Azure SA)\n- PostgreSQL"]
+    end
+
+    subgraph Storage ["Concept Storage Format"]
+        StorageFmt["Concept Storage Format\n\nProviders:\n- OKF\n- Relational Table"]
+    end
+
+    %% Client and Adapter Relations
+    CICD -->|invokes| CLI
+    AgentTools -->|invokes| Skill
+    Skill -->|invokes| CLI
+    CLI -->|implements| CoreSDK
+    AgentTools -->|OR invokes| MCP
+    MCP -->|implements| CoreSDK
+    Humans -->|invokes| Apps
+    Apps -->|Implements| CoreSDK
+
+    %% Core SDK Services Relations
+    CoreSDK -->|instantiates| IndexSvc
+    CoreSDK -->|instantiates| GraphSvc
+    CoreSDK -->|instantiates| SearchSvc
+    CoreSDK -->|instantiates| PersistSvc
+
+    %% Persistence to Storage Format
+    PersistSvc -->|instantiates| StorageFmt
 ```
 
+### 🔄 Core SDK Subsystem Execution Flows
+
+```mermaid
+graph LR
+    subgraph Ingestion ["Ingestion Flow (create / update / sync)"]
+        direction LR
+        P1["1. OKF Parser and Lifecycle"] -->|Validate Schema and State| P2["2. DocumentStore"]
+        P2 -->|Persist Payload| P3["3. IndexStore and Search"]
+        P3 -->|Index FTS5 and Extract Links| P4["4. GraphStore"]
+    end
+```
+
+```mermaid
+graph LR
+    subgraph Retrieval ["Context Discovery Flow (suggest-context / search)"]
+        direction LR
+        Q1["1. SearchProvider (FTS5)"] -->|Lexical Match| Q2["2. GraphStore"]
+        Q2 -->|Traverse Edges| Q3["3. DocumentStore"]
+        Q3 -->|Hydrate Payload| Q4["4. Context Linearizer"]
+    end
+```
 ---
 
 ## 2. Core Components

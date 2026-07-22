@@ -7,12 +7,12 @@
 	"workspaceFolder": "/workspaces/gyrus",
   "postCreateCommand": "bash .devcontainer/post-create.sh",
 	"features": {
-		"https://github.com/armckinney/containers/releases/download/v1.0.8/devcontainer-feature-vscode-customizations.tgz": {},
-		"https://github.com/armckinney/containers/releases/download/v1.0.8/devcontainer-feature-copilot.tgz": {
+		"https://github.com/armckinney/containers/releases/download/v1.0.9/devcontainer-feature-vscode-customizations.tgz": {},
+		"https://github.com/armckinney/containers/releases/download/v1.0.9/devcontainer-feature-copilot.tgz": {
 			"rulefilePath": "docs/agents/AGENTS.md",
 			"skillsPath": "docs/agents/skills"
 		},
-		"https://github.com/armckinney/containers/releases/download/v1.0.8/devcontainer-feature-antigravity.tgz": {
+		"https://github.com/armckinney/containers/releases/download/v1.0.9/devcontainer-feature-antigravity.tgz": {
 			"rulefilePath": "docs/agents/AGENTS.md",
 			"skillsPath": "docs/agents/skills"
 		}
@@ -46,8 +46,6 @@
 			},
 			"extensions": [
 				"ms-azuretools.vscode-docker",
-				"yzhang.markdown-all-in-one",
-				"bierner.markdown-mermaid",
 				"github.vscode-github-actions",
 				"golang.go",
 				"ms-vscode.makefile-tools"

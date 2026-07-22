@@ -19,9 +19,10 @@ This document tracks all outstanding features, architectural enhancements, and p
 
 ## 📋 Outstanding Specification Features
 
-### 1. Container & Deployment Packaging
+### 1. CI/CD, Container & Deployment Packaging
 
-- [x] **GitHub Container Registry (GHCR) Publishing**: Build and publish `ghcr.io/armckinney/gyrus:latest` multi-arch Docker images (`linux/amd64`, `linux/arm64`) via GitHub Actions.
+- [ ] **GitHub Actions Automated CLI Binary Release**: Set up GitHub Actions workflow to cross-compile, package (tar.gz/zip), generate SHA-256 checksums, and publish standalone `gyrus` CLI executables across Linux (`amd64`/`arm64`), macOS (`amd64`/`arm64`), and Windows (`amd64`) for GitHub releases on git tag pushes.
+- [ ] **GitHub Actions MCP Container Image Publishing**: Build and publish multi-arch Docker container images (`linux/amd64`, `linux/arm64`) for the Gyrus MCP server to GitHub Container Registry (`ghcr.io/armckinney/gyrus:latest` and version tags) via GitHub Actions.
 - [ ] **Helm Chart / Kubernetes Deployment**: Official Helm chart for hosting Gyrus central memory service in Kubernetes clusters.
 
 ---
@@ -54,3 +55,10 @@ This document tracks all outstanding features, architectural enhancements, and p
 
 - [ ] **Owner-Group Access Control (RBAC)**: Fine-grained Role-Based Access Control enforcing read/write permissions per `owner_group`.
 - [ ] **Authentication Tokens & OAuth2**: API token validation for HTTP/SSE MCP servers and centralized team instances.
+
+---
+
+### 6. Context Hygiene & Document Lifecycle Cleanup
+
+- [ ] **Stale & Low-Quality Context Cleanup**: Design and implement strategies for identifying, reviewing, and cleaning up old, superseded, or low-quality context and concept documents (e.g., automated staleness detection, decay/quality scoring, garbage collection routines, and `deprecated`/`archived` state sweeps).
+
