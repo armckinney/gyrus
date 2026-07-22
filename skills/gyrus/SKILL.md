@@ -96,12 +96,20 @@ gyrus link <from-id> <to-id> [--rel-type "depends_on|supersedes|implements|mitig
 gyrus unlink <from-id> <to-id> [--rel-type "depends_on"]
 ```
 
-### 7. `gyrus sync`
+### 7. `gyrus archive`
+Archives (deletes) a document from storage and search index.
+
+```bash
+gyrus archive <document-id> [--json]
+```
+
+### 8. `gyrus sync`
 Re-indexes filesystem documents, updates SQLite FTS5 indexes, and extracts dependency links.
 
 ```bash
 gyrus sync [--json]
 ```
+
 
 ### 8. `gyrus validate`
 Validates an OKF Markdown file or JSON envelope schema without saving changes.

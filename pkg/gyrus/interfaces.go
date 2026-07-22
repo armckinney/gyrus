@@ -8,6 +8,7 @@ type DocumentStore interface {
 	Get(ctx context.Context, id string) (Document, error)
 	Update(ctx context.Context, id string, patch DocumentPatch, expectedVersion int) (DocumentRef, error)
 	Delete(ctx context.Context, id string) error
+	Archive(ctx context.Context, id string) error
 }
 
 // IndexStore manages metadata indexing and search retrieval.

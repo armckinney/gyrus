@@ -57,6 +57,13 @@ func (s *Server) registerTools() {
 		mcp.WithString("rel_type", mcp.Description("Relationship type (depends_on|supersedes|implements)")),
 	)
 	s.mcpServer.AddTool(linkTool, s.handleLink)
+
+	// memory.archive
+	archiveTool := mcp.NewTool("memory_archive",
+		mcp.WithDescription("Archive (delete) a document from storage and search index"),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Document ID to archive")),
+	)
+	s.mcpServer.AddTool(archiveTool, s.handleArchive)
 }
 
 func getArgString(req mcp.CallToolRequest, key string) string {
@@ -188,3 +195,14 @@ func (s *Server) handleLink(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 
 	return mcp.NewToolResultText(fmt.Sprintf("Linked '%s' -> '%s'", fromID, toID)), nil
 }
+
+func (s *Server) handleArchive(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	id := getArgString(req, "id")
+	if err := s.store.Archive(ctx, id); err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("archive failed: %v", err)), nil
+	}
+	_ = s.indexer.Remove(ctx, id)
+
+	return mcp.NewToolResultText(fmt.Sprintf("Archived document '%s'", id)), nil
+}
+

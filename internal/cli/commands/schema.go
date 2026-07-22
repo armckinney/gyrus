@@ -2,9 +2,10 @@ package commands
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/armckinney/gyrus/internal/cli"
+	"github.com/armckinney/gyrus/internal/okf"
+	"github.com/armckinney/gyrus/internal/provider/localfs"
 	"github.com/spf13/cobra"
 )
 
@@ -14,34 +15,15 @@ var schemaCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		docType := args[0]
-		templatePath := fmt.Sprintf("docs/specs/doc-types/%s.md", docType)
+		customSchemasDir, _ := localfs.ResolveSchemasPath()
 
-		data, err := os.ReadFile(templatePath)
+		templateContent, err := okf.GetTemplate(docType, customSchemasDir)
 		if err != nil {
-			// Print default template fallback
-			fallback := fmt.Sprintf(`---
-id: %s-001
-title: Example Title
-category: architecture
-type: %s
-owner_group: platform
-version: 1
-status: draft
-tags:
-  - example
-dependencies: []
----
-
-# Title
-
-Document description body here.
-`, docType, docType)
-			fmt.Print(fallback)
-			return nil
+			return fmt.Errorf("failed retrieving template for type '%s': %w", docType, err)
 		}
 
 		if !cli.GlobalJSONOutput {
-			fmt.Print(string(data))
+			fmt.Print(templateContent)
 		}
 
 		return nil
