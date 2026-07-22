@@ -1,6 +1,6 @@
 # Specification 03: MCP Interface Specification
 
-The Gyrus MCP Server is launched locally via `gyrus mcp serve` and exposes standard resources, tools, and prompts to AI agent clients.
+The Gyrus MCP Server is launched locally via `gyrus mcp serve` and exposes standard resources, tools, and prompts to AI agent clients (such as Cursor, Claude Desktop, and VS Code Copilot).
 
 ---
 
@@ -8,57 +8,80 @@ The Gyrus MCP Server is launched locally via `gyrus mcp serve` and exposes stand
 
 * **`memory.suggest_context`**
   * *Parameters:*
-    * `request` (string, required): The coding task or user request prompt.
-    * `max_results` (integer, optional): Maximum document limit.
-  * *Returns:* Summary of relevant document IDs and their text payloads.
+    * `request` (string, required): The coding task or prompt description.
+    * `max_results` (integer, optional): Maximum document count (default: 5).
+  * *Returns:* Linearized text summary of relevant context documents.
+
 * **`memory.search`**
   * *Parameters:*
-    * `query` (string, required): Keyword/lexical query string.
-  * *Returns:* List of matching document headers and summaries.
+    * `query` (string, required): Search term.
+    * `category` (string, optional): Filter by category.
+    * `doc_type` (string, optional): Filter by document type.
+    * `status` (string, optional): Filter by status.
+    * `tag` (string, optional): Filter by tag.
+  * *Returns:* List of matching document headers and metadata summaries.
+
 * **`memory.get`**
   * *Parameters:*
-    * `id` (string, required): The document ID.
-  * *Returns:* Raw content and metadata payload.
+    * `id` (string, required): Target document ID.
+  * *Returns:* Full JSON envelope and Markdown content body.
+
 * **`memory.create`**
   * *Parameters:*
-    * `doc_type` (string, required): e.g. `adr`, `prd`.
-    * `title` (string, required): Document title.
-    * `metadata` (object, required): Envelope tags and categories.
-    * `body` (string, required): Markdown content.
-  * *Returns:* Target document ID and validation status.
+    * `id` (string, required): Unique document ID.
+    * `title` (string, required): Human-readable title.
+    * `doc_type` (string, required): Document type (e.g. `adr`, `prd`, `specification`).
+    * `category` (string, required): Category (`architecture`, `technical`, etc.).
+    * `status` (string, required): Initial state (e.g. `proposed`, `draft`).
+    * `owner_group` (string, required): Owning group (e.g. `engineering`).
+    * `tags` (array[string], optional): List of tags.
+    * `dependencies` (array[string], optional): List of dependent document IDs.
+    * `body` (string, required): Markdown text body content.
+  * *Returns:* Created document ID, version, and validation status.
+
 * **`memory.update`**
   * *Parameters:*
     * `id` (string, required): Target document ID.
-    * `expected_version` (integer, required): For optimistic concurrency checks.
-    * `patch` (object, required): Fields to modify.
-    * `change_reason` (string, required): Audit log justification.
+    * `expected_version` (integer, required): Expected current version for lock check.
+    * `status` (string, optional): New status string (must be a valid transition).
+    * `change_reason` (string, required): Audit log reason.
+    * `body` (string, optional): Updated Markdown text body content.
   * *Returns:* Status and new version index.
+
+* **`memory.link` / `memory.unlink`**
+  * *Parameters:*
+    * `from_id` (string, required): Source document ID.
+    * `to_id` (string, required): Target document ID.
+    * `relationship_type` (string, required): Enum: `[supersedes, depends_on, implements, mitigates]`.
+  * *Returns:* Execution result status.
+
 * **`memory.validate`**
   * *Parameters:*
-    * `doc_type` (string, required): target type.
-    * `metadata` (object, required): Envelope tags.
-    * `body` (string, required): Content block.
-  * *Returns:* Boolean validity and error details.
+    * `doc_type` (string, required): Document type.
+    * `metadata` (object, required): OKF metadata dictionary.
+    * `body` (string, required): Markdown body content.
+  * *Returns:* Validity boolean and validation error messages.
 
 ---
 
 ## 2. Exposed MCP Resources
 
-Agents can fetch specific documents or index files directly using resource URIs:
+Agents can fetch documents or indexes directly via resource URIs:
 
-* **`memory://doc/{id}`:** Fetches the full document text.
-* **`memory://schema/{document_type}`:** Retrieves the JSON Schema validation contract.
-* **`memory://repo/context`:** Fetches the local repository's active context summary.
+* **`memory://doc/{id}`:** Reads the complete document content and frontmatter envelope.
+* **`memory://schema/{document_type}`:** Retrieves the JSON Schema validation contract and template for a document type.
+* **`memory://repo/context`:** Fetches the active repository context summary.
 * **`memory://adr`:** Lists all active Architecture Decision Records.
-* **`memory://proposal`:** Lists all active Improvement Proposals.
-* **`memory://runbook`:** Lists all operations and setup runbooks.
+* **`memory://prd`:** Lists all active Product Requirements Documents.
+* **`memory://specification`:** Lists all active Technical Specifications.
 
 ---
 
 ## 3. Exposed MCP Prompts
 
-Exposes standard prompts to align agent behaviors:
+Standard prompts exposed to align agent behaviors:
 
-* **`prepare-adr`:** Guides the agent to scaffold a new Architecture Decision Record using Gyrus templates.
-* **`review-implementation-against-memory`:** Prompts the agent to compare its proposed code changes against the retrieved Gyrus context documents to catch constraint violations.
-* **`propose-memory-update`:** Instructs the agent on how to structure a patch to update the context library when implementing new features.
+* **`prepare-adr`:** Prompts the agent to scaffold a new Architecture Decision Record using Gyrus templates.
+* **`review-implementation-against-memory`:** Prompts the agent to compare its proposed code changes against retrieved Gyrus documents to catch constraint violations.
+* **`propose-memory-update`:** Instructs the agent on how to structure a patch to update context when adding new features.
+

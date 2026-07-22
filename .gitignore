@@ -3,6 +3,9 @@
 *key*
 *local*
 
+# TODO remove this after implementation:
+!*localfs*.md
+
 # Logs
 *.log
 *.db
