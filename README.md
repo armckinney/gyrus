@@ -81,10 +81,12 @@ Suggest linearized context matching an agent prompt:
 ## 📚 Documentation Sitemap
 
 - 🏛️ **[System Architecture](file:///workspaces/gyrus/docs/usage/architecture.md):** Complete guide to the Gyrus Core SDK, Provider Framework, OKF directory topology, and state machines.
-- ⚙️ **[Configuration Reference](file:///workspaces/gyrus/docs/usage/reference/config.md):** Comprehensive reference for all `.gyrus/config.yaml` options, profiles, and path precedence.
+- ⚙️ **[Configuration Reference](file:///workspaces/gyrus/docs/usage/reference/config.md):** Comprehensive reference for all `.gyrus.yaml` options, profiles, and path precedence.
 - 🛠️ **[CLI Reference Manual](file:///workspaces/gyrus/docs/usage/reference/cli.md):** Detailed argument and flag reference for all 11 `gyrus` CLI subcommands and exit codes.
-- 🔌 **[MCP Server Reference](file:///workspaces/gyrus/docs/usage/reference/mcp.md):** Setup guide for Cursor, Claude Desktop, and VS Code with MCP tool signatures.
-- 📖 **[Setup & Onboarding Guide](file:///workspaces/gyrus/docs/usage/guides/setup.md):** Step-by-step tutorial for setting up team context and configuring agent skills.
+- 🔌 **[MCP Server Setup Guide](file:///workspaces/gyrus/docs/usage/guides/mcp-setup.md):** Native and Docker containerized MCP stdio server setup for Cursor, Claude Desktop, and VS Code.
+- 🤖 **[Agent Skills Setup Guide](file:///workspaces/gyrus/docs/usage/guides/skills.md):** Instructions for copying `.agents/skills/gyrus/SKILL.md` into code repositories for Claude Code and terminal agents.
+- 📋 **[Specification Implementation Roadmap (TODO.md)](file:///workspaces/gyrus/docs/TODO.md):** Remaining planned feature roadmap including cloud providers, PostgreSQL, vector search, and web dashboard.
+
 
 
 ---

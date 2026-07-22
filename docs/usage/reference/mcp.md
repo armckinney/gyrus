@@ -1,36 +1,50 @@
 # Gyrus MCP Server Reference Manual
 
-This manual provides setup configurations, tool definitions, resource URIs, and prompts for integrating the Gyrus embedded Model Context Protocol (MCP) server into GUI IDEs (Cursor, Claude Desktop, VS Code).
+This manual provides the consolidated launch configurations, tool definitions, resource URIs, and prompts for the Gyrus Model Context Protocol (MCP) server.
 
 ---
 
-## 1. IDE Launch Configurations
+## 1. Tool Configuration File Locations
 
-### A. Cursor (`.cursor/mcp.json`)
+Add the standard `mcpServers.gyrus` configuration block to your tool's respective path:
 
-Add the following block to `.cursor/mcp.json` in your workspace:
+| AI Tool / Client | Configuration File Path |
+| :--- | :--- |
+| **Google Antigravity CLI (AGY)** | `~/.gemini/antigravity-cli/mcp.json` or `<workspace>/mcp.json` |
+| **GitHub Copilot / VS Code** | `<workspace>/.vscode/mcp.json` |
+| **Claude Desktop** | macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`<br>Windows: `%APPDATA%\Claude\claude_desktop_config.json` |
+| **OpenAI Codex / Custom MCP Clients** | `<workspace>/.codex/mcp.json` |
 
+---
+
+## 2. Standard MCP Launch Configurations
+
+### Containerized Docker GHCR (Zero-Install)
+```json
+{
+  "mcpServers": {
+    "gyrus": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-v", "${workspaceFolder}:/workspace",
+        "ghcr.io/armckinney/gyrus:latest",
+        "mcp", "serve", "--storage-path", "/workspace"
+      ]
+    }
+  }
+}
+```
+
+### Native Binary
 ```json
 {
   "mcpServers": {
     "gyrus": {
       "command": "gyrus",
-      "args": ["mcp", "serve", "--storage-path", "/absolute/path/to/your/workspace"]
-    }
-  }
-}
-```
-
-### B. Claude Desktop (`claude_desktop_config.json`)
-
-Add the following block to your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "gyrus": {
-      "command": "/usr/local/bin/gyrus",
-      "args": ["mcp", "serve", "--storage-path", "/Users/yourname/projects/gyrus-docs"]
+      "args": ["mcp", "serve"]
     }
   }
 }
@@ -38,9 +52,9 @@ Add the following block to your `claude_desktop_config.json`:
 
 ---
 
-## 2. MCP Tools Reference
+## 3. MCP Tools Reference
 
-When connected, Gyrus exposes five native memory tools to the AI assistant:
+When connected, Gyrus exposes five native memory tools to AI assistants:
 
 ### 1. `memory_create`
 Creates a new OKF contract document.
@@ -84,7 +98,7 @@ Creates a directed relationship edge between two documents.
 
 ---
 
-## 3. MCP Resources & Prompts
+## 4. MCP Resources & Prompts
 
 ### Resources
 - **URI:** `memory://doc/{id}`  
