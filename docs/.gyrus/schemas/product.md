@@ -17,11 +17,11 @@ dependencies: []
 
 ## 1. Overview & Value Proposition
 
-[TODO: Provide a high-level summary of what the product is, why it exists, and who it is for. Write a compelling pitch that immediately informs any developer or stakeholder coming to this page.]
+[Fill: Provide a high-level summary of what the product is, why it exists, and who it is for. Write a compelling pitch that immediately informs any developer or stakeholder coming to this page.]
 
 ### Key Benefits
-* **Benefit 1:** [TODO]
-* **Benefit 2:** [TODO]
+* **Benefit 1:** [Fill in]
+* **Benefit 2:** [Fill in]
 
 ---
 

@@ -17,34 +17,34 @@ dependencies: []
 
 ## 1. Summary & Highlights
 
-* **Release Date:** [TODO: YYYY-MM-DD]
+* **Release Date:** [Fill: YYYY-MM-DD]
 * **Target Version:** `vX.Y.Z`
 * **Release Branch:** `release/vX.Y.Z`
 
 ### High-Level Summary
-[TODO: Provide a brief 1-2 paragraph description of the main focus of this release. E.g., "This release introduces SQLite Edge Database support for offline agent queries, along with stability improvements under network drops."]
+[Fill: Provide a brief 1-2 paragraph description of the main focus of this release. E.g., "This release introduces SQLite Edge Database support for offline agent queries, along with stability improvements under network drops."]
 
 ---
 
 ## 2. Changelog
 
 ### 🚀 Features & Enhancements
-* **[Feature Name]:** [TODO: Brief description of the new capability and links to specifications or JIRA tickets.]
-* **[Enhancement Name]:** [TODO: Brief description.]
+* **[Feature Name]:** [Fill: Brief description of the new capability and links to specifications or JIRA tickets.]
+* **[Enhancement Name]:** [Fill: Brief description.]
 
 ### 🐛 Bug Fixes
-* **[Fix Name]:** [TODO: Description of the bug resolved, links to issues.]
-* **[Fix Name 2]:** [TODO: Description.]
+* **[Fix Name]:** [Fill: Description of the bug resolved, links to issues.]
+* **[Fix Name 2]:** [Fill: Description.]
 
 ### ⚠️ Deprecations & Breaking Changes
-* **Deprecation:** [TODO: Describe deprecated endpoints or variables, when they will be removed.]
-* **Breaking Change:** [TODO: Describe breaking modifications and their impact.]
+* **Deprecation:** [Fill: Describe deprecated endpoints or variables, when they will be removed.]
+* **Breaking Change:** [Fill: Describe breaking modifications and their impact.]
 
 ---
 
 ## 3. Upgrade / Migration Guide
 
-[TODO: Provide step-by-step instructions if special actions are required to migrate to this version.]
+[Fill: Provide step-by-step instructions if special actions are required to migrate to this version.]
 
 ```bash
 # Example upgrade steps

@@ -17,33 +17,33 @@ dependencies: []
 
 ## 1. Objective & Scope
 
-* **Owner / Sponsor:** [TODO]
-* **Effective Date:** [TODO: YYYY-MM-DD]
-* **Target Audience:** [TODO: E.g., All software engineers, frontend team, etc.]
+* **Owner / Sponsor:** [Fill in]
+* **Effective Date:** [Fill: YYYY-MM-DD]
+* **Target Audience:** [Fill: E.g., All software engineers, frontend team, etc.]
 
 ### Purpose
-[TODO: What is the goal of this standard? E.g., "This document defines the Git branching and pull request review policies for all repos under organization X."]
+[Fill: What is the goal of this standard? E.g., "This document defines the Git branching and pull request review policies for all repos under organization X."]
 
 ---
 
 ## 2. Standard Guidelines & Rules
 
-[TODO: Outline the rules, guidelines, or process steps in structured lists or tables.]
+[Fill: Outline the rules, guidelines, or process steps in structured lists or tables.]
 
 ### Rule 1: [Short Title]
-* **Requirement:** [TODO: Clear definition of what must be done]
-* **Rationale:** [TODO: Why this rule exists]
+* **Requirement:** [Fill: Clear definition of what must be done]
+* **Rationale:** [Fill: Why this rule exists]
 
 ### Rule 2: [Short Title]
-* **Requirement:** [TODO: Clear definition]
-* **Rationale:** [TODO: Why this rule exists]
+* **Requirement:** [Fill: Clear definition]
+* **Rationale:** [Fill: Why this rule exists]
 
 ---
 
 ## 3. Recommended Tools & Examples
 
 ### Code or Configuration Examples
-[TODO: Provide examples showing correct vs. incorrect implementations.]
+[Fill: Provide examples showing correct vs. incorrect implementations.]
 
 ```text
 Correct Pattern:
@@ -54,12 +54,12 @@ Incorrect Pattern:
 ```
 
 ### Automation & Tooling
-* **Linters:** [TODO: E.g., ESLint configuration rules]
-* **Formatters:** [TODO: E.g., Prettier, black]
+* **Linters:** [Fill: E.g., ESLint configuration rules]
+* **Formatters:** [Fill: E.g., Prettier, black]
 
 ---
 
 ## 4. Compliance & Enforcement
 
-* **Enforcement Point:** [TODO: E.g., CI/CD gating check, peer review requirement, automated nightly audit.]
-* **Exceptions:** [TODO: Under what circumstances can this standard be bypassed, and who has approval authority?]
+* **Enforcement Point:** [Fill: E.g., CI/CD gating check, peer review requirement, automated nightly audit.]
+* **Exceptions:** [Fill: Under what circumstances can this standard be bypassed, and who has approval authority?]

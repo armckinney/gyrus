@@ -17,19 +17,19 @@ dependencies: []
 
 ## 1. Executive Summary
 
-* **Lead Engineer:** [TODO]
-* **Target Environment:** [TODO]
-* **Last Audited:** [TODO: Date/None]
+* **Lead Engineer:** [Fill in]
+* **Target Environment:** [Fill in]
+* **Last Audited:** [Fill: Date/None]
 
 ### Overview
-[TODO: Provide a brief summary of the specification, its purpose, and the major components or systems it defines.]
+[Fill: Provide a brief summary of the specification, its purpose, and the major components or systems it defines.]
 
 ---
 
 ## 2. System Architecture & Topology (If Applicable)
 
 ### High-Level Block Diagram
-[TODO: Provide a visual representation of system layout (Mermaid, block diagram, or flowchart).]
+[Fill: Provide a visual representation of system layout (Mermaid, block diagram, or flowchart).]
 
 ```mermaid
 graph TD
@@ -45,23 +45,23 @@ graph TD
 ```
 
 ### Subsystems & Interfaces
-* **Subsystem A:** [TODO: Purpose, technology, responsibility, and interfaces]
-* **Subsystem B:** [TODO: Purpose, technology, responsibility, and interfaces]
+* **Subsystem A:** [Fill: Purpose, technology, responsibility, and interfaces]
+* **Subsystem B:** [Fill: Purpose, technology, responsibility, and interfaces]
 
 ---
 
 ## 3. Core Design Decisions & Trade-offs
 
-* **Pattern/Style:** [TODO: E.g., Microservices, Event-driven architecture, Modular Monolith]
+* **Pattern/Style:** [Fill: E.g., Microservices, Event-driven architecture, Modular Monolith]
 * **Trade-off Analysis:**
-  * **Option A:** [TODO: Pros / Cons]
-  * **Option B:** [TODO: Pros / Cons]
-  * **Selected Option:** [TODO: Justification]
+  * **Option A:** [Fill: Pros / Cons]
+  * **Option B:** [Fill: Pros / Cons]
+  * **Selected Option:** [Fill: Justification]
 
 ---
 
 ## 4. Cross-Cutting Concerns & Technical Rules
 
-* **Security & Network Boundaries:** [TODO: Detail firewall rules, VPC setups, encryption in-transit/at-rest, identity validation.]
-* **Scale & Resiliency:** [TODO: High Availability, replication factors, horizontal autoscaling thresholds, disaster recovery strategy.]
-* **Data Flow & Consistency:** [TODO: Eventual consistency vs. strong transaction consistency paths.]
+* **Security & Network Boundaries:** [Fill: Detail firewall rules, VPC setups, encryption in-transit/at-rest, identity validation.]
+* **Scale & Resiliency:** [Fill: High Availability, replication factors, horizontal autoscaling thresholds, disaster recovery strategy.]
+* **Data Flow & Consistency:** [Fill: Eventual consistency vs. strong transaction consistency paths.]

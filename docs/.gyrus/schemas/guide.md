@@ -17,18 +17,18 @@ dependencies: []
 
 ## Overview
 
-[TODO: Provide a brief summary of what this guide covers and who the intended audience is. E.g., "This runbook details how to recover from an edge database replication lag."]
+[Fill: Provide a brief summary of what this guide covers and who the intended audience is. E.g., "This runbook details how to recover from an edge database replication lag."]
 
 ### Prerequisites
-* [TODO: Required software, access permissions, or prior knowledge]
-* [TODO: E.g., Entra ID admin permissions, `az cli` installed]
+* [Fill: Required software, access permissions, or prior knowledge]
+* [Fill: E.g., Entra ID admin permissions, `az cli` installed]
 
 ---
 
 ## Step-by-Step Instructions
 
 ### Step 1: [Name of Step 1]
-[TODO: Explain what needs to be done. Provide exact terminal commands inside code blocks where applicable.]
+[Fill: Explain what needs to be done. Provide exact terminal commands inside code blocks where applicable.]
 
 ```bash
 # Example command
@@ -36,7 +36,7 @@ export ENV_VAR="value"
 ```
 
 ### Step 2: [Name of Step 2]
-[TODO: Continue with the instructions.]
+[Fill: Continue with the instructions.]
 
 ---
 
@@ -44,8 +44,8 @@ export ENV_VAR="value"
 
 How do we check if the steps succeeded?
 
-* **Success Criteria 1:** [TODO: E.g., Server logs show "Reconciliation complete"]
-* **Success Criteria 2:** [TODO: E.g., API endpoint `/health` returns `200 OK`]
+* **Success Criteria 1:** [Fill: E.g., Server logs show "Reconciliation complete"]
+* **Success Criteria 2:** [Fill: E.g., API endpoint `/health` returns `200 OK`]
 
 ---
 
@@ -54,12 +54,12 @@ How do we check if the steps succeeded?
 What should the user do if things go wrong?
 
 * **Issue: [Common Error Message]**
-  * **Cause:** [TODO]
-  * **Resolution:** [TODO]
+  * **Cause:** [Fill in]
+  * **Resolution:** [Fill in]
 
 * **Issue: [Another Common Error Message]**
-  * **Cause:** [TODO]
-  * **Resolution:** [TODO]
+  * **Cause:** [Fill in]
+  * **Resolution:** [Fill in]
 
 ---
 

@@ -17,14 +17,14 @@ dependencies: []
 
 ## 1. Overview & Setup
 
-[TODO: Provide a brief summary of what interfaces are documented here, who uses them, and how to configure/load them.]
+[Fill: Provide a brief summary of what interfaces are documented here, who uses them, and how to configure/load them.]
 
 ---
 
 ## 2. API Reference (If Applicable)
 
 ### Endpoint: `METHOD /path/to/endpoint`
-* **Description:** [TODO: Purpose of the endpoint.]
+* **Description:** [Fill: Purpose of the endpoint.]
 * **Headers:**
   * `Authorization: Bearer <Token>`
 * **Request Payload (JSON):**
@@ -45,7 +45,7 @@ dependencies: []
 ## 3. Command Line Interface (CLI) Reference (If Applicable)
 
 ### Command: `executable sub-command [flags]`
-* **Usage:** [TODO: Example execution]
+* **Usage:** [Fill: Example execution]
 * **Available Flags:**
   * `--flag, -f`: [Description and defaults]
 
@@ -63,7 +63,7 @@ Below are the configuration parameters required to run the system:
 
 ## 5. Frequently Asked Questions (FAQ) & Troubleshooting
 
-[TODO: Embed frequently encountered technical issues, common developer misconfigurations, and their resolutions.]
+[Fill: Embed frequently encountered technical issues, common developer misconfigurations, and their resolutions.]
 
 * **Q: [Common developer question]?**
   * **A:** [Explanation and resolution.]
