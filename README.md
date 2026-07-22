@@ -16,13 +16,20 @@ Gyrus delivers zero-dependency embedded search (powered by CGO-free SQLite FTS5)
 
 ### 1. Installation
 
-Build from source using Go 1.25+:
+Install the pre-compiled `gyrus` binary automatically across Linux, macOS, and Windows (Git Bash/WSL):
+
+```bash
+curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/install.sh | bash
+```
+
+*Alternatively, build from source using Go 1.25+:*
 
 ```bash
 git clone https://github.com/armckinney/gyrus.git
 cd gyrus
 make build
 ```
+
 
 This compiles the standalone `gyrus` executable into the workspace root.
 
@@ -74,9 +81,11 @@ Suggest linearized context matching an agent prompt:
 ## 📚 Documentation Sitemap
 
 - 🏛️ **[System Architecture](file:///workspaces/gyrus/docs/usage/architecture.md):** Complete guide to the Gyrus Core SDK, Provider Framework, OKF directory topology, and state machines.
+- ⚙️ **[Configuration Reference](file:///workspaces/gyrus/docs/usage/reference/config.md):** Comprehensive reference for all `.gyrus/config.yaml` options, profiles, and path precedence.
 - 🛠️ **[CLI Reference Manual](file:///workspaces/gyrus/docs/usage/reference/cli.md):** Detailed argument and flag reference for all 11 `gyrus` CLI subcommands and exit codes.
 - 🔌 **[MCP Server Reference](file:///workspaces/gyrus/docs/usage/reference/mcp.md):** Setup guide for Cursor, Claude Desktop, and VS Code with MCP tool signatures.
 - 📖 **[Setup & Onboarding Guide](file:///workspaces/gyrus/docs/usage/guides/setup.md):** Step-by-step tutorial for setting up team context and configuring agent skills.
+
 
 ---
 

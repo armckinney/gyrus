@@ -96,6 +96,7 @@ Gyrus resolves its root storage location in the following order of precedence:
 
 1. **`--storage-path <path>`** CLI flag argument.
 2. **`GYRUS_STORAGE_PATH`** environment variable.
-3. **`.gyrus/config.yaml`** file in current working directory.
-4. **`~/.config/gyrus/config.yaml`** file in user home directory.
+3. **Repository Project Config File:** `.gyrus.yaml`, `.gyrus.yml`, `.gyrus/config.yaml`, or `.gyrus/config.yml` in current working directory or any parent repository directory.
+4. **User Home Config File:** `~/.config/gyrus/config.yaml`, `~/.config/gyrus/config.yml`, `~/.gyrus.yaml`, or `~/.gyrus.yml`.
 5. **`~/.gyrus/`** default application directory.
+

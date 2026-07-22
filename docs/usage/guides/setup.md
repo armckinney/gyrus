@@ -2,11 +2,20 @@
 
 This guide walks human developers and team leads through initializing Gyrus, organizing team context documents, and enabling AI assistants to read and maintain codebase memory.
 
+## 1. Quick Installation
+
+Install the pre-compiled `gyrus` executable automatically:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/install.sh | bash
+```
+
 ---
 
-## 1. Setting Up Workspace Configuration
+## 2. Setting Up Workspace Configuration
 
-To configure Gyrus for your repository, create a `.gyrus/config.yaml` file in the root of your project:
+To configure Gyrus for your code repository, create a `.gyrus.yaml` file in the root of your project:
+
 
 ```yaml
 version: 1
@@ -26,6 +35,9 @@ graph:
 search:
   provider: sqlite_fts5
 ```
+
+Gyrus automatically searches for `.gyrus.yaml`, `.gyrus.yml`, `.gyrus/config.yaml`, or `.gyrus/config.yml` starting from your current working directory and walking up parent repository directories.
+
 
 Add `.gyrus/index.db` to your `.gitignore` so local SQLite databases are not committed to version control:
 

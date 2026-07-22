@@ -20,13 +20,30 @@ The **Gyrus Core SDK** composes five distinct provider abstractions:
 
 Gyrus defines five pre-configured deployment profiles tailored to specific execution environments:
 
-| Profile | Storage Provider | Index Provider | Graph Provider | Search Provider | Target Use Case & Environment |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **`Test`** | `localfs` | OKF or SQLite | OKF or SQLite | SQLite FTS5 (Optional) | Unit tests, test fixtures, local mock pipelines, fast CI validation runs. |
-| **`Local Full`** | SQLite | SQLite | SQLite edge tables | SQLite FTS5 | Local application development, deterministic local integration tests. |
-| **`Small`** *(MVP Default)* | Git repo / `localfs` | OKF | OKF links / metadata | OKF / local scan | Personal and small team repositories; zero-dependency Git storage. |
-| **`Medium`** | Blob storage (S3/Azure) | PostgreSQL | PostgreSQL edge tables | PostgreSQL full-text | Team deployments and shared service backend instances. |
-| **`Large`** | PostgreSQL | PostgreSQL | PostgreSQL edge tables | PostgreSQL FTS | Centralized platform enterprise service supporting multi-tenant access. |
+| Profile | Status | Storage Provider | Index Provider | Graph Provider | Search Provider | Target Use Case & Environment |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`Test`** | `IMPLEMENTED` | `localfs` | OKF / SQLite | OKF / SQLite | SQLite FTS5 | Unit tests, test fixtures, local mock pipelines. |
+| **`Local Full`** | `IMPLEMENTED` | `localfs` / SQLite | SQLite | SQLite edge tables | SQLite FTS5 | Local application development, standalone CLI & MCP. |
+| **`Small`** *(Default)* | `IMPLEMENTED` | `localfs` | OKF | OKF links / metadata | SQLite FTS5 / OKF scan | Personal and small team repositories. |
+| **`Medium`** | `PLANNED` | Blob storage (S3/Azure) | PostgreSQL | PostgreSQL edge tables | PostgreSQL full-text | Team deployments and shared service backend instances. |
+| **`Large`** | `PLANNED` | PostgreSQL | PostgreSQL | PostgreSQL edge tables | PostgreSQL FTS | Centralized platform enterprise service supporting multi-tenant access. |
+
+---
+
+## 3. Provider Capability Matrix
+
+| Provider Type | Driver Name | Status | Description |
+| :--- | :--- | :--- | :--- |
+| **Storage** | `localfs` | `IMPLEMENTED` | Local filesystem storage for OKF Markdown directory bundles. |
+| **Storage** | `git` / `blob` / `postgres` | `PLANNED` | Remote Git, Cloud S3/Azure Blob, and PostgreSQL database storage. |
+| **Index** | `sqlite` / `okf` | `IMPLEMENTED` | Embedded SQLite `documents_index` and direct YAML frontmatter validation. |
+| **Index** | `postgres` | `PLANNED` | PostgreSQL metadata indexer. |
+| **Graph** | `sqlite` / `okf` | `IMPLEMENTED` | SQLite `document_edges` graph store and frontmatter dependency extraction. |
+| **Graph** | `postgres` | `PLANNED` | PostgreSQL relationship edge tables. |
+| **Search** | `sqlite_fts5` / `okf_scan` | `IMPLEMENTED` | CGO-free SQLite FTS5 full-text keyword search and filesystem scan filter. |
+| **Search** | `postgres_fts` | `PLANNED` | PostgreSQL full-text search engine. |
+
+
 
 ---
 
@@ -36,9 +53,10 @@ When Gyrus operates in **Small / Local Profiles**, it determines its storage roo
 
 1. **CLI Flag:** `--storage-path <path>` passed explicitly on command invocation.
 2. **Environment Variable:** `GYRUS_STORAGE_PATH` environment variable.
-3. **Project Config File:** `storage.root` property defined in `.gyrus/config.yaml`.
-4. **User Config File:** `storage.root` property defined in `~/.config/gyrus/config.yaml`.
+3. **Repository Project Config File:** `.gyrus.yaml`, `.gyrus.yml`, `.gyrus/config.yaml`, or `.gyrus/config.yml` located in the current working directory or any parent repository directory. Relative paths in `storage.root` resolve relative to the directory containing the config file.
+4. **User Home Config File:** `~/.config/gyrus/config.yaml`, `~/.config/gyrus/config.yml`, `~/.gyrus.yaml`, or `~/.gyrus.yml`.
 5. **Default Fallback:** `~/.gyrus/` (global application storage) or `./.gyrus/` (project-local directory).
+
 
 ---
 
