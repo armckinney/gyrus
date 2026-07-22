@@ -91,24 +91,24 @@ The Gyrus codebase is built as a single Go module delivering the **Gyrus Core SD
 
 ## 3. Master Ticket Index
 
-All individual task tickets are maintained in the [`tickets/`](file:///workspaces/gyrus/docs/implementation/tickets) directory. Each ticket contains a persistent status indicator (`NOT STARTED`, `IN PROGRESS`, `COMPLETED`).
+All individual task tickets are maintained in the [`tickets/`](./) directory. Each ticket contains a persistent status indicator (`NOT STARTED`, `IN PROGRESS`, `COMPLETED`).
 
 | Ticket ID | Phase | Title | Status |
 | :--- | :--- | :--- | :--- |
-| **[GYRUS-001](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-001-repo-cleanup-bootstrap.md)** | Phase 0 | Repository Cleanup & Go Module Scaffolding | `COMPLETED` |
-| **[GYRUS-101](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-101-core-sdk-interfaces.md)** | Phase 1 | Core SDK Public Interfaces & Domain Models | `COMPLETED` |
-| **[GYRUS-102](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-102-okf-envelope-parser.md)** | Phase 1 | OKF Envelope Parser & Schema Validator | `COMPLETED` |
-| **[GYRUS-103](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-103-lifecycle-state-machine.md)** | Phase 1 | Lifecycle State-Machine Validation Engine | `COMPLETED` |
-| **[GYRUS-201](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-201-localfs-storage-provider.md)** | Phase 2 | Localfs Storage Provider & Path Resolution | `COMPLETED` |
-| **[GYRUS-202](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-202-sqlite-index-fts-provider.md)** | Phase 2 | SQLite DDL, Indexing & FTS5 Search Engine | `COMPLETED` |
-| **[GYRUS-203](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-203-sqlite-graph-sync.md)** | Phase 2 | SQLite Edge Graph & Incremental File Sync | `COMPLETED` |
-| **[GYRUS-301](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-301-cli-command-framework.md)** | Phase 3 | CLI Command Framework & Exit Code Mapper | `COMPLETED` |
-| **[GYRUS-302](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-302-cli-core-crud.md)** | Phase 3 | CLI Core Mutation Commands (`init`, `create`, `get`, `update`) | `COMPLETED` |
-| **[GYRUS-303](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-303-cli-link-sync-validate.md)** | Phase 3 | CLI Relationship & Maintenance Commands (`link`, `unlink`, `sync`, `validate`) | `COMPLETED` |
-| **[GYRUS-304](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-304-cli-search-suggest.md)** | Phase 3 | CLI Context Discovery Commands (`search`, `suggest-context`, `schema`) | `COMPLETED` |
-| **[GYRUS-401](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-401-mcp-server-tools.md)** | Phase 4 | MCP Stdio Server & Memory Tools | `COMPLETED` |
-| **[GYRUS-402](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-402-mcp-resources-prompts-skill.md)** | Phase 4 | MCP Resources, Prompts & Open Skill Format Shim | `COMPLETED` |
-| **[GYRUS-501](file:///workspaces/gyrus/docs/implementation/tickets/GYRUS-501-testing-packaging.md)** | Phase 5 | Profile Verification Tests & GoReleaser Packaging | `COMPLETED` |
+| **[GYRUS-001](./GYRUS-001-repo-cleanup-bootstrap.md)** | Phase 0 | Repository Cleanup & Go Module Scaffolding | `COMPLETED` |
+| **[GYRUS-101](./GYRUS-101-core-sdk-interfaces.md)** | Phase 1 | Core SDK Public Interfaces & Domain Models | `COMPLETED` |
+| **[GYRUS-102](./GYRUS-102-okf-envelope-parser.md)** | Phase 1 | OKF Envelope Parser & Schema Validator | `COMPLETED` |
+| **[GYRUS-103](./GYRUS-103-lifecycle-state-machine.md)** | Phase 1 | Lifecycle State-Machine Validation Engine | `COMPLETED` |
+| **[GYRUS-201](./GYRUS-201-localfs-storage-provider.md)** | Phase 2 | Localfs Storage Provider & Path Resolution | `COMPLETED` |
+| **[GYRUS-202](./GYRUS-202-sqlite-index-fts-provider.md)** | Phase 2 | SQLite DDL, Indexing & FTS5 Search Engine | `COMPLETED` |
+| **[GYRUS-203](./GYRUS-203-sqlite-graph-sync.md)** | Phase 2 | SQLite Edge Graph & Incremental File Sync | `COMPLETED` |
+| **[GYRUS-301](./GYRUS-301-cli-command-framework.md)** | Phase 3 | CLI Command Framework & Exit Code Mapper | `COMPLETED` |
+| **[GYRUS-302](./GYRUS-302-cli-core-crud.md)** | Phase 3 | CLI Core Mutation Commands (`init`, `create`, `get`, `update`) | `COMPLETED` |
+| **[GYRUS-303](./GYRUS-303-cli-link-sync-validate.md)** | Phase 3 | CLI Relationship & Maintenance Commands (`link`, `unlink`, `sync`, `validate`) | `COMPLETED` |
+| **[GYRUS-304](./GYRUS-304-cli-search-suggest.md)** | Phase 3 | CLI Context Discovery Commands (`search`, `suggest-context`, `schema`) | `COMPLETED` |
+| **[GYRUS-401](./GYRUS-401-mcp-server-tools.md)** | Phase 4 | MCP Stdio Server & Memory Tools | `COMPLETED` |
+| **[GYRUS-402](./GYRUS-402-mcp-resources-prompts-skill.md)** | Phase 4 | MCP Resources, Prompts & Open Skill Format Shim | `COMPLETED` |
+| **[GYRUS-501](./GYRUS-501-testing-packaging.md)** | Phase 5 | Profile Verification Tests & GoReleaser Packaging | `COMPLETED` |
 
 ---
 

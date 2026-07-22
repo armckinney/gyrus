@@ -62,3 +62,10 @@ This document tracks all outstanding features, architectural enhancements, and p
 
 - [ ] **Stale & Low-Quality Context Cleanup**: Design and implement strategies for identifying, reviewing, and cleaning up old, superseded, or low-quality context and concept documents (e.g., automated staleness detection, decay/quality scoring, garbage collection routines, and `deprecated`/`archived` state sweeps).
 
+---
+
+### 7. Branding & Visual Identity
+
+- [ ] **Create Official Project Logo**: Design and create an official Gyrus logo and visual branding assets for the GitHub repository, root README, documentation, and web app.
+
+
