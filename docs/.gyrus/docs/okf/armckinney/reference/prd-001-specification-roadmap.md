@@ -24,9 +24,9 @@ This document serves as the central master roadmap for Gyrus. All planned featur
 
 Target: Complete core automated release workflows and visual branding to finalize the initial open-source MVP.
 
-- [ ] **GitHub Actions Automated CLI Binary Release**: Set up GitHub Actions workflow (`.github/workflows/release.yml`) to cross-compile, package (`tar.gz`/`zip`), generate SHA-256 checksums, and publish standalone `gyrus` CLI executables across Linux (`amd64`/`arm64`), macOS (`amd64`/`arm64`), and Windows (`amd64`) on git tag pushes (`v*`).
-- [ ] **GitHub Actions MCP Container Image Publishing**: Build and publish multi-arch Docker container images (`linux/amd64`, `linux/arm64`) for the Gyrus MCP server to GitHub Container Registry (`ghcr.io/armckinney/gyrus:latest` and version tags) via GitHub Actions (`.github/workflows/docker-mcp.yml`).
-- [ ] **Create Official Project Logo & Visual Assets**: Design and create an official Gyrus logo and visual branding assets for the GitHub repository, root README, documentation, and web app.
+- [x] **GitHub Actions Automated CLI Binary Release**: Set up GitHub Actions workflow (`.github/workflows/wf-release.yml`) to cross-compile, package (`tar.gz`/`zip`), generate SHA-256 checksums, and publish standalone `gyrus` CLI executables across Linux (`amd64`/`arm64`), macOS (`amd64`/`arm64`), and Windows (`amd64`) via Verge version bumping (`v*`).
+- [x] **GitHub Actions MCP Container Image Publishing**: Build and publish multi-arch Docker container images (`linux/amd64`, `linux/arm64`) for the Gyrus MCP server to GitHub Container Registry (`ghcr.io/armckinney/gyrus:latest` and version tags) via GitHub Actions (`.github/workflows/wf-release.yml`).
+- [x] **Create Official Project Logo & Visual Assets**: Design and create an official Gyrus logo and visual branding assets for the GitHub repository, root README, documentation, and web app.
 
 ---
 

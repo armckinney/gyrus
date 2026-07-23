@@ -1,4 +1,8 @@
-# Gyrus: Unified Context & Memory Engine
+<p align="center">
+  <img src="docs/static/logo.png" alt="Gyrus Logo" width="150" />
+</p>
+
+# Gyrus: Unified Context Control Plane & Memory Engine
 
 > **The Context Control Plane for Software Development Teams & AI Agents.**
 > A shared, governed layer to discover, resolve, create, maintain, and distribute engineering context across humans, AI tools, repositories, and documentation systems.

@@ -21,20 +21,23 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache: true
 
-      # TODO: install verge
-      
+      - name: Install Verge CLI
+        run: |
+          curl -sSL https://raw.githubusercontent.com/armckinney/verge/main/install.sh | bash
+          verge --help
+
       - name: Calculate and Push Pre-release Tag
         id: tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 1. Fetch history, calculate next vsemver pre-release tag using .verge.yaml defaults
-          # (Bumps patch and increments sequence, e.g. v0.1.2-dev.1)
-          TAG=$(./verge bump)
+          # Calculate next vsemver pre-release tag using .verge.yaml defaults (e.g. v0.1.1-dev.1)
+          TAG=$(verge bump)
           echo "Resolved next pre-release version: ${TAG}"
           
-          # 2. Tag the repository and push to GitHub
+          # Tag the repository and push to GitHub
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git tag "${TAG}"

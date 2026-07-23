@@ -1,22 +1,17 @@
 name: wf-ci
 
-env:
-  DOCKERHUB_ID: 'armck'
-
-
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
 
-
 defaults:
   run:
     shell: bash
 
 jobs:
-  
+
   container-build-and-push:
     uses: armckinney/cicd/.github/workflows/rwf-container-build-and-push.yaml@main
 
