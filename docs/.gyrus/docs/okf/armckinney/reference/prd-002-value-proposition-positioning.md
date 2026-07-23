@@ -5,7 +5,7 @@ category: technical
 type: prd
 format: ""
 owner_group: armckinney
-version: 2
+version: 3
 status: active
 tags:
   - product-positioning
@@ -19,9 +19,9 @@ dependencies: []
 
 ## 1. Executive Summary
 
-**Gyrus** is a lightweight, provider-neutral **Context Control Plane** and knowledge graph engine designed for software development teams and AI agentic tools. While alternative solutions focus narrowly on workplace search, code retrieval, data governance catalogs, or personal agent memory, Gyrus provides a unified layer where humans and heterogeneous AI tools collaboratively create, govern, resolve, and distribute portable engineering context.
+**Gyrus** is a lightweight, provider-neutral **Context Control Plane** and knowledge engine designed for software development teams and AI agentic tools. While alternative market solutions specialize narrowly in workplace search, source-code retrieval, data catalogs, persistent agent memory, or vector databases, Gyrus provides a unified coordination layer where humans and heterogeneous AI tools collaboratively create, govern, resolve, and distribute portable engineering context.
 
-Gyrus is built around the **Open Knowledge Format (OKF)** standard. It acts as a coordination layer between agent clients, documentation platforms, code repositories, storage backends, and human review workflows—guaranteeing that organizational context remains discoverable, structured, governed, portable, human-readable, and reliable enough to influence critical engineering decisions.
+Gyrus is built around the **Open Knowledge Format (OKF)** standard. It acts as a coordination layer between agent clients, documentation platforms, code repositories, storage backends, search engines, and human review workflows—guaranteeing that organizational context remains discoverable, structured, governed, portable, human-readable, and reliable enough to influence critical engineering decisions.
 
 ---
 
@@ -29,7 +29,7 @@ Gyrus is built around the **Open Knowledge Format (OKF)** standard. It acts as a
 
 ### 2.1 Core Product Philosophy
 
-1. **Context Should Be a Managed Engineering Asset:** Engineering context must be treated with the same discipline as source code and infrastructure configuration—possessing explicit ownership, defined scope, known authority, version history, validation rules, review workflows, lifecycle status, and traceable provenance.
+1. **Context Should Be a Managed Engineering Asset:** Engineering context must be treated with the same discipline as source code and system configuration—possessing explicit ownership, defined scope, known authority, version history, validation rules, review workflows, lifecycle status, and traceable provenance.
 2. **Humans and Agents Should Share the Same Canonical Knowledge:** Canonical knowledge must remain portable and human-readable (Markdown + YAML frontmatter contracts). Embeddings, vector indexes, full-text databases, and knowledge graphs are derived projections, not the canonical source of truth.
 3. **Context Resolution Is More Than Search:** Traditional search answers *"which documents appear relevant?"* Gyrus context resolution answers *"which information is applicable, current, authoritative, and required for this task within our token budget?"*
 4. **Agents Should Propose Knowledge, Not Silently Redefine It:** AI agents can discover patterns and propose updates, but high-authority context requires governed promotion (`Session Observation` ➔ `Candidate Memory` ➔ `Proposed Document` ➔ `Validated Review` ➔ `Published Knowledge`).
@@ -48,42 +48,74 @@ Gyrus is built around the **Open Knowledge Format (OKF)** standard. It acts as a
 
 ---
 
-## 3. Market Landscape Positioning & Competitor Differentiation
+## 3. Comprehensive Market Landscape Positioning & Categorized Comparisons
 
-Gyrus is designed for a distinct purpose in the AI infrastructure ecosystem. The table and analysis below position Gyrus against products across the entire context market:
+Gyrus is positioned across both **commercial marketplace products** and **architectural solution approaches**.
 
-### 3.1 Comprehensive Market Comparison Matrix
+### 3.1 Market Category Classification
 
-| Alternative Solution | Primary Design Center | Key Strengths | Why Choose Gyrus Context Control Plane Instead? |
-| :--- | :--- | :--- | :--- |
-| **Atlan Context Engineering Studio** | Governed business and data context | Versioned Context Repos, semantic models, data lineage, BI integration | Choose Gyrus when context extends beyond data governance into architecture, ADRs, PRDs, code conventions, runbooks, and agent memory without requiring an enterprise data catalog foundation. |
-| **Glean** | Enterprise workplace search & agent platform | Broad application connectors, enterprise permissions search, managed assistants | Choose Gyrus when you need context-as-code, repository ownership, portable Markdown artifacts, custom lifecycle rules, offline execution, and freedom from a managed workplace-AI SaaS platform. |
-| **Augment Context Engine** | Code retrieval for software agents | Deep semantic code indexing, cross-repository code retrieval, MCP integration | Choose Gyrus when context includes complete plans, decisions, standards, runbooks, and memories in addition to code selection. Augment retrieves code; Gyrus governs knowledge authority. |
-| **Sourcegraph** | Code intelligence and software navigation | Large-scale code search, symbol navigation, multi-repository code retrieval | Choose Gyrus when code intelligence is only one provider within a broader knowledge ecosystem. Gyrus manages the lifecycle, authority, and contracts of knowledge rather than specializing in source-code AST parsing. |
-| **Mem0** | Persistent personal agent memory | Long-term memory across users, sessions, and chat applications | Choose Gyrus when knowledge must remain coherent, reviewable, human-readable, and authoritative. Gyrus separates temporary memory observations from approved canonical knowledge artifacts. |
-| **Zep / Graphiti** | Temporal knowledge graphs for agents | Entity relationships, changing facts, provenance, temporal retrieval | Choose Gyrus when the knowledge graph should be a derived index rather than the canonical representation. Humans and agents work with portable artifacts while graph relationships support retrieval behind the scenes. |
-| **TrustGraph & Graph Frameworks** | Self-hosted graph ingestion & retrieval toolkits | Flexible infrastructure for building custom graph-based context systems | Choose Gyrus when you want an opinionated, ready-to-use context product rather than a complex infrastructure toolkit. Gyrus defines artifact types, scopes, lifecycle, validation, and review workflows. |
-| **Skills + Documentation MCP** *(e.g. Confluence MCP)* | Agent-guided documentation workflows | Low complexity, familiar human interface, reusable prompt instructions | Choose Gyrus when guidelines must become enforceable behavior. Gyrus adds stable artifact identities, contract validation, scope inheritance, state machines, and task-specific context resolution. |
-| **Repository-Local Files Only** *(e.g. `.cursorrules`, `AGENTS.md`)* | Local, version-controlled file hints | Portable, close to the code, reviewable via PRs, zero latency | Choose Gyrus when context spans multiple repositories or requires global-to-local inheritance. Gyrus combines local repository ownership with global context inheritance, search indexing, and multi-agent persistence. |
+Alternatives in the AI context space generally specialize in one of six product categories:
+1. **Governed Data & Semantic Definitions:** Atlan Context Engineering Studio
+2. **Enterprise Workplace Search & Knowledge Platforms:** Glean, Notion AI
+3. **Source Code Retrieval & Intelligence Engines:** Augment Context Engine, Sourcegraph
+4. **Persistent Agent Memory Platforms:** Mem0
+5. **Temporal Knowledge Graphs & Graph Infrastructure:** Zep, Graphiti, TrustGraph
+6. **Lightweight Instruction & File Frameworks:** Agent Skills, Doc MCPs (e.g. Confluence MCP), Repo-Local Files (`.cursorrules`, `AGENTS.md`)
 
 ---
 
-### 3.2 Deep-Dive Competitor Analysis
+### 3.2 Master Market & Solution Comparison Matrix
 
-#### A. Gyrus vs. Data & Enterprise Search Platforms (Atlan, Glean)
-* **Atlan Context Engineering Studio:** Atlan creates versioned Context Repos for data catalogs, BI metrics, and data lineage. However, it is fundamentally tied to data warehouse governance. Gyrus operates as a developer-first context-as-code control plane covering software engineering architecture, implementation plans, ADRs, runbooks, and repository conventions.
-* **Glean:** Glean provides a centralized workplace AI platform with application connectors across Google Drive, Slack, and Jira. While powerful for corporate workplace search, Glean requires sending organizational data to a managed SaaS platform. Gyrus provides git-native, offline-ready, air-gapped context control that developers check directly into repositories or local storage.
+| Solution / Product | Product Category / Design Center | Key Strengths | Gaps & Limitations | Why Choose Gyrus Context Control Plane Instead? |
+| :--- | :--- | :--- | :--- | :--- |
+| **Atlan Context Engineering Studio** | Governed Business & Data Context Layer | Versioned Context Repos, BI semantic models, data lineage, evaluation benchmarks | Specialized for data warehouse/catalog assets; lacks software architecture, ADRs, runbooks, and repo context | Choose Gyrus when context extends beyond data governance into architecture, ADRs, PRDs, code conventions, runbooks, and agent memory without requiring an enterprise data catalog foundation. |
+| **Glean** | Enterprise Search & Workplace Knowledge Platform | Broad SaaS application connectors, enterprise permissions search, managed AI assistants | Managed SaaS platform; lacks context-as-code, repository ownership, portable Markdown artifacts, and offline capability | Choose Gyrus when you need context-as-code, repository ownership, portable Markdown artifacts, custom lifecycle rules, offline execution, and freedom from a managed workplace-AI SaaS platform. |
+| **Augment Context Engine** | Source-Code Retrieval for Coding Agents | Deep semantic code indexing, cross-repository code retrieval, MCP integration | Focuses on selecting source code snippets; lacks artifact lifecycle, ADR governance, or team knowledge contracts | Choose Gyrus when context includes complete plans, decisions, standards, runbooks, and memories in addition to code selection. Augment retrieves code; Gyrus governs knowledge authority. |
+| **Sourcegraph** | Large-Scale Code Intelligence & Navigation | Multi-repository code search, symbol navigation, AST syntax understanding | Focuses on code search & symbol definitions; does not manage authority or lifecycle of engineering decisions and specs | Choose Gyrus when code intelligence is only one provider within a broader knowledge ecosystem. Gyrus manages the lifecycle, authority, and contracts of knowledge rather than specializing in source-code AST parsing. |
+| **Mem0** | Persistent Personal Agent Memory Platform | Long-term memory extraction across users, sessions, and chat applications | Breaks knowledge into unstructured facts/triples; loses narrative, human reviewability, and artifact contracts | Choose Gyrus when knowledge must remain coherent, reviewable, human-readable, and authoritative. Gyrus separates temporary memory observations from approved canonical knowledge artifacts. |
+| **Zep / Graphiti** | Temporal Knowledge Graph Engine for Agents | Dynamic entity relationship modeling, changing facts, temporal retrieval | Derived graph is the primary store; harder for humans to directly inspect, review, or version-control in Git | Choose Gyrus when the knowledge graph should be a derived index rather than the canonical representation. Humans and agents work with portable artifacts while graph relationships support retrieval behind the scenes. |
+| **TrustGraph & Graph Frameworks** | Self-Hosted Graph Construction Toolkit | Flexible infrastructure primitives for building custom graph context pipelines | Unopinionated toolkit; does not define artifact contracts, scope inheritance, lifecycle states, or review workflows | Choose Gyrus when you want an opinionated, ready-to-use context product rather than a complex infrastructure toolkit. Gyrus defines artifact types, scopes, lifecycle, validation, and review workflows. |
+| **Documentation Platforms & MCPs** *(e.g. Confluence)* | Enterprise Documentation Platform & Wiki MCP | Human-readable wiki pages, permissions, version history, familiar editing | Page-centric retrieval; lacks task-specific context resolution, scope inheritance, or contract schemas | Choose Gyrus when Confluence should remain a human publishing surface without dictating the entire context architecture. Gyrus adds provider-neutral contracts, resolution, and governance. |
+| **Agent Skills Only** *(e.g. `SKILL.md`)* | Instruction-Driven Behavioral Prompt Adapter | Portable instructions, easy to prototype, low operational overhead | Prompt instructions only; lacks persistent storage, stable identities, search index, authority rules, or enforcement | Choose Gyrus to convert recommended agent instructions into an enforceable Go core engine, storage persistence layer, and unified multi-agent context hub. |
+| **Agent Skills + Doc MCP** | Instruction-Driven Doc Retrieval Workflow | Low-cost combination of behavioral guidance and wiki persistence | Relies on LLMs to consistently follow search & update instructions; lacks deterministic resolution or state machines | Choose Gyrus to eliminate instruction drift. Gyrus converts search & validation conventions into a deterministic Go context resolution engine (`suggest-context`). |
+| **Repository-Local Files Only** *(e.g. `.cursorrules`, `AGENTS.md`)* | Repo-Local Static File Hints | Version-controlled, portable, close to code, reviewable via PRs | Fragmented per repo; lacks global discovery, cross-repo context inheritance, or central indexing | Choose Gyrus to combine local repository ownership with global context inheritance, search indexing, and unified multi-agent persistence. |
+| **Search, Vector, or Graph DB Primitives** *(e.g. Pinecone, Chroma)* | Search & Retrieval Infrastructure Primitive | High-dimensional semantic similarity, vector indexing, scalable retrieval | Infrastructure primitives; lack artifact contracts, human-readable canonical sources, scope inheritance, or approval workflows | Choose Gyrus to use vector/search/graph databases as replaceable derived indexes beneath a governed, contract-native context control plane. |
 
-#### B. Gyrus vs. Code Retrieval & Code Intelligence Systems (Augment, Sourcegraph)
-* **Augment Code Engine & Sourcegraph:** Augment and Sourcegraph specialize in deep source-code indexing, AST symbol resolution, and multi-repo code snippet retrieval for coding LLMs. Gyrus complements these tools by serving as the higher-level knowledge authority—governing *why* decisions were made (ADRs), *what* requirements exist (PRDs), and *how* systems must be built (Standards), leaving code intelligence engines to handle raw source-code lookup.
+---
 
-#### C. Gyrus vs. Agent Memory Platforms & Temporal Graphs (Mem0, Zep, Graphiti)
-* **Mem0 & Zep/Graphiti:** Memory platforms extract unstructured key-value facts or temporal graph edges from user chat sessions. However, breaking complex engineering architecture into isolated graph triples loses narrative, authority, and human reviewability. Gyrus maintains coherent, human-readable OKF Markdown documents as the canonical source of truth, deriving graph edges (`depends_on`, `implements`) and memory promotions through governed workflows.
+### 3.3 Evaluation of Structural Solution Alternatives
 
-#### D. Gyrus vs. Lightweight Agent Skills & Doc MCPs (`.cursorrules`, Confluence MCP)
-* **Raw Agent Skills:** Static prompt files (e.g. `.cursorrules`) rely entirely on LLMs remembering to read unindexed files, resulting in high prompt token bloat and unvalidated edits.
-* **Generic Doc MCPs (e.g. Confluence):** Confluence MCPs allow searching wiki pages, but lack task-specific context resolution, scope inheritance, and contract validation.
-* **The Gyrus Synergy:** Gyrus uses Agent Skills and MCP as runtime adapters, but enforces context resolution (`suggest-context`), contract validation (`okf.Validate`), and state machines in a pure, fast Go engine.
+Beyond commercial products, engineering organizations typically evaluate six structural architectural approaches. Gyrus fulfills the specific gaps of each:
+
+#### Alternative 1: Agent Skills Only (`SKILL.md`)
+* **Strengths:** Lightweight, portable, easy to prototype, zero infra overhead, compatible with multiple agent clients.
+* **Gaps:** Provides prompt instructions, not shared state or enforcement. Lacks persistent storage, stable artifact IDs, search indexes, authority rules, scope inheritance, supersession, or review workflows.
+* **Gyrus Fulfillment:** Gyrus uses Agent Skills as an integration transport, while providing the durable state, validation, retrieval, lifecycle, and governance capabilities beneath them.
+
+#### Alternative 2: Documentation Platform or Documentation MCP (Confluence)
+* **Strengths:** Human-readable pages, rich search, organization permissions, existing adoption, familiar editing.
+* **Gaps:** Focuses on storing and retrieving wiki pages. Lacks task-specific context resolution, scope inheritance, repository-local distribution, agent memory promotion, contract schemas, or multi-agent uniformity.
+* **Gyrus Fulfillment:** Gyrus uses documentation platforms as replaceable publishing providers while maintaining a provider-independent artifact model and context resolution layer.
+
+#### Alternative 3: Agent Skills and Documentation MCP
+* **Strengths:** Combines behavioral guidance with wiki persistence. Low cost, human-readable, good for early experimentation.
+* **Gaps:** Relies on LLMs remembering to search, interpret, merge, and validate context correctly. Lacks deterministic context resolution, scope precedence, or state machine enforcement.
+* **Gyrus Fulfillment:** Gyrus replaces prompt-driven conventions with deterministic system invariants (`context.resolve` / `gyrus suggest-context`), ensuring context is resolved consistently regardless of the calling LLM or client.
+
+#### Alternative 4: Agent Memory Platform (Mem0)
+* **Strengths:** Persistent memory across sessions, automated fact extraction, personalized user state.
+* **Gaps:** Treats knowledge as isolated key-value facts or message episodes. Weakens narrative structure, authority, reviewability, and human comprehension of engineering architecture.
+* **Gyrus Fulfillment:** Gyrus maintains coherent OKF Markdown documents as canonical sources of truth, using memory systems as derived indexes while enforcing a governed promotion workflow (`Observation` ➔ `Candidate Memory` ➔ `Published Document`).
+
+#### Alternative 5: Repository-Local Files Only (`.cursorrules`, `AGENTS.md`)
+* **Strengths:** Portable, version-controlled, close to code, reviewable in PRs, offline-ready.
+* **Gaps:** Isolated per repository. Cannot handle organization-wide standards, cross-repo discovery, scope inheritance, or central search indexing.
+* **Gyrus Fulfillment:** Gyrus treats repositories as first-class providers and materialization targets while resolving broader organizational context (`Organization` ➔ `Domain` ➔ `System` ➔ `Repository` ➔ `Task`).
+
+#### Alternative 6: Build Directly on Search, Vector, or Knowledge Graph DBs (Pinecone, Chroma, Neo4j)
+* **Strengths:** High-dimensional semantic search, flexible queries, scalable retrieval primitives.
+* **Gaps:** Database primitives, not a complete context product. Lack artifact contracts, human-readable canonical representations, scope inheritance, approval workflows, or document lifecycle.
+* **Gyrus Fulfillment:** Gyrus uses vector, graph, and full-text databases as replaceable indexing projections while maintaining Markdown contracts as the portable source of truth.
 
 ---
 
