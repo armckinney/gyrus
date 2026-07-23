@@ -1,7 +1,12 @@
-# Universal secrets
+# Universal secrets & local environment overrides
 *secret*
 *key*
-*local*
+*.local
+*.local.*
+.env*.local
+
+# Explicitly preserve codebase packages
+!/internal/provider/localfs/**
 
 # Logs
 *.log
@@ -56,3 +61,14 @@ coverage.out
 # Environment variables - exclude test env
 .env
 !.env.test
+
+# Gyrus Binary Execution Artifacts (anchor to root)
+/gyrus
+/bin/gyrus
+
+# Explicitly preserve codebase packages and skill paths
+!/pkg/gyrus/**
+!/skills/gyrus/**
+!/docs/agents/skills/gyrus/**
+!/.agents/skills/gyrus/**
+!*/.gyrus/**

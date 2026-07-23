@@ -1,0 +1,17 @@
+version: 1
+profile: local_full
+schemas_path: ./docs/.gyrus/schemas
+
+storage:
+  provider: localfs
+  root: ./docs/.gyrus/docs
+
+index:
+  provider: sqlite
+  dsn: ./docs/.gyrus/docs/index.db
+
+graph:
+  provider: sqlite
+
+search:
+  provider: sqlite_fts5

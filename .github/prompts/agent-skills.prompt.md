@@ -1,0 +1,1 @@
+../../docs/agents/skills/agent-skills/SKILL.md

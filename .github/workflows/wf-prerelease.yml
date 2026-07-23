@@ -1,0 +1,52 @@
+name: wf-prerelease
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  prerelease:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install Verge CLI
+        run: |
+          curl -sSL https://raw.githubusercontent.com/armckinney/verge/main/install.sh | bash
+          verge --help
+
+      - name: Calculate and Push Pre-release Tag
+        id: tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Calculate next vsemver pre-release tag using .verge.yaml defaults (e.g. v0.1.1-dev.1)
+          TAG=$(verge bump)
+          echo "Resolved next pre-release version: ${TAG}"
+          
+          # Tag the repository and push to GitHub
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${TAG}"
+          git push origin "${TAG}"
+
+      - name: Run GoReleaser (Pre-release)
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

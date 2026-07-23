@@ -1,0 +1,108 @@
+---
+id: guide-002-setup-onboarding
+title: Team Onboarding & Context Setup Guide
+category: technical
+type: guide
+format: ""
+owner_group: armckinney
+version: 1
+status: active
+last_modified_by: ""
+last_updated: 2026-07-22T06:38:56Z
+---
+
+# Gyrus Setup & Onboarding Guide
+
+This guide walks human developers and team leads through initializing Gyrus, organizing team context documents, and enabling AI assistants to read and maintain codebase memory.
+
+## 1. Quick Installation
+
+Install the pre-compiled `gyrus` executable automatically:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/install.sh | bash
+```
+
+---
+
+## 2. Setting Up Workspace Configuration
+
+To configure Gyrus for your code repository, create a `.gyrus.yaml` file in the root of your project:
+
+
+```yaml
+version: 1
+profile: small # test | local_full | small | medium | large
+
+storage:
+  provider: localfs
+  root: ./.gyrus/docs
+
+index:
+  provider: sqlite
+  dsn: ./.gyrus/index.db
+
+graph:
+  provider: sqlite
+
+search:
+  provider: sqlite_fts5
+```
+
+Gyrus automatically searches for `.gyrus.yaml`, `.gyrus.yml`, `.gyrus/config.yaml`, or `.gyrus/config.yml` starting from your current working directory and walking up parent repository directories.
+
+
+Add `.gyrus/index.db` to your `.gitignore` so local SQLite databases are not committed to version control:
+
+```text
+# .gitignore
+.gyrus/index.db
+```
+
+---
+
+## 2. Bootstrapping Contract Documents
+
+Gyrus uses 11 standardized document types under the **Open Knowledge Format (OKF)**:
+
+| Document Type | Recommended Use Case |
+| :--- | :--- |
+| **`adr`** | Architecture Design Records documenting key decisions. |
+| **`prd`** | Product Requirement Documents defining features and goals. |
+| **`guide`** | Developer guides and onboarding walkthroughs. |
+| **`improvement-proposal`** | System enhancement proposals. |
+| **`release-note`** | Version release summaries and changelogs. |
+| **`specification`** | Detailed technical specifications. |
+| **`standards`** | Team coding standards and conventions. |
+| **`technical-reference`** | Module API and data model references. |
+| **`product`** | High-level product overview documents. |
+| **`glossary`** | Domain taxonomy and definitions. |
+| **`freeform`** | Notes and unformatted engineering docs. |
+
+To create a new ADR from a template:
+
+```bash
+gyrus schema adr > adr-001-my-feature.md
+# Edit frontmatter and content, then register in Gyrus:
+gyrus sync
+```
+
+---
+
+## 3. Configuring Terminal CLI Agents (Claude Code, Aider)
+
+For terminal-based agents, copy the Open Skill Format definition from `skills/gyrus/SKILL.md` into your agent skills folder (`.agents/skills/gyrus/SKILL.md`).
+
+Agents will automatically run `gyrus suggest-context --prompt "<task>"` to retrieve precise documentation context before modifying code.
+
+---
+
+## 4. Re-indexing and Maintaining Memory
+
+Whenever team members create or edit Markdown documents by hand:
+
+```bash
+gyrus sync
+```
+
+`gyrus sync` scans your storage directory, calculates SHA-256 file checksums, updates SQLite FTS5 indexes, and extracts document linkage edges automatically.

@@ -1,6 +1,6 @@
 FROM ghcr.io/armckinney/go:1.25.0
 
-ARG WORKSPACE=/workspaces/template-go
+ARG WORKSPACE=/workspaces/gyrus
 ENV WORKSPACE=${WORKSPACE}
 
 # make non-interactive for build

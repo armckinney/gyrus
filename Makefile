@@ -1,33 +1,29 @@
-# Build the application
+# Gyrus Makefile
+
 all: build
 
+build:
+	@echo "Building gyrus binary..."
+	@go build -o gyrus cmd/gyrus/main.go
+
 test:
-	@echo "Testing..."
-	@./tests/db/setup.sh
+	@echo "Running Gyrus tests..."
 	@go test ./... -v
 
 fmt:
-	@echo "Formatting..."
+	@echo "Formatting Go code..."
 	@go fmt ./...
 
 lint:
-	@echo "Linting..."
+	@echo "Linting Go code..."
 	@gofmt -l .
 	@go vet ./...
 
-build:
-	@echo "Building..."
-	@go build -o main cmd/api/main.go
-
 clean:
-	@echo "Cleaning..."
-	@rm -rf main tmp
+	@echo "Cleaning build artifacts..."
+	@rm -rf gyrus bin/ dist/ coverage.out coverage.html
 
 run:
-	@go run cmd/api/main.go
+	@go run cmd/gyrus/main.go
 
-watch:
-	@echo "Access app on http://localhost:8080"
-	@go tool air
-
-.PHONY: all build run test clean watch
+.PHONY: all build test fmt lint clean run

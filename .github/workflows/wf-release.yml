@@ -1,0 +1,69 @@
+name: wf-release
+
+env:
+  DOCKERHUB_ID: 'armck'
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release-cli:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install Verge CLI
+        run: |
+          curl -sSL https://raw.githubusercontent.com/armckinney/verge/main/install.sh | bash
+          verge --help
+
+      - name: Calculate and Push Release Tag
+        id: tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Calculate next vsemver patch version using verge
+          TAG=$(verge bump --kind patch)
+          echo "Resolved next release version: ${TAG}"
+          echo "version=${TAG}" >> $GITHUB_OUTPUT
+          
+          # Tag the repository and push to GitHub
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${TAG}"
+          git push origin "${TAG}"
+
+      - name: Run GoReleaser (CLI Binaries)
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-container:
+    needs: release-cli
+    uses: armckinney/cicd/.github/workflows/rwf-container-build-and-push.yaml@main
+    secrets: inherit
+    with:
+      dockerfile: Dockerfile
+      image_name: gyrus
+      image_tag: ${{ needs.release-cli.outputs.version }}
+      platforms: linux/amd64,linux/arm64

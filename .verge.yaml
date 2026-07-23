@@ -1,0 +1,17 @@
+# Gyrus CLI Self-Versioning Configuration
+# Decoupled from GitHub API to prevent race conditions and rate-limits by using the local gittag provider.
+
+version_type: vsemver
+
+default:
+  bump_kind: prerelease
+  prerelease_stage: dev
+
+sequence:
+  type: increment
+
+provider:
+  type: gittag
+  gittag:
+    repo_dir: "."
+    include_prerelease: true

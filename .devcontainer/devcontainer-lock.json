@@ -1,0 +1,19 @@
+{
+  "features": {
+    "https://github.com/armckinney/containers/releases/download/v1.0.9/devcontainer-feature-antigravity.tgz": {
+      "version": "1.5.0",
+      "resolved": "https://github.com/armckinney/containers/releases/download/v1.0.9/devcontainer-feature-antigravity.tgz",
+      "integrity": "sha256:0d8b554f56bdef0959a6cdd01585b50258f91d0ec9c7b18bb2cf20e8ce1f8284"
+    },
+    "https://github.com/armckinney/containers/releases/download/v1.0.9/devcontainer-feature-copilot.tgz": {
+      "version": "1.5.0",
+      "resolved": "https://github.com/armckinney/containers/releases/download/v1.0.9/devcontainer-feature-copilot.tgz",
+      "integrity": "sha256:1c98df655bd133dd2a7a6a4951bcca56db03e44b3831645397f916bedd49342b"
+    },
+    "https://github.com/armckinney/containers/releases/download/v1.0.9/devcontainer-feature-vscode-customizations.tgz": {
+      "version": "1.1.0",
+      "resolved": "https://github.com/armckinney/containers/releases/download/v1.0.9/devcontainer-feature-vscode-customizations.tgz",
+      "integrity": "sha256:af938bc2f72cb61988d1ace426e76f70759bc989e391fa7216b02c2940290e57"
+    }
+  }
+}
