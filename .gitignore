@@ -1,7 +1,12 @@
-# Universal secrets
+# Universal secrets & local environment overrides
 *secret*
 *key*
-*local*
+*.local
+*.local.*
+.env*.local
+
+# Explicitly preserve codebase packages
+!/internal/provider/localfs/**
 
 # Logs
 *.log
