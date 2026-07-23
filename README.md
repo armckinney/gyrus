@@ -1,44 +1,63 @@
 # Gyrus: Unified Context & Memory Engine
 
-> High-performance context management engine and knowledge graph for software development teams and AI agents.
+> **The Context Control Plane for Software Development Teams & AI Agents.**
+> A shared, governed layer to discover, resolve, create, maintain, and distribute engineering context across humans, AI tools, repositories, and documentation systems.
 
 ---
 
 ## 🌟 Overview & Value Proposition
 
-**Gyrus** is an open-source context management engine and knowledge graph designed to bridge the gap between human engineering teams and AI coding assistants. Built in Go, Gyrus organizes codebase context, Architecture Design Records (ADRs), specifications, PRDs, and guidelines using the **Open Knowledge Format (OKF)** standard.
+**Gyrus** is an open-source **Context Control Plane** and knowledge graph designed to bridge the gap between human engineering teams and AI coding assistants (such as Cursor, Claude Code, GitHub Copilot, and custom agents). Built in Go, Gyrus organizes codebase context, Architecture Design Records (ADRs), specifications, PRDs, runbooks, and guidelines using the **Open Knowledge Format (OKF)** standard.
 
-Gyrus delivers provider-agnostic search (i.e. embedded SQLite FTS5 or cloud search backends), incremental filesystem and cloud synchronization, document state-machine validation, a standalone CLI (`gyrus`), and an embedded Model Context Protocol (MCP) server for GUI IDEs (i.e. Cursor, Claude Desktop, Copilot).
-
----
-
-### 🎯 Why Gyrus?
-
-Gyrus is an active **Context Engine** built around 8 core engineering pillars:
-
-1. 📄 **Concept Data Contracts (OKF):** Validates structured software contracts (`adr`, `prd`, `spec`) rather than unstructured text dumps.
-2. 🕸️ **Knowledge Graph Indexing:** Traverses explicit directional links (`depends_on`, `implements`) for deep architectural context.
-3. 🧩 **Composable Service Providers:** Runs locally (`localfs` + SQLite FTS5) or scales to enterprise cloud backends (Git repos, S3, Postgres).
-4. 🌐 **Unified Memory Persistence:** Operates as a single source of truth across CLI, MCP stdio servers, agent skills, and web apps.
-5. 📦 **Composable Core SDK (`pkg/gyrus`):** Embeds zero-dependency Go engine directly into custom AI pipelines and internal CLI tools.
-6. 🎯 **Token-Budgeted Context Linearization:** Synthesizes high-signal, non-redundant context within prompt token limits (`gyrus suggest-context`).
-7. 🔄 **State Machine Governance:** Enforces validated document lifecycle state transitions (i.e. `proposed` ➔ `accepted`).
-8. 🚀 **Embedded Templates (`go:embed`):** Ships 11 pre-packaged Markdown schema templates with `.gyrus.yaml` override support.
+Rather than replacing your existing tools or forcing a migration to a proprietary cloud platform, Gyrus coordinates your existing infrastructure—Git repositories, documentation platforms (e.g. Confluence), local filesystems, search engines, and vector databases—under a single, provider-neutral context model.
 
 ---
 
-### 📊 Objective Capability & Feature Comparison Matrix
+### 🌐 What Gyrus Is
 
-| Feature / Dimension | Raw Agent Skills *(i.e. `.cursorrules`)* | Generic Doc MCPs *(i.e. Confluence)* | Vector DBs / RAG *(i.e. Pinecone)* | 🌌 **Gyrus Context Engine** |
-| :--- | :--- | :--- | :--- | :--- |
-| **Primary Strength** | Local IDE Zero-Latency | Collaborative Wiki Pages | Semantic Similarity Search | **Structured Contract Framework (OKF)** |
-| **Structured Data Contracts (OKF)** | ❌ None | ❌ Unstructured Pages | ❌ Raw Text Chunks | **✅ Enforced ADR/PRD/Spec Schemas** |
-| **Knowledge Graph & Dependencies** | ❌ None | ⚠️ Loose Page Tree | ⚠️ Implicit Vector Distance | **✅ Explicit Edge Graph (`depends_on`, `implements`)** |
-| **State Machine Governance** | ❌ None | ❌ None | ❌ None | **✅ Validated Transitions (`proposed` ➔ `accepted`)** |
-| **Token-Budgeted Linearization** | ❌ Manual Prompt Bloat | ❌ Unbounded Payload | ⚠️ Top-K Text Chunks | **✅ Budgeted Linearizer (`suggest-context`)** |
-| **Infrastructure Deployment** | **✅ Local Text Files** | ❌ SaaS Cloud Only | ❌ DB Cluster Only | **✅ Optional Zero-Infra Local or Cloud** |
+* **A Shared Context Layer:** Enables developers and AI agents to work from the same trusted body of architectural, operational, and implementation knowledge.
+* **A Common Interface Across Agentic Tools:** Exposes a unified API surface across CLI, stdio MCP server, Open Skill Format skills, `AGENTS.md`, and custom agent pipelines.
+* **A Context Resolution Engine:** Determines what information is *applicable, current, authoritative, and required* for a specific task within token budgets, moving far beyond simple keyword search.
+* **A Governed Knowledge Creation Framework:** Provides a structured promotion lifecycle (`Observation` ➔ `Candidate Memory` ➔ `Proposed Artifact` ➔ `Published Knowledge`) so AI agents propose knowledge rather than silently redefining organizational truth.
+* **A Portable Artifact System:** Keeps canonical knowledge human-readable (Markdown + YAML frontmatter contracts) so context travels with code across dev containers, CI/CD pipelines, and offline environments.
 
-> 📖 *For a complete strategic comparison and deep-dive analysis, see the official PRD: [Gyrus Product Value Proposition & Strategic Positioning](docs/.gyrus/docs/okf/armckinney/reference/prd-002-value-proposition-positioning.md).*
+---
+
+### 🛑 What Gyrus Is Not
+
+* **Not a replacement for Git, Confluence, or documentation platforms** — Gyrus coordinates and materializes context across them.
+* **Not a coding agent or agent orchestration framework** — Gyrus provides the governed context layer that any coding or research agent consumes.
+* **Not a proprietary vector database or locked-in wiki** — Gyrus uses search indexes, vector embeddings, and knowledge graphs as derived projections while canonical Markdown artifacts remain the source of truth.
+* **Not a replacement for MCP or Agent Skills** — Gyrus leverages MCP and Agent Skills as runtime transport and behavioral integration adapters.
+
+---
+
+## 🎯 Core Engineering Pillars
+
+1. 📄 **Concept Data Contracts (OKF):** Validates structured software contracts (`adr`, `prd`, `specification`, `guide`, `standards`, `glossary`, `improvement-proposal`, `release-note`) rather than unstructured text dumps.
+2. 🕸️ **Knowledge Graph & Edge Indexing:** Traverses explicit directional links (`depends_on`, `supersedes`, `implements`, `mitigates`) for deep architectural context.
+3. 🧩 **Composable Service Providers:** Runs locally (`localfs` + embedded SQLite FTS5) or scales to enterprise cloud backends (Git repos, AWS S3, Azure SA, PostgreSQL).
+4. 🌐 **Unified Memory Persistence:** Operates as a single source of truth across CLI tools (`gyrus`), MCP stdio servers, agent skills, and web dashboards.
+5. 📦 **Composable Core SDK (`pkg/gyrus`):** Embeds a zero-dependency Go engine directly into custom AI pipelines, CLI tools, and background workers.
+6. 🎯 **Token-Budgeted Context Resolution (`gyrus suggest-context`):** Synthesizes high-signal, non-redundant context within prompt token limits.
+7. 🔄 **State Machine & Immutability Governance:** Enforces validated document lifecycle state transitions (e.g. `proposed` ➔ `accepted`) and runtime content immutability for decision logs (`immutable: true`).
+8. 🚀 **Embedded Templates (`go:embed`) & Custom Overrides:** Ships 11 pre-packaged Markdown schema templates with `.gyrus.yaml` override support.
+
+---
+
+## 📊 Market & Solution Comparison
+
+| Solution Category | Strengths | Gaps | 🌌 **Gyrus Context Control Plane Value** |
+| :--- | :--- | :--- | :--- |
+| **Agent Skills** *(e.g. `.cursorrules`, `SKILL.md`)* | Portable instructions & zero-latency local prompt hints | Cannot provide shared state, authority, lifecycle, or multi-agent enforcement | Adds durable context persistence, schema validation, task resolution, and state machine governance |
+| **Documentation Platforms & MCPs** *(e.g. Confluence)* | Human-readable pages, search, permissions, & rich wiki collaboration | Provider-specific, page-centric, lacks repository scoping & engineering contract schemas | Adds a provider-independent artifact model, contract validation, and task-specific context resolution |
+| **Skills + Documentation MCP** | Low-cost way to guide agents toward structured docs | Relies on each agent to consistently follow instructions; high prompt token bloat | Converts recommended agent behavior into an enforceable Go core engine & single-source MCP |
+| **Agent Memory Platforms** *(e.g. Mem0)* | Persistent facts, session memories, and user state | Optimized for individual agents rather than shared, governed, human-readable knowledge | Preserves coherent Markdown artifacts and separates temporary memory from trusted knowledge |
+| **Repository-Local Files** | Version-controlled, portable, close to the code | Limited global discovery, cross-repository reuse, & central governance | Combines local repository ownership with global context inheritance and unified indexing |
+| **Vector DBs & RAG Frameworks** *(e.g. Pinecone, Chroma)* | High-dimensional semantic similarity search | Raw text chunks lack contract boundaries, explicit edges (`depends_on`), or state governance | Uses search/vector/graph DBs as replaceable derived indexes beneath a governed context model |
+| **Gyrus Context Engine** | **Shared, governed, portable context across humans & heterogeneous AI agents** | *Complements existing tools rather than replacing them* | **Provides canonical OKF contracts, context resolution, provider neutrality, & zero-infra local/cloud scale** |
+
+> 📖 *For a complete strategic comparison and deep-dive market analysis, see the official PRD: [Gyrus Product Value Proposition & Strategic Positioning](docs/.gyrus/docs/okf/armckinney/reference/prd-002-value-proposition-positioning.md).*
 
 ---
 
@@ -168,5 +187,5 @@ Suggest linearized context matching an agent prompt:
 - 🛠️ **[CLI Reference Manual](docs/.gyrus/docs/okf/armckinney/reference/tech-ref-001-cli-manual.md):** Detailed argument and flag reference for all 11 `gyrus` CLI subcommands and exit codes.
 - 🔌 **[MCP Server Setup Guide](docs/.gyrus/docs/okf/armckinney/reference/guide-004-mcp-server-setup.md):** Native and Docker containerized MCP stdio server setup for Cursor, Claude Desktop, and VS Code.
 - 🤖 **[Agent Skills Setup Guide](docs/.gyrus/docs/okf/armckinney/reference/guide-003-agent-skills-setup.md):** Instructions for copying `.agents/skills/gyrus/SKILL.md` into code repositories for Claude Code and terminal agents.
-- 📑 **[Value Proposition & Strategic Positioning PRD](docs/.gyrus/docs/okf/armckinney/reference/prd-002-value-proposition-positioning.md):** Deep-dive comparison PRD of Gyrus vs raw agent skills, doc MCPs, vector DBs, and combination approaches.
-- 📋 **[Specification Implementation Roadmap](docs/.gyrus/docs/okf/armckinney/reference/prd-001-specification-roadmap.md):** Remaining planned feature roadmap including cloud providers, PostgreSQL, vector search, and web dashboard.
+- 📑 **[Value Proposition & Strategic Positioning PRD](docs/.gyrus/docs/okf/armckinney/reference/prd-002-value-proposition-positioning.md):** Comprehensive market-wide strategic comparison PRD of Gyrus vs enterprise context engines, vector DBs, memory platforms, and agent skills.
+- 📋 **[Specification Implementation Roadmap](docs/.gyrus/docs/okf/armckinney/reference/prd-001-specification-roadmap.md):** Master roadmap across Phase 1 MVP, Phase 2 Version 1.0, and Phase 3 Future Extensions.
