@@ -9,12 +9,12 @@ import (
 )
 
 const (
-	ExitSuccess            = 0
-	ExitValidationError    = 1
-	ExitTransitionError    = 2
-	ExitAuthError          = 3
-	ExitConcurrencyError   = 4
-	ExitStorageError       = 5
+	ExitSuccess          = 0
+	ExitValidationError  = 1
+	ExitTransitionError  = 2
+	ExitAuthError        = 3
+	ExitConcurrencyError = 4
+	ExitStorageError     = 5
 )
 
 // MapErrorToExitCode inspects an error and returns the corresponding Gyrus programmatic exit code.

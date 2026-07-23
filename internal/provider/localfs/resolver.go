@@ -130,4 +130,3 @@ func expandAndAbsRelative(path string, baseDir string) (string, error) {
 	}
 	return filepath.Abs(path)
 }
-

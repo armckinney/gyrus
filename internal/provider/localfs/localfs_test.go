@@ -127,4 +127,3 @@ storage:
 		t.Errorf("Expected resolved path '%s', got '%s'", expected, resolved)
 	}
 }
-

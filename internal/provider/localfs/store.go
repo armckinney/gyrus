@@ -212,4 +212,3 @@ func (s *Store) Archive(ctx context.Context, id string) error {
 	// For localfs, archiving deletes the document file from disk
 	return s.Delete(ctx, id)
 }
-

@@ -6,7 +6,7 @@ import "time"
 type Category string
 
 const (
-	CategoryArchitecture Category = "architecture"
+	CategoryArchitecture  Category = "architecture"
 	CategoryBusinessLogic Category = "business-logic"
 	CategoryProduct       Category = "product"
 	CategoryOperations    Category = "operations"
@@ -24,7 +24,7 @@ const (
 	TypeReleaseNote         DocumentType = "release-note"
 	TypeSpecification       DocumentType = "specification"
 	TypeStandards           DocumentType = "standards"
-	TypeTechnicalReference DocumentType = "technical-reference"
+	TypeTechnicalReference  DocumentType = "technical-reference"
 	TypeProduct             DocumentType = "product"
 	TypeGlossary            DocumentType = "glossary"
 	TypeFreeform            DocumentType = "freeform"

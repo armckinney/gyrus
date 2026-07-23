@@ -205,4 +205,3 @@ func (s *Server) handleArchive(ctx context.Context, req mcp.CallToolRequest) (*m
 
 	return mcp.NewToolResultText(fmt.Sprintf("Archived document '%s'", id)), nil
 }
-

@@ -25,7 +25,7 @@ var validTypes = map[gyrus.DocumentType]bool{
 	gyrus.TypeReleaseNote:         true,
 	gyrus.TypeSpecification:       true,
 	gyrus.TypeStandards:           true,
-	gyrus.TypeTechnicalReference: true,
+	gyrus.TypeTechnicalReference:  true,
 	gyrus.TypeProduct:             true,
 	gyrus.TypeGlossary:            true,
 	gyrus.TypeFreeform:            true,
