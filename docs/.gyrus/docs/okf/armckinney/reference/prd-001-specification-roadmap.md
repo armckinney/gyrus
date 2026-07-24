@@ -35,11 +35,11 @@ Target: Complete core automated release workflows and visual branding to finaliz
 Target: Expand data providers, transport interfaces, context hygiene, and embed the Web UI visual dashboard.
 
 ### 2.1 Additional Storage & Search Provider Drivers
-- [ ] **Git Storage Driver (`git`)**: Direct remote Git repository persistence via GitHub/Bitbucket APIs without requiring local workspace clones.
-- [ ] **Cloud Object Storage Drivers (`s3`, `blob`)**: AWS S3, Azure Blob Storage, and Google Cloud Storage drivers for cloud-native OKF document bundles.
-- [ ] **PostgreSQL Index & Storage Driver (`postgres`)**: Centralized PostgreSQL database backend for enterprise deployments.
-- [ ] **PostgreSQL FTS Search Engine (`postgres_fts`)**: PostgreSQL `tsvector` and `tsquery` full-text search engine.
-- [ ] **Vector Embedding Search Driver (`vector`)**: Semantic vector search provider (using pgvector or local embeddings) for hybrid BM25 keyword + vector context retrieval.
+- [x] **Git Storage Driver (`git`)**: Direct remote Git repository persistence via `go-git` (`GYRUS-201`) without requiring local workspace clones.
+- [x] **Cloud Object Storage Drivers (`s3`, `blob`)**: AWS S3, Azure Blob Storage, and Google Cloud Storage drivers (`GYRUS-202`) via `gocloud.dev/blob` for cloud-native OKF document bundles.
+- [x] **PostgreSQL Index & Storage Driver (`postgres`)**: Centralized PostgreSQL database backend (`GYRUS-203`) for enterprise deployments using `pgx/v5`.
+- [x] **PostgreSQL FTS Search Engine (`postgres_fts`)**: Native PostgreSQL `tsvector` and `tsquery` full-text search engine (`GYRUS-204`).
+- [x] **Vector Embedding Search Driver (`vector`)**: Semantic vector search provider (`GYRUS-205`) supporting Local Ollama, OpenAI embeddings, and Reciprocal Rank Fusion (RRF) hybrid search.
 
 ### 2.2 Transport & Networking Enhancements
 - [ ] **MCP SSE/HTTP Listener Mode (`gyrus mcp serve --transport sse`)**: Server-Sent Events (SSE) and HTTP listener mode for remote MCP server consumption over network endpoints.
