@@ -18,13 +18,13 @@ storage_provider: localfs
 index_provider: sqlite
 storage_root: docs/.gyrus/docs
 schemas_path: docs/.gyrus/schemas
-default_owner_group: armckinney
+default_owner_group: root
 EOF
   echo "=> Created default .gyrus.yaml"
 fi
 
 # Create default directories
-mkdir -p docs/.gyrus/docs/okf/armckinney/reference
+mkdir -p docs/.gyrus/docs/okf/root/reference
 mkdir -p docs/.gyrus/schemas
 
 # Run sync

@@ -147,6 +147,20 @@ Initialize Gyrus in your repository workspace:
 ./gyrus init
 ```
 
+### 3. Install Gyrus Agent Skill in Any Repository
+
+Equip your repository's `.agents/skills/gyrus` directory with the Gyrus Agent Skill so AI agents (Cursor, Claude Code, GitHub Copilot, custom agents) can automatically discover, search, resolve, create, and update OKF codebase context:
+
+```bash
+# Install latest release skill
+curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/skills/gyrus/scripts/install-skill.sh | bash
+
+# Or install a specific release version (version pinning)
+curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/skills/gyrus/scripts/install-skill.sh | bash -s v0.1.0
+```
+
+Once installed, agents have immediate access to Gyrus CLI commands, OKF frontmatter schema references, and diagnostic healthchecks (`bash .agents/skills/gyrus/scripts/verify.sh`).
+
 By default, Gyrus resolves storage path hierarchy in the following order:
 1. `--storage-path` CLI flag
 2. `GYRUS_STORAGE_PATH` environment variable
