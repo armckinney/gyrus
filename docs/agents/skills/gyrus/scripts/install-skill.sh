@@ -31,7 +31,7 @@ else
   trap 'rm -rf "$TMP_DIR"' EXIT
   curl -sSL "https://github.com/${REPO}/archive/refs/heads/main.tar.gz" | tar -xz -C "$TMP_DIR"
   mkdir -p "${TARGET_DIR}"
-  cp -r "$TMP_DIR/gyrus-main/skills/gyrus/"* "${TARGET_DIR}/"
+  cp -r "$TMP_DIR/gyrus-main/skills/gyrus/." "${TARGET_DIR}/"
 fi
 
 chmod +x "${TARGET_DIR}/scripts/"*.sh 2>/dev/null || true
