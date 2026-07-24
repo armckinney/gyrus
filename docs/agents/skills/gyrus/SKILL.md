@@ -1,11 +1,36 @@
 ---
 name: gyrus
 description: Gyrus Unified Context & Memory Engine agent skill. Use to search, retrieve, create, update, link, and suggest relevant OKF codebase context for tasks.
+applyTo:
+  - "**"
 ---
 
 # Gyrus Agent Skill Specification & CLI Reference
 
 This skill equips AI agents to interact directly with Gyrus codebase memory via the `gyrus` CLI executable.
+
+---
+
+## 🚀 Prerequisite Setup & Installation
+
+Before executing Gyrus commands, verify that `gyrus` is available in `$PATH`:
+
+```bash
+# Verify installation or auto-install via helper script
+bash skills/gyrus/scripts/install.sh
+```
+
+To initialize Gyrus configuration and sync storage in a new workspace:
+
+```bash
+bash skills/gyrus/scripts/init.sh
+```
+
+To run a diagnostic healthcheck on database sync and binary execution:
+
+```bash
+bash skills/gyrus/scripts/verify.sh
+```
 
 ---
 
@@ -24,15 +49,7 @@ This skill equips AI agents to interact directly with Gyrus codebase memory via 
 
 ---
 
-## 📋 Allowed Document Enums
-
-- **Categories (`--category`):** `architecture`, `business-logic`, `product`, `operations`, `technical`
-- **Document Types (`--type`):** `adr`, `prd`, `guide`, `specification`, `standards`, `technical-reference`, `product`, `release-note`, `improvement-proposal`, `glossary`, `freeform`
-- **Relationship Types (`--rel-type`):** `depends_on`, `supersedes`, `implements`, `mitigates`
-
----
-
-## 📜 Document Mutability & Lifecycle Rules
+## 📋 Allowed Document Enums & Mutability Rules
 
 Gyrus memory distinguishes between **Living Documents** and **Immutable Decision-Log Documents**:
 
@@ -47,7 +64,7 @@ Gyrus memory distinguishes between **Living Documents** and **Immutable Decision
      2. Link the new document to supersede the old one (`gyrus link <new-id> <old-id> --rel-type supersedes`).
      3. Update the old document status to `superseded` or `deprecated` (`gyrus update <old-id> --status superseded`).
 
-3. ⚙️ **Custom Immutable Templates (`immutable: true`):** Users can mark custom document types (e.g. `security-audit`, `compliance-report`, `incident-postmortem`) as immutable by setting `immutable: true` in the YAML frontmatter. Gyrus engine will reject content mutations once the document exits `draft`/`proposed` status.
+3. ⚙️ **Custom Immutable Templates (`immutable: true`):** Users can mark custom document types as immutable by setting `immutable: true` in the YAML frontmatter.
 
 ---
 
@@ -129,17 +146,26 @@ Re-indexes filesystem documents, updates SQLite FTS5 indexes, and extracts depen
 gyrus sync [--json]
 ```
 
-
-### 8. `gyrus validate`
+### 9. `gyrus validate`
 Validates an OKF Markdown file or JSON envelope schema without saving changes.
 
 ```bash
 gyrus validate <path-to-file.md>
 ```
 
-### 9. `gyrus schema`
+### 10. `gyrus schema`
 Prints structural frontmatter template for a document type.
 
 ```bash
 gyrus schema <doc-type>
 ```
+
+---
+
+## 📚 Skill Reference Guides
+
+For detailed specifications, inspect the supporting reference docs:
+
+- 📄 **[OKF Schemas Reference](references/okf-schemas.md):** Complete frontmatter schema & state machine specifications.
+- 🔌 **[MCP Setup Guide](references/mcp-setup.md):** Registration guide for Cursor, Claude Desktop, and VS Code / Copilot.
+- 🗄️ **[Storage & Search Providers](references/storage-providers.md):** Configuration guide for LocalFS, Git, Cloud Blob, PostgreSQL, and Vector embeddings.
