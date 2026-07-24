@@ -4,6 +4,7 @@ project_name: gyrus
 before:
   hooks:
     - go mod tidy
+    - bash -c 'TAG="${GORELEASER_CURRENT_TAG:-latest}"; tar -czf gyrus-skill.tar.gz -C skills gyrus && cp gyrus-skill.tar.gz "gyrus-skill_${TAG}.tar.gz"'
 
 builds:
   - env:
@@ -34,6 +35,10 @@ checksum:
 
 snapshot:
   version_template: "{{ .Tag }}-next"
+
+release:
+  extra_files:
+    - glob: ./gyrus-skill*.tar.gz
 
 changelog:
   sort: asc
