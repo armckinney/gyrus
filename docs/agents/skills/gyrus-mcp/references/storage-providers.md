@@ -9,8 +9,8 @@ storage_provider: localfs  # Options: localfs, git, blob
 index_provider: sqlite      # Options: sqlite, postgres
 search_provider: sqlite     # Options: sqlite, postgres_fts, vector
 
-storage_root: docs/.gyrus/docs
-schemas_path: docs/.gyrus/schemas
+storage_root: .gyrus/docs
+schemas_path: .gyrus/schemas
 default_owner_group: armckinney
 ```
 
@@ -19,7 +19,7 @@ default_owner_group: armckinney
 ## 🗄️ Storage Providers
 
 ### 1. Local Filesystem (`localfs`) - Default
-Stores OKF Markdown documents directly in the repository filesystem (`docs/.gyrus/docs/okf/<owner_group>/reference/<id>.md`).
+Stores OKF Markdown documents directly in the repository filesystem (`.gyrus/docs/okf/<owner_group>/reference/<id>.md`).
 - **Zero Infra:** No external databases required.
 - **Git Native:** Files are committed directly into version control.
 

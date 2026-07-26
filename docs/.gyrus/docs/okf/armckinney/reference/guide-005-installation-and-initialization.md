@@ -53,7 +53,7 @@ gyrus init
 ```
 
 ### What `gyrus init` does automatically:
-1. **Generates Configuration:** Writes a `.gyrus.yaml` file in the workspace root (`storage_root: docs/.gyrus/docs`). Storage directories are created **lazily** on document write (`gyrus create`), keeping workspace root 100% clean on `init`.
+1. **Generates Configuration:** Writes a `.gyrus.yaml` file in the workspace root (`storage_root: .gyrus/docs`). Storage directories are created **lazily** on document write (`gyrus create`), keeping workspace root 100% clean on `init`.
 2. **Equips Agent Skills:** Installs Gyrus Agent Skill files (`SKILL.md`, `references/`) exclusively into `.agents/skills/gyrus-cli/` and `.agents/skills/gyrus-mcp/`.
 3. **Registers MCP Servers (Containerized Stdio by Default):** Non-destructively merges Gyrus MCP stdio server configurations into agent tool JSON files for Google Antigravity, Claude, OpenAI Codex, and GitHub Copilot.
 
