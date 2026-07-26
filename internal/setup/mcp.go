@@ -156,8 +156,23 @@ func injectMCPServerJSON(filePath string, command string, args []string) error {
 		"command": command,
 		"args":    args,
 	}
-
 	root["mcpServers"] = mcpServers
+
+	// For VS Code / Copilot Chat, also ensure the "servers" block with "type": "stdio" is present
+	if filepath.Base(filepath.Dir(filePath)) == ".vscode" {
+		var servers map[string]interface{}
+		if raw, ok := root["servers"].(map[string]interface{}); ok {
+			servers = raw
+		} else {
+			servers = make(map[string]interface{})
+		}
+		servers["gyrus"] = map[string]interface{}{
+			"type":    "stdio",
+			"command": command,
+			"args":    args,
+		}
+		root["servers"] = servers
+	}
 
 	out, err := json.MarshalIndent(root, "", "  ")
 	if err != nil {
