@@ -184,11 +184,54 @@ func resolveGitCredentialHelper(repoURL string) (transport.AuthMethod, error) {
 	return nil, nil
 }
 
-func (s *Store) docPath(id string) string {
-	if !strings.HasSuffix(id, ".md") && !strings.HasSuffix(id, ".json") {
-		return id + ".md"
+func (s *Store) docPath(doc *gyrus.Document) string {
+	ownerGroup := doc.OwnerGroup
+	if ownerGroup == "" {
+		ownerGroup = "default"
 	}
-	return id
+	categorySubdir := "reference"
+	if doc.Category == gyrus.CategoryBusinessLogic || doc.Category == gyrus.CategoryProduct {
+		categorySubdir = "workspaces/main"
+	} else if string(doc.Category) != "" {
+		categorySubdir = string(doc.Category)
+	}
+
+	return filepath.Join("docs", "okf", ownerGroup, categorySubdir, fmt.Sprintf("%s.md", doc.ID))
+}
+
+func (s *Store) findDocPathByID(id string) (string, error) {
+	targetMD := id
+	if !strings.HasSuffix(targetMD, ".md") && !strings.HasSuffix(targetMD, ".json") {
+		targetMD = id + ".md"
+	}
+
+	var found string
+	var walk func(dir string) error
+	walk = func(dir string) error {
+		entries, err := s.fs.ReadDir(dir)
+		if err != nil {
+			return nil
+		}
+		for _, entry := range entries {
+			relPath := filepath.Join(dir, entry.Name())
+			if entry.IsDir() {
+				if err := walk(relPath); err != nil {
+					return err
+				}
+			} else if entry.Name() == targetMD || entry.Name() == id {
+				found = relPath
+				return nil
+			}
+		}
+		return nil
+	}
+
+	_ = walk(".")
+	if found != "" {
+		return found, nil
+	}
+
+	return "", fmt.Errorf("document '%s' not found in git repository", id)
 }
 
 func (s *Store) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentRef, error) {
@@ -200,8 +243,8 @@ func (s *Store) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentR
 		return gyrus.DocumentRef{}, fmt.Errorf("failed to serialize doc: %w", err)
 	}
 
-	path := s.docPath(doc.ID)
-	
+	path := s.docPath(&doc)
+
 	// Create directory if needed
 	dir := filepath.Dir(path)
 	if dir != "." && dir != "" {
@@ -255,7 +298,11 @@ func (s *Store) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentR
 }
 
 func (s *Store) Get(ctx context.Context, id string) (gyrus.Document, error) {
-	path := s.docPath(id)
+	path, err := s.findDocPathByID(id)
+	if err != nil {
+		return gyrus.Document{}, err
+	}
+
 	f, err := s.fs.Open(path)
 	if err != nil {
 		return gyrus.Document{}, fmt.Errorf("failed to open file %s: %w", path, err)
@@ -307,7 +354,7 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.DocumentPatch
 	if patch.Content != nil {
 		doc.Content = *patch.Content
 	}
-	
+
 	doc.Version++
 	doc.LastUpdated = time.Now()
 
@@ -316,7 +363,11 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.DocumentPatch
 		return gyrus.DocumentRef{}, fmt.Errorf("failed to serialize doc: %w", err)
 	}
 
-	path := s.docPath(id)
+	path, err := s.findDocPathByID(id)
+	if err != nil {
+		path = s.docPath(&doc)
+	}
+
 	f, err := s.fs.Create(path)
 	if err != nil {
 		return gyrus.DocumentRef{}, fmt.Errorf("failed to update file: %w", err)
@@ -365,7 +416,10 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.DocumentPatch
 }
 
 func (s *Store) Delete(ctx context.Context, id string) error {
-	path := s.docPath(id)
+	path, err := s.findDocPathByID(id)
+	if err != nil {
+		return err
+	}
 	
 	wt, err := s.repo.Worktree()
 	if err != nil {
