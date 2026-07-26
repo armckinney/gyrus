@@ -74,7 +74,10 @@ func getTargetConfigPaths(workspaceDir string, target MCPTarget) []string {
 		default: // linux
 			path = filepath.Join(userHome, ".config", "Claude", "claude_desktop_config.json")
 		}
-		return []string{path}
+		return []string{
+			filepath.Join(workspaceDir, ".claude", "mcp.json"),
+			path,
+		}
 
 	case MCPTargetAntigravity:
 		return []string{
