@@ -5,7 +5,7 @@ category: technical
 type: guide
 format: markdown
 owner_group: armckinney
-version: 3
+version: 4
 status: active
 tags:
   - testing
@@ -25,9 +25,9 @@ dependencies:
 
 # Phase 2.1 Manual Validation & Integration Testing Guide
 
-This guide provides step-by-step instructions to manually test and validate workspace initialization (`gyrus init`), both agent skills (`gyrus-cli` and `gyrus-mcp`), and each of the five storage and search provider drivers implemented in **Phase 2.1**:
+This guide provides step-by-step instructions to manually test and validate workspace initialization (`../gyrus init`), both agent skills (`gyrus-cli` and `gyrus-mcp`), and each of the five storage and search provider drivers implemented in **Phase 2.1**:
 
-0. **Workspace Initialization & Agent Skill Equipping (`gyrus init`)**
+0. **Workspace Initialization & Agent Skill Equipping (`../gyrus init`)**
 1. **Git Remote Storage Driver (`git`)** (`GYRUS-201`)
 2. **Cloud Blob Storage Driver (`blob`)** (`GYRUS-202`)
 3. **PostgreSQL Storage & Index Driver (`postgres`)** (`GYRUS-203`)
@@ -36,50 +36,74 @@ This guide provides step-by-step instructions to manually test and validate work
 
 ---
 
-## 🧪 0. Validating Workspace Initialization & Skill Equipping (`gyrus init`)
+## 🧪 0. Validating Workspace Initialization & Skill Equipping (`../gyrus init`)
 
-Tests master workspace initialization, tool-targeted MCP registration, agent skill equipping (`gyrus-cli` and `gyrus-mcp`), and profile selection.
+Tests master workspace initialization, containerized & local stdio MCP registration, global setup (`--global`), agent skill equipping (`gyrus-cli` and `gyrus-mcp`), and profile selection.
 
 ### 0.1 Full Workspace Initialization Test
 ```bash
 # 1. Create a clean test directory
-mkdir -p /tmp/gyrus-init-test && cd /tmp/gyrus-init-test
+mkdir -p gyrus-init-test && cd gyrus-init-test
 
-# 2. Run master workspace initialization
-gyrus init
+# 2. Run master workspace initialization (Containerized Stdio mode by default)
+../gyrus init
 
-# 3. Verify .gyrus.yaml configuration file created
+# 3. Verify workspace root directory layout (zero docs/ folder eagerly created)
+ls -la
+
+# 4. Verify .gyrus.yaml configuration file created
 cat .gyrus.yaml
 
-# 4. Verify agent skills equipped (.agents/skills/gyrus-cli and .agents/skills/gyrus-mcp)
+# 5. Verify agent skills equipped (.agents/skills/gyrus-cli and .agents/skills/gyrus-mcp)
 ls -la .agents/skills/gyrus-cli/SKILL.md .agents/skills/gyrus-mcp/SKILL.md
 
-# 5. Verify stdio MCP server registered for target platforms (.cursor/mcp.json, .vscode/mcp.json, .codex/mcp.json)
-cat .cursor/mcp.json
+# 6. Verify stdio MCP servers registered for target platforms
+cat .antigravity/mcp.json   # Google Antigravity
+cat .claude/mcp.json        # Claude Code & Desktop
+cat .codex/mcp.json         # OpenAI Codex
+cat .vscode/mcp.json        # GitHub Copilot / VS Code (includes mcpServers & servers blocks)
 ```
 
-### 0.2 Tool-Targeted MCP & Skill Initialization Test
+### 0.2 Local Binary & Global Setup Modes
 ```bash
-# Target Claude Desktop / Claude Code only
-gyrus init --mcp-target claude --skill-target claude
+# Register MCP servers using local binary execution mode instead of Docker
+../gyrus init --mcp-mode local
 
-# Target Cursor / Antigravity only
-gyrus init --mcp-target antigravity
+# Register MCP servers globally in user home (~) across all agent tools
+../gyrus init --global
+```
+
+### 0.3 Tool-Targeted MCP & Skill Initialization Test
+```bash
+# Target Google Antigravity only
+../gyrus init --mcp-target antigravity
+
+# Target Claude Desktop / Claude Code only
+../gyrus init --mcp-target claude --skill-target claude
 
 # Target GitHub Copilot / VS Code only
-gyrus init --mcp-target copilot
+../gyrus init --mcp-target copilot
+
+# Target OpenAI Codex only
+../gyrus init --mcp-target codex
 ```
 
-### 0.3 Headless CLI-Only Initialization Test
+### 0.4 Selective Component & Headless Initialization Test
 ```bash
+# Skip generating .gyrus.yaml config file (only equip MCP & skills)
+../gyrus init --no-config
+
 # Skip MCP server registration for headless / server / CI environments
-gyrus init --no-mcp
+../gyrus init --no-mcp
 
 # Skip agent skills
-gyrus init --no-skill
+../gyrus init --no-skill
+
+# Equip ONLY MCP servers (skip config generation and skills)
+../gyrus init --no-config --no-skill
 ```
 
-### 0.4 Validating the `gyrus-cli` Agent Skill (Terminal Agents)
+### 0.5 Validating `gyrus-cli` Agent Skill (Terminal Agents)
 Tests agent execution via terminal CLI subcommands:
 
 ```bash
@@ -87,13 +111,13 @@ Tests agent execution via terminal CLI subcommands:
 head -n 6 .agents/skills/gyrus-cli/SKILL.md
 
 # 2. Test suggest-context CLI subcommand
-gyrus suggest-context --prompt "architecture standards" --json
+../gyrus suggest-context --prompt "architecture standards" --json
 
 # 3. Test FTS keyword search CLI subcommand
-gyrus search --query "storage engine" --json
+../gyrus search --query "storage engine" --json
 
-# 4. Test creating a contract document via CLI subcommand
-gyrus create \
+# 4. Test creating a contract document via CLI subcommand (lazily creates docs/ directory on write)
+../gyrus create \
   --id "adr-cli-skill-test" \
   --title "CLI Skill Test ADR" \
   --category "architecture" \
@@ -103,7 +127,7 @@ gyrus create \
   --content "Testing CLI skill execution."
 ```
 
-### 0.5 Validating the `gyrus-mcp` Agent Skill (MCP-Native Agents)
+### 0.6 Validating `gyrus-mcp` Agent Skill (MCP-Native Agents)
 Tests agent execution via native MCP tools and JSON-RPC stdio protocol calls:
 
 ```bash
@@ -111,13 +135,22 @@ Tests agent execution via native MCP tools and JSON-RPC stdio protocol calls:
 head -n 6 .agents/skills/gyrus-mcp/SKILL.md
 
 # 2. Verify stdio MCP server responds to JSON-RPC initialization request
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test-client","version":"1.0.0"}}}' | gyrus mcp serve
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test-client","version":"1.0.0"}}}' | ../gyrus mcp serve
 
 # 3. Test listing registered native MCP tools (gyrus_suggest_context, gyrus_search, gyrus_get_document, gyrus_create_document, gyrus_update_document, gyrus_link_documents, gyrus_sync)
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' | gyrus mcp serve
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' | ../gyrus mcp serve
 
 # 4. Test listing registered MCP resources (gyrus://documents/{id}, gyrus://schema/{type}, gyrus://graph/topology)
-echo '{"jsonrpc":"2.0","id":3,"method":"resources/list"}' | gyrus mcp serve
+echo '{"jsonrpc":"2.0","id":3,"method":"resources/list"}' | ../gyrus mcp serve
+```
+
+### 0.7 Automated Skill & Integration Test Suite (`tests/skills/`)
+```bash
+# Fast, offline Unit & Static Skill Analysis Tests (skips live integration)
+make test
+
+# Explicit Live Google Antigravity Integration Test
+make test-integration
 ```
 
 ---
@@ -130,7 +163,7 @@ The Git storage driver provides direct remote Git repository persistence via `go
 Initialize with Git profile or update `.gyrus.yaml`:
 
 ```bash
-gyrus init --profile git
+../gyrus init --profile git
 ```
 
 ```yaml
@@ -154,7 +187,7 @@ ls -la ~/.ssh/id_ed25519 ~/.ssh/id_rsa
 ### 1.3 Execution & Verification Steps
 ```bash
 # 1. Create a document directly on remote Git
-gyrus create \
+../gyrus create \
   --id "adr-git-driver-test" \
   --title "Git Driver Test ADR" \
   --category "architecture" \
@@ -164,7 +197,7 @@ gyrus create \
   --content "Testing remote Git storage driver execution."
 
 # 2. Retrieve document over Git transport
-gyrus get adr-git-driver-test --json
+../gyrus get adr-git-driver-test --json
 
 # 3. Verify in GitHub / GitLab web interface that a commit was created with message:
 # "gyrus: create adr-git-driver-test (v1)"
@@ -185,13 +218,13 @@ mkdir -p /tmp/gyrus-blob-bucket
 Initialize with blob profile:
 
 ```bash
-gyrus init --profile blob
+../gyrus init --profile blob
 ```
 
 ### 2.2 Execution & Verification Steps
 ```bash
 # 1. Create a document in blob storage
-gyrus create \
+../gyrus create \
   --id "prd-blob-driver-test" \
   --title "Blob Driver Test PRD" \
   --category "product" \
@@ -204,7 +237,7 @@ gyrus create \
 ls -la /tmp/gyrus-blob-bucket/docs/armckinney/product/prd-blob-driver-test.md
 
 # 3. Retrieve document from blob store
-gyrus get prd-blob-driver-test --json
+../gyrus get prd-blob-driver-test --json
 ```
 
 ---
@@ -228,16 +261,16 @@ docker run -d \
 Initialize with postgres profile:
 
 ```bash
-gyrus init --profile postgres
+../gyrus init --profile postgres
 ```
 
 ### 3.3 Execution & Verification Steps
 ```bash
 # 1. Run sync to execute DDL migrations and populate PostgreSQL schema
-gyrus sync --json
+../gyrus sync --json
 
 # 2. Create a document in PostgreSQL
-gyrus create \
+../gyrus create \
   --id "spec-postgres-driver-test" \
   --title "PostgreSQL Driver Test Spec" \
   --category "technical" \
@@ -269,7 +302,7 @@ postgres:
 ### 4.2 Execution & Verification Steps
 ```bash
 # 1. Execute FTS keyword search
-gyrus search --query "enterprise storage" --json
+../gyrus search --query "enterprise storage" --json
 
 # 2. Verify search output returns relevant documents with PostgreSQL ts_rank_cd() scores.
 ```
@@ -289,13 +322,13 @@ ollama pull nomic-embed-text
 Initialize with vector profile:
 
 ```bash
-gyrus init --profile vector
+../gyrus init --profile vector
 ```
 
 ### 5.2 Execution & Verification Steps
 ```bash
 # 1. Perform semantic context resolution for a concept prompt
-gyrus suggest-context --prompt "how to store relational SQL records" --json
+../gyrus suggest-context --prompt "how to store relational SQL records" --json
 
 # 2. Verify that vector search matches semantically related documents (e.g. spec-postgres-driver-test)
 # even if the exact words "relational" or "SQL" do not appear in the document title!
@@ -308,6 +341,9 @@ gyrus suggest-context --prompt "how to store relational SQL records" --json
 You can also run automated unit test verification across all provider packages and setup routines:
 
 ```bash
-# Run unit & integration tests across all packages
-go test ./internal/... -v
+# Run unit & static skill tests across all packages
+make test
+
+# Run explicit live integration tests
+make test-integration
 ```

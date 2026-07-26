@@ -90,18 +90,21 @@ Selectively register MCP servers or equip skills for specific AI agent platforms
 | **GitHub Copilot / VS Code** | `gyrus init --mcp-target copilot` | `.vscode/mcp.json` |
 | **All Active Agents** | `gyrus init --mcp-target all` | *Registers across all 4 platforms* |
 
-### 3.4 CLI-Only & Headless Environments
-For CI/CD pipelines, Docker containers, or headless server instances:
+### 3.4 Selective Component Initialization (`--no-config`, `--no-mcp`, `--no-skill`)
+You can selectively skip setup components if you only want to equip skills or MCP configs without generating a `.gyrus.yaml` file:
 
 ```bash
+# Skip generating .gyrus.yaml (only equip MCP configs and agent skills)
+gyrus init --no-config
+
 # Skip MCP server registration
 gyrus init --no-mcp
 
 # Skip Agent Skill equipping
 gyrus init --no-skill
 
-# Complete headless CLI-only initialization
-gyrus init --no-mcp --no-skill
+# Equip ONLY MCP servers (skip config generation and agent skills)
+gyrus init --no-config --no-skill
 ```
 
 ### 3.5 Storage Profile Selection (`--profile`)
