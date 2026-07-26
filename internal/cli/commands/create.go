@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/armckinney/gyrus/internal/cli"
+	"github.com/armckinney/gyrus/internal/provider"
 	"github.com/armckinney/gyrus/internal/provider/localfs"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 	"github.com/spf13/cobra"
@@ -30,12 +31,12 @@ var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a new OKF contract document",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		storageRoot, err := localfs.ResolveStoragePath(cli.GlobalStoragePath)
+		cfg, storageRoot, err := localfs.LoadConfig(cli.GlobalStoragePath)
 		if err != nil {
 			return err
 		}
 
-		store, err := localfs.NewStore(storageRoot)
+		store, err := provider.NewDocumentStore(cfg, storageRoot)
 		if err != nil {
 			return err
 		}

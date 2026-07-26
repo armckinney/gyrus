@@ -8,11 +8,66 @@ import (
 )
 
 type Config struct {
-	SchemasPath string `yaml:"schemas_path"`
-	StorageRoot string `yaml:"storage_root"`
-	Storage     struct {
+	StorageProvider   string `yaml:"storage_provider"`
+	IndexProvider     string `yaml:"index_provider"`
+	SearchProvider    string `yaml:"search_provider"`
+	StorageRoot       string `yaml:"storage_root"`
+	SchemasPath       string `yaml:"schemas_path"`
+	DefaultOwnerGroup string `yaml:"default_owner_group"`
+	Storage           struct {
 		Root string `yaml:"root"`
 	} `yaml:"storage"`
+	Git struct {
+		RepoURL string `yaml:"repo_url"`
+		Branch  string `yaml:"branch"`
+	} `yaml:"git"`
+	Blob struct {
+		BucketURL string `yaml:"bucket_url"`
+		Prefix    string `yaml:"prefix"`
+	} `yaml:"blob"`
+	Postgres struct {
+		ConnectionString string `yaml:"connection_string"`
+	} `yaml:"postgres"`
+}
+
+// LoadConfig loads .gyrus.yaml from PWD or parent directories and resolves storage root.
+func LoadConfig(flagPath string) (*Config, string, error) {
+	storagePath, err := ResolveStoragePath(flagPath)
+	if err != nil {
+		return &Config{}, "", err
+	}
+
+	pwd, err := os.Getwd()
+	if err != nil {
+		return &Config{}, storagePath, nil
+	}
+
+	curr := pwd
+	for {
+		configCandidates := []string{
+			filepath.Join(curr, ".gyrus.yaml"),
+			filepath.Join(curr, ".gyrus.yml"),
+			filepath.Join(curr, ".gyrus", "config.yaml"),
+			filepath.Join(curr, ".gyrus", "config.yml"),
+		}
+
+		for _, candidate := range configCandidates {
+			if data, err := os.ReadFile(candidate); err == nil {
+				var cfg Config
+				if err := yaml.Unmarshal(data, &cfg); err == nil {
+					return &cfg, storagePath, nil
+				}
+			}
+		}
+
+		parent := filepath.Dir(curr)
+		if parent == curr {
+			break
+		}
+		curr = parent
+	}
+
+	return &Config{}, storagePath, nil
 }
 
 // ResolveStoragePath evaluates storage root precedence hierarchy:

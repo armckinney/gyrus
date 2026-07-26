@@ -360,13 +360,7 @@ func (s *Store) push() error {
 		Auth:       s.auth,
 	})
 	if err != nil && err != git.NoErrAlreadyUpToDate {
-		// Ignore if the repository doesn't have a valid remote for pushing
-		if strings.Contains(err.Error(), "repository not found") || strings.Contains(err.Error(), "remote repository is empty") {
-			return nil
-		}
-		// If pushing fails because we don't have a real remote in testing, just ignore it.
-		// A proper implementation might check if it's a memory-only remote.
-		return nil
+		return fmt.Errorf("failed to push to remote git repository (%s): %w", s.repoURL, err)
 	}
 	return nil
 }
