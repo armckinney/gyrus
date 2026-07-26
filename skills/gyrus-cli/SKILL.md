@@ -1,6 +1,6 @@
 ---
-name: gyrus
-description: Gyrus Unified Context & Memory Engine agent skill. Use to search, retrieve, create, update, link, and suggest relevant OKF codebase context for tasks.
+name: gyrus-cli
+description: Gyrus Unified Context & Memory Engine CLI agent skill. Use to search, retrieve, create, update, link, and suggest relevant OKF codebase context for tasks via gyrus CLI subcommands.
 applyTo:
   - "**"
 ---

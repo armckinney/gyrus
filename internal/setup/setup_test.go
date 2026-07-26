@@ -40,9 +40,14 @@ func TestMasterSetupWorkflow(t *testing.T) {
 	}
 
 	// 3. Verify Agent Skill Files
-	skillFile := filepath.Join(tempDir, ".agents", "skills", "gyrus", "SKILL.md")
-	if _, err := os.Stat(skillFile); os.IsNotExist(err) {
-		t.Errorf("Expected skill file at %s", skillFile)
+	cliSkillFile := filepath.Join(tempDir, ".agents", "skills", "gyrus-cli", "SKILL.md")
+	if _, err := os.Stat(cliSkillFile); os.IsNotExist(err) {
+		t.Errorf("Expected CLI skill file at %s", cliSkillFile)
+	}
+
+	mcpSkillFile := filepath.Join(tempDir, ".agents", "skills", "gyrus-mcp", "SKILL.md")
+	if _, err := os.Stat(mcpSkillFile); os.IsNotExist(err) {
+		t.Errorf("Expected MCP skill file at %s", mcpSkillFile)
 	}
 
 	// 4. Verify MCP Registration

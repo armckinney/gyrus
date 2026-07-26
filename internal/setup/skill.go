@@ -23,7 +23,7 @@ func InstallAgentSkill(workspaceDir string, target SkillTarget) ([]string, error
 		folderName string
 		content    string
 	}{
-		{folderName: "gyrus", content: embeddedSkillMD},
+		{folderName: "gyrus-cli", content: embeddedSkillMD},
 		{folderName: "gyrus-mcp", content: embeddedMCPSkillMD},
 	}
 
@@ -76,8 +76,8 @@ func InstallAgentSkill(workspaceDir string, target SkillTarget) ([]string, error
 }
 
 const embeddedSkillMD = `---
-name: gyrus
-description: Gyrus Unified Context & Memory Engine agent skill. Use to search, retrieve, create, update, link, and suggest relevant OKF codebase context for tasks.
+name: gyrus-cli
+description: Gyrus Unified Context & Memory Engine CLI agent skill. Use to search, retrieve, create, update, link, and suggest relevant OKF codebase context for tasks via gyrus CLI subcommands.
 applyTo:
   - "**"
 ---
