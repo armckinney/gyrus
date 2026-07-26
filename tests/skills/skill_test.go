@@ -108,13 +108,13 @@ func TestAntigravityBehavioralIntegration(t *testing.T) {
 		t.Fatalf("setup.RunSetup for Antigravity failed: %v", err)
 	}
 
-	// b. Assert Antigravity MCP config generated (.cursor/mcp.json)
-	cursorMCP := filepath.Join(tempDir, ".cursor", "mcp.json")
-	if _, err := os.Stat(cursorMCP); os.IsNotExist(err) {
-		t.Fatalf("Antigravity MCP config file not created at %s", cursorMCP)
+	// b. Assert Antigravity MCP config generated (.antigravity/mcp.json)
+	antigravityMCP := filepath.Join(tempDir, ".antigravity", "mcp.json")
+	if _, err := os.Stat(antigravityMCP); os.IsNotExist(err) {
+		t.Fatalf("Dedicated Antigravity MCP config file not created at %s", antigravityMCP)
 	}
 
-	mcpContent, err := os.ReadFile(cursorMCP)
+	mcpContent, err := os.ReadFile(antigravityMCP)
 	if err != nil {
 		t.Fatalf("Failed reading Antigravity MCP config: %v", err)
 	}

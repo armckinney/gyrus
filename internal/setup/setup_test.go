@@ -51,9 +51,9 @@ func TestMasterSetupWorkflow(t *testing.T) {
 	}
 
 	// 4. Verify MCP Registration
-	cursorMCP := filepath.Join(tempDir, ".cursor", "mcp.json")
-	if _, err := os.Stat(cursorMCP); os.IsNotExist(err) {
-		t.Errorf("Expected Cursor MCP config at %s", cursorMCP)
+	antigravityMCP := filepath.Join(tempDir, ".antigravity", "mcp.json")
+	if _, err := os.Stat(antigravityMCP); os.IsNotExist(err) {
+		t.Errorf("Expected Antigravity MCP config at %s", antigravityMCP)
 	}
 	if len(result.InstalledMCP) == 0 {
 		t.Errorf("Expected non-empty InstalledMCP slice")

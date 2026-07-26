@@ -78,7 +78,7 @@ func getTargetConfigPaths(workspaceDir string, target MCPTarget) []string {
 
 	case MCPTargetAntigravity:
 		return []string{
-			filepath.Join(workspaceDir, ".cursor", "mcp.json"),
+			filepath.Join(workspaceDir, ".antigravity", "mcp.json"),
 		}
 
 	case MCPTargetCodex:
