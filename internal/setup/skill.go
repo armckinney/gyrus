@@ -32,7 +32,6 @@ func InstallAgentSkill(workspaceDir string, target SkillTarget) ([]string, error
 	for _, st := range skillTypes {
 		skillDirs := []string{
 			filepath.Join(workspaceDir, ".agents", "skills", st.folderName),
-			filepath.Join(workspaceDir, "skills", st.folderName),
 		}
 
 		for _, dir := range skillDirs {
