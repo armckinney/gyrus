@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/armckinney/gyrus/internal/cli"
 	"github.com/armckinney/gyrus/internal/setup"
@@ -36,8 +37,15 @@ Flags allow custom-tailoring your setup:
 			return err
 		}
 
+		targetDir := cwd
+		if storageFlag, _ := cmd.Flags().GetString("storage-path"); storageFlag != "" {
+			targetDir = filepath.Dir(storageFlag)
+		} else if cli.GlobalStoragePath != "" {
+			targetDir = filepath.Dir(cli.GlobalStoragePath)
+		}
+
 		res, err := setup.RunSetup(setup.SetupOptions{
-			WorkspaceDir: cwd,
+			WorkspaceDir: targetDir,
 			Profile:      setup.Profile(initProfile),
 			OwnerGroup:   initOwnerGroup,
 			MCPTarget:    setup.MCPTarget(initMCPTarget),
