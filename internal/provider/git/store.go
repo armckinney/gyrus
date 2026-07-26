@@ -1,10 +1,13 @@
 package git
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -12,6 +15,8 @@ import (
 	"github.com/armckinney/gyrus/internal/okf"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 
+	"github.com/go-git/go-billy/v5"
+	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -20,8 +25,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
-	"github.com/go-git/go-billy/v5/memfs"
-	"github.com/go-git/go-billy/v5"
 )
 
 type Store struct {
@@ -100,6 +103,7 @@ func NewStore(opts Options) (*Store, error) {
 
 func discoverAuth(url string) (transport.AuthMethod, error) {
 	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
+		// 1. Check explicit environment variables first
 		token := os.Getenv("GIT_AUTH_TOKEN")
 		if token == "" {
 			token = os.Getenv("GITHUB_TOKEN")
@@ -110,9 +114,22 @@ func discoverAuth(url string) (transport.AuthMethod, error) {
 				Password: token,
 			}, nil
 		}
+
+		// 2. Query system git credential helper (git credential fill)
+		if auth, err := resolveGitCredentialHelper(url); err == nil && auth != nil {
+			return auth, nil
+		}
+
 		return nil, nil
 	}
+
 	if strings.HasPrefix(url, "git@") || strings.HasPrefix(url, "ssh://") {
+		// 1. Try running SSH Agent auth if available
+		if sshAgent, err := ssh.NewSSHAgentAuth("git"); err == nil && sshAgent != nil {
+			return sshAgent, nil
+		}
+
+		// 2. Fall back to scanning user SSH key files
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return nil, err
@@ -128,6 +145,42 @@ func discoverAuth(url string) (transport.AuthMethod, error) {
 		}
 		return nil, nil
 	}
+	return nil, nil
+}
+
+func resolveGitCredentialHelper(repoURL string) (transport.AuthMethod, error) {
+	cmd := exec.Command("git", "credential", "fill")
+	cmd.Stdin = strings.NewReader(fmt.Sprintf("url=%s\n\n", repoURL))
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	var username, password string
+	scanner := bufio.NewScanner(bytes.NewReader(out))
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			switch parts[0] {
+			case "username":
+				username = parts[1]
+			case "password":
+				password = parts[1]
+			}
+		}
+	}
+
+	if password != "" {
+		if username == "" {
+			username = "git"
+		}
+		return &http.BasicAuth{
+			Username: username,
+			Password: password,
+		}, nil
+	}
+
 	return nil, nil
 }
 
