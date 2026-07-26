@@ -72,3 +72,6 @@ coverage.out
 !/docs/agents/skills/gyrus/**
 !/.agents/skills/gyrus/**
 !*/.gyrus/**
+
+# TODO: remove
+test-phase-2-1.md
