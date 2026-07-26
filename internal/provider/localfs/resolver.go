@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	SchemasPath string `yaml:"schemas_path"`
+	StorageRoot string `yaml:"storage_root"`
 	Storage     struct {
 		Root string `yaml:"root"`
 	} `yaml:"storage"`
@@ -44,8 +45,14 @@ func ResolveStoragePath(flagPath string) (string, error) {
 			for _, candidate := range configCandidates {
 				if data, err := os.ReadFile(candidate); err == nil {
 					var cfg Config
-					if err := yaml.Unmarshal(data, &cfg); err == nil && cfg.Storage.Root != "" {
-						return expandAndAbsRelative(cfg.Storage.Root, curr)
+					if err := yaml.Unmarshal(data, &cfg); err == nil {
+						root := cfg.StorageRoot
+						if root == "" {
+							root = cfg.Storage.Root
+						}
+						if root != "" {
+							return expandAndAbsRelative(root, curr)
+						}
 					}
 				}
 			}

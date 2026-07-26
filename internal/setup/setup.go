@@ -1,8 +1,6 @@
 package setup
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
 )
 
@@ -50,11 +48,8 @@ func RunSetup(opts SetupOptions) (*SetupResult, error) {
 
 	result := &SetupResult{}
 
-	// 1. Create storage root directory
+	// 1. Resolve storage root directory path
 	storageDir := filepath.Join(opts.WorkspaceDir, "docs", ".gyrus", "docs")
-	if err := os.MkdirAll(storageDir, 0755); err != nil {
-		return nil, fmt.Errorf("failed creating storage root %s: %w", storageDir, err)
-	}
 	result.StorageDir = storageDir
 
 	// 2. Generate .gyrus.yaml config file (if not skipped)

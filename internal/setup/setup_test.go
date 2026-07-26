@@ -33,10 +33,10 @@ func TestMasterSetupWorkflow(t *testing.T) {
 		t.Errorf("Expected .gyrus.yaml to exist at %s", configPath)
 	}
 
-	// 2. Verify Storage Dir
-	storageDir := filepath.Join(tempDir, "docs", ".gyrus", "docs")
-	if _, err := os.Stat(storageDir); os.IsNotExist(err) {
-		t.Errorf("Expected storage root at %s", storageDir)
+	// 2. Verify Storage Dir path string
+	expectedStorageDir := filepath.Join(tempDir, "docs", ".gyrus", "docs")
+	if result.StorageDir != expectedStorageDir {
+		t.Errorf("Expected storage root path %s, got %s", expectedStorageDir, result.StorageDir)
 	}
 
 	// 3. Verify Agent Skill Files
