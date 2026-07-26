@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/armckinney/gyrus/internal/cli"
 	"github.com/armckinney/gyrus/internal/provider"
 	"github.com/armckinney/gyrus/internal/provider/localfs"
+	"github.com/armckinney/gyrus/internal/provider/sqlite"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 	"github.com/spf13/cobra"
 )
@@ -84,6 +86,13 @@ var createCmd = &cobra.Command{
 		ref, err := store.Create(context.Background(), doc)
 		if err != nil {
 			return err
+		}
+
+		// Auto-index document into local SQLite search index
+		dbPath := filepath.Join(storageRoot, "index.db")
+		if idx, err := sqlite.NewIndexer(dbPath); err == nil {
+			_ = idx.Index(context.Background(), doc)
+			idx.Close()
 		}
 
 		if cli.GlobalJSONOutput {

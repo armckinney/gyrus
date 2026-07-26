@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -21,6 +23,11 @@ type Indexer struct {
 
 // NewIndexer connects to SQLite DSN and runs migrations.
 func NewIndexer(dsn string) (*Indexer, error) {
+	dir := filepath.Dir(dsn)
+	if dir != "" && dir != "." {
+		_ = os.MkdirAll(dir, 0755)
+	}
+
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open sqlite database: %w", err)
