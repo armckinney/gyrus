@@ -1,6 +1,6 @@
 # Gyrus MCP Server Setup Guide
 
-Gyrus provides a Model Context Protocol (MCP) server running over `stdio` transport. It enables AI coding assistants (Cursor, Claude Desktop, GitHub Copilot, VS Code) to directly access codebase memory, search ADRs, and resolve task context.
+Gyrus provides a Model Context Protocol (MCP) server running over `stdio` transport. It enables AI coding assistants (Google Antigravity, Claude, OpenAI Codex, GitHub Copilot / VS Code) to directly access codebase memory, search ADRs, and resolve task context.
 
 ## 🛠️ MCP Tool Definitions
 
@@ -15,41 +15,68 @@ Gyrus exposes 7 native MCP tools:
 
 ---
 
-## ⚙️ IDE Configuration Files
+## 🚀 Automatic MCP Registration (`gyrus init`)
 
-### 1. Cursor (`.cursor/mcp.json`)
+Run `gyrus init` to non-destructively register Gyrus MCP servers across target agent tools:
+
+```bash
+# Containerized Stdio (Default)
+gyrus init --mcp-mode container
+
+# Local Binary Mode
+gyrus init --mcp-mode local
+
+# Global Registration (~/ user home)
+gyrus init --global
+```
+
+---
+
+## ⚙️ Target Configuration Matrix
+
+### 1. Google Antigravity (`.antigravity/mcp.json`)
 ```json
 {
   "mcpServers": {
     "gyrus": {
-      "command": "gyrus",
-      "args": ["mcp", "serve"]
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-v", "${PWD}:/workspace", "-w", "/workspace", "ghcr.io/armckinney/gyrus:latest", "mcp", "serve"]
     }
   }
 }
 ```
 
-### 2. Claude Desktop (`claude_desktop_config.json`)
+### 2. Claude Desktop & Code (`.claude/mcp.json` & `~/.config/Claude/claude_desktop_config.json`)
 ```json
 {
   "mcpServers": {
     "gyrus": {
-      "command": "/usr/local/bin/gyrus",
-      "args": ["mcp", "serve"]
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-v", "${PWD}:/workspace", "-w", "/workspace", "ghcr.io/armckinney/gyrus:latest", "mcp", "serve"]
     }
   }
 }
 ```
 
-### 3. VS Code / Copilot (`.vscode/mcp.json`)
+### 3. OpenAI Codex (`.codex/mcp.json`)
 ```json
 {
-  "inputs": [],
-  "servers": {
+  "mcpServers": {
     "gyrus": {
-      "type": "stdio",
-      "command": "gyrus",
-      "args": ["mcp", "serve"]
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-v", "${PWD}:/workspace", "-w", "/workspace", "ghcr.io/armckinney/gyrus:latest", "mcp", "serve"]
+    }
+  }
+}
+```
+
+### 4. GitHub Copilot / VS Code (`.vscode/mcp.json`)
+```json
+{
+  "mcpServers": {
+    "gyrus": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-v", "${PWD}:/workspace", "-w", "/workspace", "ghcr.io/armckinney/gyrus:latest", "mcp", "serve"]
     }
   }
 }

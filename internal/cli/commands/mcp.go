@@ -39,7 +39,7 @@ var mcpSetupCmd = &cobra.Command{
 			return err
 		}
 
-		files, err := setup.RegisterMCPServer(cwd, setup.MCPTarget(mcpTarget), "gyrus")
+		files, err := setup.RegisterMCPServer(cwd, setup.MCPTarget(mcpTarget), setup.MCPModeLocal, false, "gyrus", "")
 		if err != nil {
 			return err
 		}

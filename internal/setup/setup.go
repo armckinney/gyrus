@@ -6,15 +6,18 @@ import (
 
 // SetupOptions defines options for workspace initialization and tool tailoring.
 type SetupOptions struct {
-	WorkspaceDir string
-	Profile      Profile
-	OwnerGroup   string
-	MCPTarget    MCPTarget
-	SkillTarget  SkillTarget
-	BinaryCmd    string
-	SkipMCP      bool
-	SkipSkill    bool
-	SkipConfig   bool
+	WorkspaceDir   string
+	Profile        Profile
+	OwnerGroup     string
+	MCPTarget      MCPTarget
+	MCPMode        MCPMode
+	GlobalMCP      bool
+	ContainerImage string
+	SkillTarget    SkillTarget
+	BinaryCmd      string
+	SkipMCP        bool
+	SkipSkill      bool
+	SkipConfig     bool
 }
 
 // SetupResult contains execution status details from workspace setup.
@@ -39,11 +42,17 @@ func RunSetup(opts SetupOptions) (*SetupResult, error) {
 	if opts.MCPTarget == "" {
 		opts.MCPTarget = MCPTargetAll
 	}
+	if opts.MCPMode == "" {
+		opts.MCPMode = MCPModeContainer
+	}
 	if opts.SkillTarget == "" {
 		opts.SkillTarget = SkillTargetAll
 	}
 	if opts.BinaryCmd == "" {
 		opts.BinaryCmd = "gyrus"
+	}
+	if opts.ContainerImage == "" {
+		opts.ContainerImage = "ghcr.io/armckinney/gyrus:latest"
 	}
 
 	result := &SetupResult{}
@@ -72,7 +81,7 @@ func RunSetup(opts SetupOptions) (*SetupResult, error) {
 
 	// 4. Register MCP Server configs (if not skipped)
 	if !opts.SkipMCP {
-		mcpFiles, err := RegisterMCPServer(opts.WorkspaceDir, opts.MCPTarget, opts.BinaryCmd)
+		mcpFiles, err := RegisterMCPServer(opts.WorkspaceDir, opts.MCPTarget, opts.MCPMode, opts.GlobalMCP, opts.BinaryCmd, opts.ContainerImage)
 		if err != nil {
 			return nil, err
 		}
