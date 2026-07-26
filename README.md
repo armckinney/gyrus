@@ -139,27 +139,22 @@ make build
 
 This compiles the standalone `gyrus` executable into the workspace root.
 
-### 2. Initialize Gyrus Storage
+### 2. Initialize Workspace
 
 Initialize Gyrus in your repository workspace:
 
 ```bash
-./gyrus init
+gyrus init
 ```
 
-### 3. Install Gyrus Agent Skill in Any Repository
+Running `gyrus init` automatically:
+- Generates `.gyrus.yaml` configuration in the workspace root
+- Equips your repository with `.agents/skills/gyrus` agent skills
+- Registers stdio MCP servers for Cursor / Antigravity, Claude Desktop, OpenAI Codex, and GitHub Copilot
 
-Equip your repository's `.agents/skills/gyrus` directory with the Gyrus Agent Skill so AI agents (Cursor, Claude Code, GitHub Copilot, custom agents) can automatically discover, search, resolve, create, and update OKF codebase context:
+> 📖 **Full Guide:** For advanced customization, CLI-only mode (`--no-mcp`), tool targeting (`--mcp-target claude`), and enterprise profiles (PostgreSQL, Vector, Git, S3), see the **[Gyrus Installation & Workspace Initialization Guide](file:///workspaces/gyrus/docs/.gyrus/docs/okf/armckinney/reference/guide-005-installation-and-initialization.md)**.
 
-```bash
-# Install latest release skill
-curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/skills/gyrus/scripts/install-skill.sh | bash
-
-# Or install a specific release version (version pinning)
-curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/skills/gyrus/scripts/install-skill.sh | bash -s v0.1.0
-```
-
-Once installed, agents have immediate access to Gyrus CLI commands, OKF frontmatter schema references, and diagnostic healthchecks (`bash .agents/skills/gyrus/scripts/verify.sh`).
+Once initialized, AI agents have immediate access to Gyrus CLI commands and OKF frontmatter schema references.
 
 By default, Gyrus resolves storage path hierarchy in the following order:
 1. `--storage-path` CLI flag

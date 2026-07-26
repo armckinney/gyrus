@@ -62,3 +62,5 @@ Target: Multi-tenant enterprise deployment packaging, RBAC, and multi-language S
 - [ ] **gRPC Core SDK Endpoint**: High-performance gRPC service definitions for multi-language Core SDK bindings (Python, TypeScript).
 - [ ] **Owner-Group Access Control (RBAC)**: Fine-grained Role-Based Access Control enforcing read/write permissions per `owner_group`.
 - [ ] **Authentication Tokens & OAuth2**: API token validation for HTTP/SSE MCP servers and centralized team instances.
+- [ ] **Agent Tool Integration Testing Framework**: Automated test suites verifying that AI agents (`agy`, Claude Code, GitHub Copilot, Cursor) actually invoke Gyrus CLI subcommands and MCP tools correctly when prompted with realistic engineering tasks.
+- [ ] **Session Agent Hooks & Full Setup Entrypoint**: Native session agent hooks (e.g. workspace entry & pre-session hooks) and an all-in-one setup wizard (`gyrus setup` / `gyrus init --full`) serving as a unified entrypoint for full installation and configuration (registering stdio/SSE MCP, equipping `.agents/skills/gyrus`, generating `.gyrus.yaml`, and setting up storage backends).

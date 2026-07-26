@@ -11,20 +11,7 @@ This skill equips AI agents to interact directly with Gyrus codebase memory via 
 
 ---
 
-## 🚀 Prerequisite Setup & Installation
-
-Before executing Gyrus commands, verify that `gyrus` is available in `$PATH`:
-
-```bash
-# Verify CLI installation or auto-install via helper script
-bash skills/gyrus/scripts/install-cli.sh
-```
-
-To initialize Gyrus configuration and sync storage in a new workspace:
-
-```bash
-bash skills/gyrus/scripts/init.sh
-```
+## 🚀 Skill Verification
 
 To run a diagnostic healthcheck on database sync and binary execution:
 
