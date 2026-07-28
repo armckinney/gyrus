@@ -27,20 +27,16 @@ var suggestCmd = &cobra.Command{
 			return err
 		}
 
-		indexer, err := provider.NewIndexStore(cfg, storageRoot)
+		searcher, err := provider.NewSearchProvider(cfg, storageRoot)
 		if err != nil {
 			return err
 		}
-		if closer, ok := indexer.(interface{ Close() error }); ok {
+		if closer, ok := searcher.(interface{ Close() error }); ok {
 			defer closer.Close()
 		}
 
-		q := gyrus.SearchQuery{
-			Query:      suggestPrompt,
-			MaxResults: 5,
-		}
-
-		results, err := indexer.Search(context.Background(), q)
+		filter := gyrus.SearchFilter{}
+		results, err := searcher.Search(context.Background(), suggestPrompt, filter)
 		if err != nil {
 			return err
 		}

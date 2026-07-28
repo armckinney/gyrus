@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 type OllamaEmbedder struct {
@@ -17,6 +18,8 @@ type OllamaEmbedder struct {
 func NewOllamaEmbedder(url, model string) *OllamaEmbedder {
 	if url == "" {
 		url = "http://localhost:11434/api/embeddings"
+	} else if !strings.HasSuffix(url, "/api/embeddings") {
+		url = strings.TrimSuffix(url, "/") + "/api/embeddings"
 	}
 	if model == "" {
 		model = "nomic-embed-text"

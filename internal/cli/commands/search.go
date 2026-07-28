@@ -31,27 +31,23 @@ var searchCmd = &cobra.Command{
 			return err
 		}
 
-		indexer, err := provider.NewIndexStore(cfg, storageRoot)
+		searcher, err := provider.NewSearchProvider(cfg, storageRoot)
 		if err != nil {
 			return err
 		}
-		if closer, ok := indexer.(interface{ Close() error }); ok {
+		if closer, ok := searcher.(interface{ Close() error }); ok {
 			defer closer.Close()
 		}
 
-		q := gyrus.SearchQuery{
-			Query: searchQueryStr,
-			Filter: gyrus.SearchFilter{
-				Category:   gyrus.Category(searchCategory),
-				Type:       gyrus.DocumentType(searchType),
-				Status:     searchStatus,
-				Tag:        searchTag,
-				OwnerGroup: searchOwnerGroup,
-			},
-			MaxResults: searchMaxResults,
+		filter := gyrus.SearchFilter{
+			Category:   gyrus.Category(searchCategory),
+			Type:       gyrus.DocumentType(searchType),
+			Status:     searchStatus,
+			Tag:        searchTag,
+			OwnerGroup: searchOwnerGroup,
 		}
 
-		results, err := indexer.Search(context.Background(), q)
+		results, err := searcher.Search(context.Background(), searchQueryStr, filter)
 		if err != nil {
 			return err
 		}
