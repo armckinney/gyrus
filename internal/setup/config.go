@@ -51,7 +51,6 @@ default_owner_group: %s
 
 blob:
   bucket_url: "file:///tmp/gyrus-blob-bucket"
-  prefix: docs
 `, ownerGroup)
 
 	case ProfilePostgres:
