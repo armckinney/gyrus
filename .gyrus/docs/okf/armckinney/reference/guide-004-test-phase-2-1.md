@@ -205,39 +205,65 @@ ls -la ~/.ssh/id_ed25519 ~/.ssh/id_rsa
 
 ---
 
-## 🧪 2. Validating the Cloud Blob Storage Driver (`GYRUS-202`)
+## 🧪 2. Validating the Azure Blob Storage Driver (`GYRUS-202`)
 
-The Cloud Blob Storage driver uses `gocloud.dev/blob` to store OKF documents across AWS S3 (`s3://`), Azure Blob Storage (`azblob://`), Google Cloud Storage (`gs://`), or local filesystem buckets (`file://`).
+The Azure Blob Storage driver (`azure_blob` / `azure`) provides cloud-native persistence directly in Azure Storage containers using `gocloud.dev/blob/azureblob`.
 
-### 2.1 Local Test (using `fileblob` bucket)
+### 2.1 Configuration (`.gyrus.yaml`)
+Initialize with Azure profile or update `.gyrus.yaml`:
+
 ```bash
-# Create a local test bucket folder
-mkdir -p /tmp/gyrus-blob-bucket
+../gyrus init --profile azure
 ```
 
-Initialize with blob profile:
+```yaml
+storage_provider: azure_blob
+index_provider: sqlite
+search_provider: sqlite
 
-```bash
-../gyrus init --profile blob
+storage_root: .gyrus/docs
+schemas_path: .gyrus/schemas
+default_owner_group: armckinney
+
+azure_blob:
+  storage_account: "myaccountname"
+  container_name: "my-gyrus-container"
 ```
 
-### 2.2 Execution & Verification Steps
+### 2.2 Azure Authentication Setup
+Set your Azure Storage credentials via environment variables or Azure CLI:
+
 ```bash
-# 1. Create a document in blob storage
+# Option A: Storage Account & Access Key
+export AZURE_STORAGE_ACCOUNT="myaccountname"
+export AZURE_STORAGE_KEY="your_azure_storage_account_key"
+
+# Option B: Shared Access Signature (SAS) Token
+export AZURE_STORAGE_ACCOUNT="myaccountname"
+export AZURE_STORAGE_SAS_TOKEN="sv=2020-08-04&ss=b&srt=sco&..."
+
+# Option C: Azure Identity / Azure CLI Login
+az login
+```
+
+### 2.3 Execution & Verification Steps
+```bash
+# 1. Create a document directly in your Azure Blob Storage container
 ../gyrus create \
-  --id "prd-blob-driver-test" \
-  --title "Blob Driver Test PRD" \
+  --id "prd-azure-blob-test" \
+  --title "Azure Blob Driver Test PRD" \
   --category "product" \
   --type "prd" \
   --owner-group "armckinney" \
   --status "draft" \
-  --content "Testing cloud blob storage driver."
+  --content "Testing Azure Blob Storage driver execution."
 
-# 2. Inspect blob key hierarchy on disk
-ls -la /tmp/gyrus-blob-bucket/docs/armckinney/product/prd-blob-driver-test.md
+# 2. Retrieve document from Azure Blob Store
+../gyrus get prd-azure-blob-test --json
 
-# 3. Retrieve document from blob store
-../gyrus get prd-blob-driver-test --json
+# 3. Verify in Azure Portal / Azure CLI that object key was created:
+# my-gyrus-container/.gyrus/docs/okf/armckinney/workspaces/main/prd-azure-blob-test.md
+az storage blob list --account-name myaccountname --container-name my-gyrus-container --output table
 ```
 
 ---

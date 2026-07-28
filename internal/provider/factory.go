@@ -18,6 +18,14 @@ func NewDocumentStore(cfg *localfs.Config, storageRoot string) (gyrus.DocumentSt
 		cfg = &localfs.Config{}
 	}
 
+	prefix := cfg.StorageRoot
+	if prefix == "" {
+		prefix = cfg.Storage.Root
+	}
+	if prefix == "" {
+		prefix = storageRoot
+	}
+
 	switch cfg.StorageProvider {
 	case "git":
 		if cfg.Git.RepoURL == "" {
@@ -27,6 +35,43 @@ func NewDocumentStore(cfg *localfs.Config, storageRoot string) (gyrus.DocumentSt
 			RepoURL: cfg.Git.RepoURL,
 			Branch:  cfg.Git.Branch,
 		})
+
+	case "s3", "aws_s3":
+		bucketName := cfg.S3.BucketName
+		if bucketName == "" {
+			return nil, fmt.Errorf("s3 storage provider selected but s3.bucket_name is empty in config file (.gyrus.yaml)")
+		}
+		bucketURL := fmt.Sprintf("s3://%s", bucketName)
+		if cfg.S3.Region != "" {
+			bucketURL = fmt.Sprintf("s3://%s?region=%s", bucketName, cfg.S3.Region)
+		}
+		return blob.NewStore(context.Background(), bucketURL, prefix)
+
+	case "azure", "azure_blob":
+		container := cfg.AzureBlob.ContainerName
+		if container == "" {
+			container = cfg.Blob.ContainerName
+		}
+		if container == "" {
+			return nil, fmt.Errorf("azure_blob storage provider selected but azure_blob.container_name is empty in config file (.gyrus.yaml)")
+		}
+		account := cfg.AzureBlob.StorageAccount
+		if account == "" {
+			account = cfg.Blob.StorageAccount
+		}
+		bucketURL := fmt.Sprintf("azblob://%s", container)
+		if account != "" {
+			bucketURL = fmt.Sprintf("azblob://%s?storage_account=%s", container, account)
+		}
+		return blob.NewStore(context.Background(), bucketURL, prefix)
+
+	case "gcs", "gcp_gcs", "gcp":
+		bucketName := cfg.GCS.BucketName
+		if bucketName == "" {
+			return nil, fmt.Errorf("gcs storage provider selected but gcs.bucket_name is empty in config file (.gyrus.yaml)")
+		}
+		bucketURL := fmt.Sprintf("gs://%s", bucketName)
+		return blob.NewStore(context.Background(), bucketURL, prefix)
 
 	case "blob":
 		bucketURL := cfg.Blob.BucketURL
@@ -42,15 +87,8 @@ func NewDocumentStore(cfg *localfs.Config, storageRoot string) (gyrus.DocumentSt
 				bucketURL = "file://" + storageRoot
 			}
 		}
-		prefix := cfg.Blob.Prefix
-		if prefix == "" {
-			prefix = cfg.StorageRoot
-			if prefix == "" {
-				prefix = cfg.Storage.Root
-			}
-			if prefix == "" {
-				prefix = storageRoot
-			}
+		if cfg.Blob.Prefix != "" {
+			prefix = cfg.Blob.Prefix
 		}
 		return blob.NewStore(context.Background(), bucketURL, prefix)
 

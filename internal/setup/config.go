@@ -13,6 +13,9 @@ const (
 	ProfileLocal    Profile = "local"
 	ProfileGit      Profile = "git"
 	ProfileBlob     Profile = "blob"
+	ProfileS3       Profile = "s3"
+	ProfileAzure    Profile = "azure"
+	ProfileGCS      Profile = "gcs"
 	ProfilePostgres Profile = "postgres"
 	ProfileVector   Profile = "vector"
 )
@@ -37,6 +40,50 @@ default_owner_group: %s
 git:
   repo_url: ""
   branch: main
+`, ownerGroup)
+
+	case ProfileS3:
+		return fmt.Sprintf(`# Gyrus CLI & MCP Configuration - AWS S3 Profile
+storage_provider: s3
+index_provider: sqlite
+search_provider: sqlite
+
+storage_root: .gyrus/docs
+schemas_path: .gyrus/schemas
+default_owner_group: %s
+
+s3:
+  bucket_name: "my-gyrus-bucket"
+  region: "us-east-1"
+`, ownerGroup)
+
+	case ProfileAzure:
+		return fmt.Sprintf(`# Gyrus CLI & MCP Configuration - Azure Blob Profile
+storage_provider: azure_blob
+index_provider: sqlite
+search_provider: sqlite
+
+storage_root: .gyrus/docs
+schemas_path: .gyrus/schemas
+default_owner_group: %s
+
+azure_blob:
+  storage_account: "myaccountname"
+  container_name: "my-gyrus-container"
+`, ownerGroup)
+
+	case ProfileGCS:
+		return fmt.Sprintf(`# Gyrus CLI & MCP Configuration - Google Cloud Storage Profile
+storage_provider: gcs
+index_provider: sqlite
+search_provider: sqlite
+
+storage_root: .gyrus/docs
+schemas_path: .gyrus/schemas
+default_owner_group: %s
+
+gcs:
+  bucket_name: "my-gyrus-gcs-bucket"
 `, ownerGroup)
 
 	case ProfileBlob:

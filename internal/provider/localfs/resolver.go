@@ -27,6 +27,17 @@ type Config struct {
 		ContainerName  string `yaml:"container_name"`
 		Prefix         string `yaml:"prefix"`
 	} `yaml:"blob"`
+	S3 struct {
+		BucketName string `yaml:"bucket_name"`
+		Region     string `yaml:"region"`
+	} `yaml:"s3"`
+	AzureBlob struct {
+		StorageAccount string `yaml:"storage_account"`
+		ContainerName  string `yaml:"container_name"`
+	} `yaml:"azure_blob"`
+	GCS struct {
+		BucketName string `yaml:"bucket_name"`
+	} `yaml:"gcs"`
 	Postgres struct {
 		ConnectionString string `yaml:"connection_string"`
 	} `yaml:"postgres"`
