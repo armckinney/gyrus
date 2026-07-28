@@ -52,6 +52,11 @@ Target: Expand data providers, transport interfaces, context hygiene, and embed 
 ### 2.4 Context Hygiene & Governance
 - [ ] **Stale & Low-Quality Context Cleanup**: Automated staleness detection, decay/quality scoring, garbage collection routines, and `deprecated`/`archived` state sweeps.
 
+### 2.5 Refactoring, Global Configuration & Branding
+- [ ] **Add Global Config support for gyrus (`~/.gyrus.yaml`)**: Support user-wide global configuration files in user home (`~/.gyrus.yaml` and `~/.config/gyrus/config.yaml`) for setting user-level defaults across workspace boundaries.
+- [ ] **Refactor repo to OOP structure and cleanup**: Refactor Go core packages and CLI command handlers to clean OOP structural patterns, consolidate provider factories, and clean up technical debt.
+- [ ] **Add demo reference to README**: Add interactive demo recording/GIF showcase to `README.md` highlighting `gyrus init`, `gyrus suggest-context`, and agent MCP workflows.
+
 ---
 
 ## 🔮 Phase 3: Future & Enterprise Extensions
