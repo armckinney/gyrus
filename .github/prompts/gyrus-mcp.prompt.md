@@ -1,0 +1,1 @@
+../../docs/agents/skills/gyrus-mcp/SKILL.md

@@ -6,3 +6,21 @@ services:
     volumes:
       - ..:/workspaces/gyrus:cached
     command: sleep infinity
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: gyrus-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: gyrus
+    ports:
+      - "5432:5432"
+    volumes:
+      - gyrus-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  gyrus-postgres-data:

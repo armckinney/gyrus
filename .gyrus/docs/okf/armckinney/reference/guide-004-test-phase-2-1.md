@@ -221,13 +221,13 @@ storage_provider: azure_blob
 index_provider: sqlite
 search_provider: sqlite
 
-storage_root: .gyrus/docs
-schemas_path: .gyrus/schemas
+storage_root: ""
+schemas_path: schemas
 default_owner_group: armckinney
 
 azure_blob:
-  storage_account: "myaccountname"
-  container_name: "my-gyrus-container"
+  storage_account: "stgyrusdev"
+  container_name: "docs"
 ```
 
 ### 2.2 Azure Authentication Setup
@@ -263,39 +263,49 @@ az login
 
 # 3. Verify in Azure Portal / Azure CLI that object key was created:
 # my-gyrus-container/.gyrus/docs/okf/armckinney/workspaces/main/prd-azure-blob-test.md
-az storage blob list --account-name myaccountname --container-name my-gyrus-container --output table
+az storage blob list --account-name stgyrusdev --container-name docs --output table
 ```
 
 ---
 
-## 🧪 3. Validating the PostgreSQL Enterprise Storage Driver (`GYRUS-203`)
+## 🧪 3. Validating the PostgreSQL Enterprise Storage & FTS Driver (`GYRUS-203` & `GYRUS-204`)
 
-The PostgreSQL driver provides centralized database storage (`DocumentStore`, `IndexStore`, `GraphStore`) using `pgx/v5`.
+The PostgreSQL driver provides centralized enterprise storage (`DocumentStore`, `IndexStore`, `GraphStore`) and native `tsvector`/`tsquery` full-text search (`search_provider: postgres_fts`) using `pgx/v5`.
 
-### 3.1 Start a Local PostgreSQL Container
-```bash
-docker run -d \
-  --name gyrus-postgres \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=gyrus \
-  -p 5432:5432 \
-  postgres:16
-```
+### 3.1 DevContainer Automatic Sidecar
+The DevContainer setup ([`.devcontainer/docker-compose.yaml`](file:///workspaces/gyrus/.devcontainer/docker-compose.yaml)) includes PostgreSQL 16 as an automatic sidecar container:
+- **Hostname inside DevContainer:** `postgres` (or `localhost`)
+- **Port:** `5432`
+- **Database / User / Password:** `gyrus` / `postgres` / `postgres`
+
+*(If running outside a DevContainer, launch PostgreSQL via Docker: `docker run -d --name gyrus-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=gyrus -p 5432:5432 postgres:16-alpine`)*
 
 ### 3.2 Configuration (`.gyrus.yaml`)
-Initialize with postgres profile:
+Initialize with PostgreSQL profile:
 
 ```bash
 ../gyrus init --profile postgres
 ```
 
+```yaml
+storage_provider: postgres
+index_provider: postgres
+search_provider: postgres_fts
+
+storage_root: .gyrus/docs
+schemas_path: .gyrus/schemas
+default_owner_group: armckinney
+
+postgres:
+  connection_string: "postgres://postgres:postgres@postgres:5432/gyrus?sslmode=disable"
+```
+
 ### 3.3 Execution & Verification Steps
 ```bash
-# 1. Run sync to execute DDL migrations and populate PostgreSQL schema
+# 1. Run sync to execute DDL migrations and initialize PostgreSQL schema
 ../gyrus sync --json
 
-# 2. Create a document in PostgreSQL
+# 2. Create a contract document directly in PostgreSQL
 ../gyrus create \
   --id "spec-postgres-driver-test" \
   --title "PostgreSQL Driver Test Spec" \
@@ -303,34 +313,13 @@ Initialize with postgres profile:
   --type "specification" \
   --owner-group "armckinney" \
   --status "active" \
-  --content "Testing PostgreSQL enterprise storage backend."
+  --content "Testing PostgreSQL enterprise storage backend and full-text search."
 
-# 3. Query PostgreSQL tables directly
-docker exec -it gyrus-postgres psql -U postgres -d gyrus -c "SELECT id, title, category, status FROM documents;"
-docker exec -it gyrus-postgres psql -U postgres -d gyrus -c "SELECT from_id, to_id, rel_type FROM document_edges;"
-```
+# 3. Retrieve document envelope from PostgreSQL
+../gyrus get spec-postgres-driver-test --json
 
----
-
-## 🧪 4. Validating the PostgreSQL Full-Text Search Engine (`GYRUS-204`)
-
-Tests native PostgreSQL `tsvector` and `tsquery` full-text search capabilities.
-
-### 4.1 Configuration (`.gyrus.yaml`)
-```yaml
-storage_provider: postgres
-index_provider: postgres
-search_provider: postgres_fts
-postgres:
-  connection_string: "postgres://postgres:postgres@localhost:5432/gyrus?sslmode=disable"
-```
-
-### 4.2 Execution & Verification Steps
-```bash
-# 1. Execute FTS keyword search
+# 4. Perform native PostgreSQL tsvector FTS keyword search
 ../gyrus search --query "enterprise storage" --json
-
-# 2. Verify search output returns relevant documents with PostgreSQL ts_rank_cd() scores.
 ```
 
 ---
