@@ -42,7 +42,17 @@ func NewDocumentStore(cfg *localfs.Config, storageRoot string) (gyrus.DocumentSt
 				bucketURL = "file://" + storageRoot
 			}
 		}
-		return blob.NewStore(context.Background(), bucketURL, cfg.Blob.Prefix)
+		prefix := cfg.Blob.Prefix
+		if prefix == "" {
+			prefix = cfg.StorageRoot
+			if prefix == "" {
+				prefix = cfg.Storage.Root
+			}
+			if prefix == "" {
+				prefix = storageRoot
+			}
+		}
+		return blob.NewStore(context.Background(), bucketURL, prefix)
 
 	case "postgres":
 		if cfg.Postgres.ConnectionString == "" {
