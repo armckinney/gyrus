@@ -4,13 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/armckinney/gyrus/internal/cli"
 	"github.com/armckinney/gyrus/internal/provider"
 	"github.com/armckinney/gyrus/internal/provider/localfs"
-	"github.com/armckinney/gyrus/internal/provider/sqlite"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 	"github.com/spf13/cobra"
 )
@@ -29,12 +27,13 @@ var suggestCmd = &cobra.Command{
 			return err
 		}
 
-		dbPath := filepath.Join(storageRoot, "index.db")
-		indexer, err := sqlite.NewIndexer(dbPath)
+		indexer, err := provider.NewIndexStore(cfg, storageRoot)
 		if err != nil {
 			return err
 		}
-		defer indexer.Close()
+		if closer, ok := indexer.(interface{ Close() error }); ok {
+			defer closer.Close()
+		}
 
 		q := gyrus.SearchQuery{
 			Query:      suggestPrompt,

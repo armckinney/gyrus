@@ -127,3 +127,23 @@ func NewIndexStore(cfg *localfs.Config, storageRoot string) (gyrus.IndexStore, e
 		return sqlite.NewIndexer(dbPath)
 	}
 }
+
+// NewGraphStore creates the appropriate gyrus.GraphStore implementation
+// based on index_provider in .gyrus.yaml.
+func NewGraphStore(cfg *localfs.Config, storageRoot string) (gyrus.GraphStore, error) {
+	if cfg == nil {
+		cfg = &localfs.Config{}
+	}
+
+	switch cfg.IndexProvider {
+	case "postgres":
+		if cfg.Postgres.ConnectionString == "" {
+			return nil, fmt.Errorf("postgres index provider selected but postgres.connection_string is empty")
+		}
+		return postgres.NewStore(context.Background(), cfg.Postgres.ConnectionString)
+
+	default:
+		dbPath := filepath.Join(storageRoot, "index.db")
+		return sqlite.NewIndexer(dbPath)
+	}
+}
