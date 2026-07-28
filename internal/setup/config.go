@@ -111,7 +111,7 @@ schemas_path: .gyrus/schemas
 default_owner_group: %s
 
 postgres:
-  connection_string: "postgres://postgres:postgres@localhost:5432/gyrus?sslmode=disable"
+  connection_string: "postgres://postgres:postgres@postgres:5432/gyrus?sslmode=disable"
 `, ownerGroup)
 
 	case ProfileVector:
