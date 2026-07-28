@@ -113,9 +113,17 @@ Specify a pre-configured storage & search profile using `--profile` (`-p`):
 ```bash
 gyrus init --profile local     # LocalFS Storage + SQLite FTS5 (Default)
 gyrus init --profile git       # Remote Git Repository Persistence
-gyrus init --profile blob      # Cloud Object Storage (S3, Azure Blob, GCS)
+gyrus init --profile azure     # Dedicated Azure Blob Storage Container
+gyrus init --profile s3        # Dedicated AWS S3 Storage Bucket
+gyrus init --profile gcs       # Dedicated Google Cloud Storage Bucket
 gyrus init --profile postgres  # PostgreSQL Database & FTS Search Backend
 ```
+
+### 3.6 Required Cloud Storage Permissions & Access Settings
+When using cloud object storage (`azure_blob`, `s3`, `gcs`), ensure your user identity or AI agent has explicit **Data Plane Read & Write permissions** assigned:
+- **Azure Blob Storage (`azure_blob`):** Standard Azure management roles (*Owner*, *Contributor*) do **NOT** grant data access. Your Entra ID user identity or Managed Identity (`az login`) **MUST be assigned the `Storage Blob Data Contributor` or `Storage Blob Data Owner` role** on the storage account/container. Alternatively, export `AZURE_STORAGE_ACCOUNT` and `AZURE_STORAGE_KEY` (or `AZURE_STORAGE_SAS_TOKEN`).
+- **AWS S3 (`s3`):** IAM policy must grant `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`, and `s3:ListBucket` permissions.
+- **Google Cloud Storage (`gcs`):** Service account / user identity must be assigned `roles/storage.objectAdmin` or `roles/storage.objectUser`.
 
 ---
 

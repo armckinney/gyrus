@@ -32,14 +32,38 @@ git:
   branch: main
 ```
 
-### 3. Cloud Blob Storage (`blob`)
-Cloud-native object storage for AWS S3, Azure Blob, and Google Cloud Storage.
+### 3. Dedicated Cloud Object Storage Drivers (`azure_blob`, `s3`, `gcs`, `blob`)
+Cloud-native object storage for Azure Blob Storage, AWS S3, Google Cloud Storage, or generic blob endpoints.
+
+#### Azure Blob Storage (`azure_blob` / `azure`):
 ```yaml
-storage_provider: blob
-blob:
-  bucket_url: s3://my-gyrus-bucket?region=us-east-1
-  prefix: docs
+storage_provider: azure_blob
+azure_blob:
+  storage_account: "myaccountname"
+  container_name: "my-gyrus-container"
 ```
+
+#### AWS S3 Storage (`s3` / `aws_s3`):
+```yaml
+storage_provider: s3
+s3:
+  bucket_name: "my-gyrus-bucket"
+  region: "us-east-1"
+```
+
+#### Google Cloud Storage (`gcs` / `gcp`):
+```yaml
+storage_provider: gcs
+gcs:
+  bucket_name: "my-gyrus-gcs-bucket"
+```
+
+> [!IMPORTANT]
+> **Required Cloud Storage Permissions & Access Settings**
+> Depending on your cloud provider and bucket/container access settings, users and AI agents **MUST have explicit Data Plane Read & Write permissions** assigned:
+> - **Azure Blob Storage (`azure_blob`):** Standard Azure management roles (*Owner*, *Contributor*) do **NOT** grant data access. Your Entra ID user or Managed Identity (`az login`) **MUST be assigned the `Storage Blob Data Contributor` or `Storage Blob Data Owner` role** on the storage account/container. Alternatively, export `AZURE_STORAGE_ACCOUNT` and `AZURE_STORAGE_KEY` (or `AZURE_STORAGE_SAS_TOKEN`).
+> - **AWS S3 (`s3`):** IAM policy must grant `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`, and `s3:ListBucket` permissions on `arn:aws:s3:::<bucket_name>/*`.
+> - **Google Cloud Storage (`gcs`):** Service account / user identity must be assigned `roles/storage.objectAdmin` or `roles/storage.objectUser`.
 
 ### 4. PostgreSQL Enterprise Driver (`postgres`)
 Centralized database backend for multi-tenant enterprise deployments.
