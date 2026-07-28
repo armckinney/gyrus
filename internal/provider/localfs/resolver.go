@@ -22,8 +22,10 @@ type Config struct {
 		Branch  string `yaml:"branch"`
 	} `yaml:"git"`
 	Blob struct {
-		BucketURL string `yaml:"bucket_url"`
-		Prefix    string `yaml:"prefix"`
+		BucketURL      string `yaml:"bucket_url"`
+		StorageAccount string `yaml:"storage_account"`
+		ContainerName  string `yaml:"container_name"`
+		Prefix         string `yaml:"prefix"`
 	} `yaml:"blob"`
 	Postgres struct {
 		ConnectionString string `yaml:"connection_string"`

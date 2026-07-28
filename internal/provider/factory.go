@@ -31,7 +31,16 @@ func NewDocumentStore(cfg *localfs.Config, storageRoot string) (gyrus.DocumentSt
 	case "blob":
 		bucketURL := cfg.Blob.BucketURL
 		if bucketURL == "" {
-			bucketURL = "file://" + storageRoot
+			if cfg.Blob.ContainerName != "" {
+				container := cfg.Blob.ContainerName
+				if cfg.Blob.StorageAccount != "" {
+					bucketURL = fmt.Sprintf("azblob://%s?storage_account=%s", container, cfg.Blob.StorageAccount)
+				} else {
+					bucketURL = fmt.Sprintf("azblob://%s", container)
+				}
+			} else {
+				bucketURL = "file://" + storageRoot
+			}
 		}
 		return blob.NewStore(context.Background(), bucketURL, cfg.Blob.Prefix)
 
