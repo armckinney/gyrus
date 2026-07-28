@@ -3,11 +3,13 @@ package provider
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/armckinney/gyrus/internal/provider/blob"
 	"github.com/armckinney/gyrus/internal/provider/git"
 	"github.com/armckinney/gyrus/internal/provider/localfs"
 	"github.com/armckinney/gyrus/internal/provider/postgres"
+	"github.com/armckinney/gyrus/internal/provider/sqlite"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
@@ -103,5 +105,25 @@ func NewDocumentStore(cfg *localfs.Config, storageRoot string) (gyrus.DocumentSt
 
 	default:
 		return nil, fmt.Errorf("unknown storage_provider: '%s' in configuration file", cfg.StorageProvider)
+	}
+}
+
+// NewIndexStore creates the appropriate gyrus.IndexStore implementation
+// based on index_provider in .gyrus.yaml.
+func NewIndexStore(cfg *localfs.Config, storageRoot string) (gyrus.IndexStore, error) {
+	if cfg == nil {
+		cfg = &localfs.Config{}
+	}
+
+	switch cfg.IndexProvider {
+	case "postgres":
+		if cfg.Postgres.ConnectionString == "" {
+			return nil, fmt.Errorf("postgres index provider selected but postgres.connection_string is empty")
+		}
+		return postgres.NewStore(context.Background(), cfg.Postgres.ConnectionString)
+
+	default:
+		dbPath := filepath.Join(storageRoot, "index.db")
+		return sqlite.NewIndexer(dbPath)
 	}
 }
