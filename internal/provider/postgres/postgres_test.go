@@ -18,7 +18,7 @@ func TestStore_Create(t *testing.T) {
 	defer mock.Close()
 
 	store := &Store{pool: mock}
-	
+
 	doc := gyrus.Document{
 		ID:      "doc-1",
 		Title:   "Test Doc",
@@ -52,10 +52,10 @@ func TestStore_Get(t *testing.T) {
 	defer mock.Close()
 
 	store := &Store{pool: mock}
-	
+
 	doc := gyrus.Document{
-		ID:      "doc-1",
-		Title:   "Test Doc",
+		ID:    "doc-1",
+		Title: "Test Doc",
 	}
 	fmBytes, _ := json.Marshal(doc)
 
@@ -91,7 +91,7 @@ func TestStore_Update(t *testing.T) {
 	defer mock.Close()
 
 	store := &Store{pool: mock}
-	
+
 	doc := gyrus.Document{
 		ID:      "doc-1",
 		Version: 1,
@@ -103,7 +103,7 @@ func TestStore_Update(t *testing.T) {
 	mock.ExpectQuery("SELECT frontmatter, content FROM documents WHERE id = \\$1 FOR UPDATE").
 		WithArgs("doc-1").
 		WillReturnRows(pgxmock.NewRows([]string{"frontmatter", "content"}).AddRow(fmBytes, "Old content"))
-		
+
 	mock.ExpectExec("UPDATE documents SET frontmatter = \\$1, content = \\$2 WHERE id = \\$3").
 		WithArgs(pgxmock.AnyArg(), "New content", "doc-1").
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
@@ -111,7 +111,7 @@ func TestStore_Update(t *testing.T) {
 	mock.ExpectExec("INSERT INTO documents_history").
 		WithArgs("doc-1", 2, pgxmock.AnyArg(), "New content", pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
-		
+
 	mock.ExpectCommit()
 
 	patchTitle := "Updated Test Doc"
@@ -154,7 +154,7 @@ func TestStore_GraphEdges(t *testing.T) {
 			CreatedAt:        time.Now(),
 		},
 	}
-	
+
 	mock.ExpectBegin()
 	mock.ExpectExec("INSERT INTO document_edges").
 		WithArgs("doc-1", "doc-2", gyrus.RelDependsOn, "user", pgxmock.AnyArg()).
@@ -174,12 +174,12 @@ func TestStore_GraphEdges(t *testing.T) {
 	mock.ExpectQuery("SELECT from_document_id, to_document_id, relationship_type, created_by, created_at FROM document_edges WHERE from_document_id = \\$1 OR to_document_id = \\$1").
 		WithArgs("doc-1").
 		WillReturnRows(rows)
-		
+
 	neighbors, err := store.Neighbors(context.Background(), "doc-1", gyrus.EdgeFilter{})
 	if err != nil {
 		t.Errorf("error was not expected while getting neighbors: %s", err)
 	}
-	
+
 	if len(neighbors) != 1 {
 		t.Errorf("expected 1 neighbor, got %d", len(neighbors))
 	}

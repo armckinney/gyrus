@@ -30,29 +30,29 @@ func TestAgentPromptRoutingSimulation(t *testing.T) {
 
 	// User Intent Scenarios to test prompt instruction clarity
 	scenarios := []struct {
-		intent               string
+		intent                string
 		expectedCLISubcommand string
-		expectedMCPTool      string
+		expectedMCPTool       string
 	}{
 		{
-			intent:               "Find architecture decision records for storage",
+			intent:                "Find architecture decision records for storage",
 			expectedCLISubcommand: "gyrus search --query",
-			expectedMCPTool:      "gyrus_search",
+			expectedMCPTool:       "gyrus_search",
 		},
 		{
-			intent:               "Get document details for a document ID",
+			intent:                "Get document details for a document ID",
 			expectedCLISubcommand: "gyrus get <document-id>",
-			expectedMCPTool:      "gyrus_get_document",
+			expectedMCPTool:       "gyrus_get_document",
 		},
 		{
-			intent:               "Suggest context for relational SQL databases",
+			intent:                "Suggest context for relational SQL databases",
 			expectedCLISubcommand: "gyrus suggest-context --prompt",
-			expectedMCPTool:      "gyrus_suggest_context",
+			expectedMCPTool:       "gyrus_suggest_context",
 		},
 		{
-			intent:               "Create a new PRD for feature X",
+			intent:                "Create a new PRD for feature X",
 			expectedCLISubcommand: "gyrus create",
-			expectedMCPTool:      "gyrus_create_document",
+			expectedMCPTool:       "gyrus_create_document",
 		},
 	}
 

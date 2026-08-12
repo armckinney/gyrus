@@ -11,16 +11,16 @@ import (
 )
 
 var (
-	initProfile        string
-	initOwnerGroup     string
-	initMCPTarget      string
-	initMCPMode        string
-	initMCPImage       string
-	initGlobal         bool
-	initSkillTarget    string
-	initNoMCP          bool
-	initNoSkill        bool
-	initNoConfig       bool
+	initProfile     string
+	initOwnerGroup  string
+	initMCPTarget   string
+	initMCPMode     string
+	initMCPImage    string
+	initGlobal      bool
+	initSkillTarget string
+	initNoMCP       bool
+	initNoSkill     bool
+	initNoConfig    bool
 )
 
 var initCmd = &cobra.Command{

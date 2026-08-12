@@ -149,6 +149,16 @@ func TestCLICommandSuiteBehavior(t *testing.T) {
 		t.Fatalf("Failed to resolve repo root: %v", err)
 	}
 
+	// Build gyrus binary if missing
+	binPath := filepath.Join(repoRoot, "gyrus")
+	if _, err := os.Stat(binPath); os.IsNotExist(err) {
+		buildCmd := exec.Command("go", "build", "-o", "gyrus", "cmd/gyrus/main.go")
+		buildCmd.Dir = repoRoot
+		if out, err := buildCmd.CombinedOutput(); err != nil {
+			t.Fatalf("Failed to auto-build gyrus binary for test: %v\nOutput:\n%s", err, string(out))
+		}
+	}
+
 	// Verify gyrus binary is built and responsive to CLI commands
 	cmd := exec.Command("./gyrus", "help")
 	cmd.Dir = repoRoot

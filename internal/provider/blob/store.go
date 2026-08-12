@@ -69,7 +69,7 @@ func serializeDocument(doc *gyrus.Document) ([]byte, error) {
 func deserializeDocument(data []byte) (gyrus.Document, error) {
 	var doc gyrus.Document
 	str := string(data)
-	
+
 	// Fast path for missing frontmatter
 	if !strings.HasPrefix(str, "---") {
 		return doc, fmt.Errorf("missing yaml frontmatter")
@@ -82,11 +82,11 @@ func deserializeDocument(data []byte) (gyrus.Document, error) {
 
 	frontmatter := parts[0]
 	frontmatter = strings.TrimPrefix(frontmatter, "---\n")
-	
+
 	if err := yaml.Unmarshal([]byte(frontmatter), &doc); err != nil {
 		return doc, err
 	}
-	
+
 	content := parts[1]
 	doc.Content = strings.TrimPrefix(content, "\n")
 
@@ -119,7 +119,7 @@ func (s *Store) findKeyByID(ctx context.Context, id string) (string, error) {
 // Create stores a new document.
 func (s *Store) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentRef, error) {
 	key := s.makeKey(doc)
-	
+
 	exists, err := s.bucket.Exists(ctx, key)
 	if err != nil {
 		return gyrus.DocumentRef{}, err

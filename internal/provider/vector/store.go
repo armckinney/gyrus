@@ -67,7 +67,7 @@ func (s *Store) Search(ctx context.Context, query string, filter gyrus.SearchFil
 		if !matchFilter(vDoc.Document, filter) {
 			continue
 		}
-		
+
 		sim := cosineSimilarity(queryVec, vDoc.Vector)
 		vectorResults = append(vectorResults, gyrus.SearchResult{
 			Document:    vDoc.Document,
@@ -75,7 +75,7 @@ func (s *Store) Search(ctx context.Context, query string, filter gyrus.SearchFil
 			MatchReason: "semantic similarity",
 		})
 	}
-	
+
 	// sort vector results by score descending
 	sort.Slice(vectorResults, func(i, j int) bool {
 		return vectorResults[i].Score > vectorResults[j].Score

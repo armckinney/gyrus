@@ -10,13 +10,13 @@ import (
 
 func setupTestRemote(t *testing.T) string {
 	dir := t.TempDir()
-	
+
 	// Init bare repository to act as remote
 	_, err := git.PlainInit(dir, true)
 	if err != nil {
 		t.Fatalf("failed to init bare test repo: %v", err)
 	}
-	
+
 	return dir
 }
 

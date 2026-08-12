@@ -196,7 +196,7 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.DocumentPatch
 	if patch.Content != nil {
 		doc.Content = *patch.Content
 	}
-	
+
 	doc.Version++
 	doc.LastUpdated = time.Now()
 
@@ -259,7 +259,7 @@ func (s *Store) Index(ctx context.Context, doc gyrus.Document) error {
 	if err != nil {
 		return err
 	}
-	
+
 	_, err = s.pool.Exec(ctx, `
 		INSERT INTO documents (id, frontmatter, content)
 		VALUES ($1, $2, $3)
@@ -322,12 +322,12 @@ func (s *Store) DeleteEdges(ctx context.Context, fromID string, toID string, rel
 func (s *Store) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilter) ([]gyrus.DocumentEdge, error) {
 	var rows pgx.Rows
 	var err error
-	
+
 	dir := filter.Direction
 	if dir == "" {
 		dir = "both"
 	}
-	
+
 	args := []any{id}
 	whereClause := ""
 	if filter.RelationshipType != "" {
@@ -347,7 +347,7 @@ func (s *Store) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilte
 			rows, err = s.pool.Query(ctx, "SELECT from_document_id, to_document_id, relationship_type, created_by, created_at FROM document_edges WHERE from_document_id = $1 OR to_document_id = $1", id)
 		}
 	}
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -414,7 +414,7 @@ func (s *Store) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.G
 			nodes[e.FromDocumentID] = true
 			nodes[e.ToDocumentID] = true
 		}
-		
+
 		var nodeList []string
 		for k := range nodes {
 			nodeList = append(nodeList, k)

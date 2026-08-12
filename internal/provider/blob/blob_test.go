@@ -12,7 +12,7 @@ import (
 
 func TestBlobStore(t *testing.T) {
 	ctx := context.Background()
-	
+
 	dir, err := os.MkdirTemp("", "blobstore-*")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
@@ -26,7 +26,7 @@ func TestBlobStore(t *testing.T) {
 	defer bucket.Close()
 
 	store := NewStoreWithBucket(bucket, "testprefix")
-	
+
 	now := time.Now().Truncate(time.Second)
 	doc := gyrus.Document{
 		ID:             "adr-2026-001",
@@ -69,7 +69,7 @@ func TestBlobStore(t *testing.T) {
 	patch := gyrus.DocumentPatch{
 		Title: &newTitle,
 	}
-	
+
 	updRef, err := store.Update(ctx, doc.ID, patch, 1)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
@@ -91,7 +91,7 @@ func TestBlobStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Archive failed: %v", err)
 	}
-	
+
 	fetched3, err := store.Get(ctx, doc.ID)
 	if err != nil {
 		t.Fatalf("Get after archive failed: %v", err)
@@ -105,7 +105,7 @@ func TestBlobStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Delete failed: %v", err)
 	}
-	
+
 	_, err = store.Get(ctx, doc.ID)
 	if err == nil {
 		t.Fatalf("expected error getting deleted document")

@@ -17,10 +17,10 @@ func TestStore_SearchFTS(t *testing.T) {
 	defer mock.Close()
 
 	store := &Store{pool: mock}
-	
+
 	doc := gyrus.Document{
-		ID:      "doc-1",
-		Title:   "Postgres FTS Search",
+		ID:       "doc-1",
+		Title:    "Postgres FTS Search",
 		Category: gyrus.CategoryTechnical,
 	}
 	fmBytes, _ := json.Marshal(doc)

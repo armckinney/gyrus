@@ -81,7 +81,10 @@ func NewStore(opts Options) (*Store, error) {
 	})
 	if err != nil {
 		if err == transport.ErrEmptyRemoteRepository || strings.Contains(err.Error(), "reference not found") || strings.Contains(err.Error(), "repository not found") {
-			st = memory.NewStorage(); fs = memfs.New(); store.fs = fs; repo, err = git.Init(st, fs)
+			st = memory.NewStorage()
+			fs = memfs.New()
+			store.fs = fs
+			repo, err = git.Init(st, fs)
 			if err != nil {
 				return nil, fmt.Errorf("failed to init empty repo: %w", err)
 			}
@@ -420,7 +423,7 @@ func (s *Store) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	wt, err := s.repo.Worktree()
 	if err != nil {
 		return fmt.Errorf("failed to get worktree: %w", err)
