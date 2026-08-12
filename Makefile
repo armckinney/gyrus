@@ -10,6 +10,12 @@ test:
 	@echo "Running Gyrus tests..."
 	@go test ./... -v
 
+test-integration: build
+	@echo "Running Live Antigravity Integration Tests..."
+	@RUN_INTEGRATION_TESTS=1 go test ./tests/skills/... -v -run TestAntigravityIntegration
+
+test-e2e: test-integration
+
 fmt:
 	@echo "Formatting Go code..."
 	@go fmt ./...
@@ -26,4 +32,4 @@ clean:
 run:
 	@go run cmd/gyrus/main.go
 
-.PHONY: all build test fmt lint clean run
+.PHONY: all build test test-integration test-e2e fmt lint clean run

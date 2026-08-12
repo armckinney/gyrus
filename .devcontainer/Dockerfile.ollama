@@ -1,0 +1,8 @@
+FROM ollama/ollama:latest
+
+# Pre-bake nomic-embed-text embedding model into the container image layer
+RUN ollama serve & \
+    PID=$! && \
+    sleep 5 && \
+    ollama pull nomic-embed-text && \
+    kill $PID

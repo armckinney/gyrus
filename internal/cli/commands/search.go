@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 
 	"github.com/armckinney/gyrus/internal/cli"
+	"github.com/armckinney/gyrus/internal/provider"
 	"github.com/armckinney/gyrus/internal/provider/localfs"
-	"github.com/armckinney/gyrus/internal/provider/sqlite"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 	"github.com/spf13/cobra"
 )
@@ -27,31 +26,28 @@ var searchCmd = &cobra.Command{
 	Use:   "search",
 	Short: "Execute FTS5 search query over OKF documents and metadata",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		storageRoot, err := localfs.ResolveStoragePath(cli.GlobalStoragePath)
+		cfg, storageRoot, err := localfs.LoadConfig(cli.GlobalStoragePath)
 		if err != nil {
 			return err
 		}
 
-		dbPath := filepath.Join(storageRoot, "index.db")
-		indexer, err := sqlite.NewIndexer(dbPath)
+		searcher, err := provider.NewSearchProvider(cfg, storageRoot)
 		if err != nil {
 			return err
 		}
-		defer indexer.Close()
-
-		q := gyrus.SearchQuery{
-			Query: searchQueryStr,
-			Filter: gyrus.SearchFilter{
-				Category:   gyrus.Category(searchCategory),
-				Type:       gyrus.DocumentType(searchType),
-				Status:     searchStatus,
-				Tag:        searchTag,
-				OwnerGroup: searchOwnerGroup,
-			},
-			MaxResults: searchMaxResults,
+		if closer, ok := searcher.(interface{ Close() error }); ok {
+			defer closer.Close()
 		}
 
-		results, err := indexer.Search(context.Background(), q)
+		filter := gyrus.SearchFilter{
+			Category:   gyrus.Category(searchCategory),
+			Type:       gyrus.DocumentType(searchType),
+			Status:     searchStatus,
+			Tag:        searchTag,
+			OwnerGroup: searchOwnerGroup,
+		}
+
+		results, err := searcher.Search(context.Background(), searchQueryStr, filter)
 		if err != nil {
 			return err
 		}

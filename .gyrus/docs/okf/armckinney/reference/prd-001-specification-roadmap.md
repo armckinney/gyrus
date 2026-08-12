@@ -35,11 +35,12 @@ Target: Complete core automated release workflows and visual branding to finaliz
 Target: Expand data providers, transport interfaces, context hygiene, and embed the Web UI visual dashboard.
 
 ### 2.1 Additional Storage & Search Provider Drivers
-- [ ] **Git Storage Driver (`git`)**: Direct remote Git repository persistence via GitHub/Bitbucket APIs without requiring local workspace clones.
-- [ ] **Cloud Object Storage Drivers (`s3`, `blob`)**: AWS S3, Azure Blob Storage, and Google Cloud Storage drivers for cloud-native OKF document bundles.
-- [ ] **PostgreSQL Index & Storage Driver (`postgres`)**: Centralized PostgreSQL database backend for enterprise deployments.
-- [ ] **PostgreSQL FTS Search Engine (`postgres_fts`)**: PostgreSQL `tsvector` and `tsquery` full-text search engine.
-- [ ] **Vector Embedding Search Driver (`vector`)**: Semantic vector search provider (using pgvector or local embeddings) for hybrid BM25 keyword + vector context retrieval.
+- [x] **Git Storage Driver (`git`)**: Direct remote Git repository persistence via `go-git` (`GYRUS-201`) without requiring local workspace clones.
+- [x] **Cloud Object Storage Drivers (`s3`, `blob`)**: AWS S3, Azure Blob Storage, and Google Cloud Storage drivers (`GYRUS-202`) via `gocloud.dev/blob` for cloud-native OKF document bundles.
+- [x] **PostgreSQL Index & Storage Driver (`postgres`)**: Centralized PostgreSQL database backend (`GYRUS-203`) for enterprise deployments using `pgx/v5`.
+- [x] **PostgreSQL FTS Search Engine (`postgres_fts`)**: Native PostgreSQL `tsvector` and `tsquery` full-text search engine (`GYRUS-204`).
+- [x] **Vector Embedding Search Driver (`vector`)**: Semantic vector search provider (`GYRUS-205`) supporting Local Ollama, OpenAI embeddings, and Reciprocal Rank Fusion (RRF) hybrid search.
+- [x] **DevContainer Ollama Sidecar**: Implement DevContainer Docker Compose sidecar service (`ollama/ollama`) with pre-configured embedding models (`nomic-embed-text`) for zero-setup local vector search testing.
 
 ### 2.2 Transport & Networking Enhancements
 - [ ] **MCP SSE/HTTP Listener Mode (`gyrus mcp serve --transport sse`)**: Server-Sent Events (SSE) and HTTP listener mode for remote MCP server consumption over network endpoints.
@@ -52,6 +53,13 @@ Target: Expand data providers, transport interfaces, context hygiene, and embed 
 ### 2.4 Context Hygiene & Governance
 - [ ] **Stale & Low-Quality Context Cleanup**: Automated staleness detection, decay/quality scoring, garbage collection routines, and `deprecated`/`archived` state sweeps.
 
+### 2.5 Refactoring, Global Configuration & Branding
+- [ ] **Add Global Config support for gyrus (`~/.gyrus.yaml`)**: Support user-wide global configuration files in user home (`~/.gyrus.yaml` and `~/.config/gyrus/config.yaml`) for setting user-level defaults across workspace boundaries.
+- [ ] **Refactor repo to OOP structure and cleanup**: Refactor Go core packages and CLI command handlers to clean OOP structural patterns, consolidate provider factories, and clean up technical debt.
+- [ ] **Add demo reference to README**: Add interactive demo recording/GIF showcase to `README.md` highlighting `gyrus init`, `gyrus suggest-context`, and agent MCP workflows.
+- [ ] **Agent Plugin Packaging**: Package Gyrus skills, subagents, and MCP tools into official Agent Plugins supporting both the [Agent Plugins Standard](https://agent-plugins.org/) format (Google Developers: https://developers.googleblog.com/agent-plugins-package-your-skills-tools-and-more/) and full compatibility with the [Google Antigravity CLI Spec](https://antigravity.google/docs/cli/plugins) via `plugin.json` for zero-config agent discovery, distribution, and runtime sidecar loading.
+- [ ] **Persistence Layer Schema Storage & Remote Linkage**: Implement core interface (CLI and MCP commands) for storing OKF contract schemas directly in the persistence layer (`storage_provider`), with schemas stored remotely and linked to the active storage provider via enforced locations (`.gyrus/schemas/`).
+
 ---
 
 ## 🔮 Phase 3: Future & Enterprise Extensions
@@ -62,3 +70,5 @@ Target: Multi-tenant enterprise deployment packaging, RBAC, and multi-language S
 - [ ] **gRPC Core SDK Endpoint**: High-performance gRPC service definitions for multi-language Core SDK bindings (Python, TypeScript).
 - [ ] **Owner-Group Access Control (RBAC)**: Fine-grained Role-Based Access Control enforcing read/write permissions per `owner_group`.
 - [ ] **Authentication Tokens & OAuth2**: API token validation for HTTP/SSE MCP servers and centralized team instances.
+- [ ] **Agent Tool Integration Testing Framework**: Automated test suites verifying that AI agents (`agy`, Claude Code, GitHub Copilot, Cursor) actually invoke Gyrus CLI subcommands and MCP tools correctly when prompted with realistic engineering tasks.
+- [ ] **Session Agent Hooks & Full Setup Entrypoint**: Native session agent hooks (e.g. workspace entry & pre-session hooks) and an all-in-one setup wizard (`gyrus setup` / `gyrus init --full`) serving as a unified entrypoint for full installation and configuration (registering stdio/SSE MCP, equipping `.agents/skills/gyrus`, generating `.gyrus.yaml`, and setting up storage backends).

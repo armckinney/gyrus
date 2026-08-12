@@ -139,13 +139,22 @@ make build
 
 This compiles the standalone `gyrus` executable into the workspace root.
 
-### 2. Initialize Gyrus Storage
+### 2. Initialize Workspace
 
 Initialize Gyrus in your repository workspace:
 
 ```bash
-./gyrus init
+gyrus init
 ```
+
+Running `gyrus init` automatically:
+- Generates `.gyrus.yaml` configuration in the workspace root
+- Equips your repository with `.agents/skills/gyrus` agent skills
+- Registers stdio MCP servers for Cursor / Antigravity, Claude Desktop, OpenAI Codex, and GitHub Copilot
+
+> 📖 **Full Guide:** For advanced customization, CLI-only mode (`--no-mcp`), tool targeting (`--mcp-target claude`), and enterprise profiles (PostgreSQL, Vector, Git, S3), see the **[Gyrus Installation & Workspace Initialization Guide](file:///workspaces/gyrus/docs/.gyrus/docs/okf/armckinney/reference/guide-005-installation-and-initialization.md)**.
+
+Once initialized, AI agents have immediate access to Gyrus CLI commands and OKF frontmatter schema references.
 
 By default, Gyrus resolves storage path hierarchy in the following order:
 1. `--storage-path` CLI flag
