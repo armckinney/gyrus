@@ -70,7 +70,7 @@ func TestCLILinkAndSyncAndValidate(t *testing.T) {
 	}
 
 	// 4. gyrus validate file
-	docFile := filepath.Join(storagePath, "okf", "team", "reference", "doc-1.md")
+	docFile := filepath.Join(storagePath, "docs", "team", "reference", "doc-1.md")
 	rootCmd.SetArgs([]string{
 		"validate",
 		docFile,

@@ -94,18 +94,17 @@ The Gyrus Core Engine enforces strict validation boundaries for all OKF metadata
 When Gyrus operates in **Open Knowledge Format (OKF)** storage mode, documents are organized in an opinionated, multi-layered directory bundle structure:
 
 ```text
-okf/                            <-- Flexible top-level directory root
-└── <team>/                     <-- Security and tenant boundary (N-layers)
-      ├── reference/            <-- Global reference documents shared across projects
-      │     ├── adrs/           <-- Global Architecture Decision Records (e.g. adr-001.md)
-      │     ├── standards/      <-- Global engineering and workflow standards
-      │     ├── specifications/ <-- System specifications and core contracts
-      │     └── prds/           <-- Global product requirement documents
-      │
-      └── workspaces/           <-- Repository and project-scoped context
-            └── <repo-x>/       <-- Specific workspace instructions (e.g. repo-x specs, runbooks)
-                  ├── context.md
-                  └── notes/
+.gyrus/                         <-- Storage Root (tool metadata directory)
+├── index.db                    <-- SQLite database index
+└── docs/                       <-- Document Collection Root
+    └── <team>/                 <-- Security and tenant boundary (N-layers)
+          ├── reference/        <-- Global reference documents shared across projects
+          │     ├── adr-001.md  <-- Global Architecture Decision Records
+          │     ├── spec-001.md <-- System specifications and core contracts
+          │     └── prd-001.md  <-- Global product requirement documents
+          │
+          └── workspaces/       <-- Repository and project-scoped context
+                └── <repo-x>/   <-- Specific workspace context & runbooks
 ```
 
 ### Key Topology Principles:

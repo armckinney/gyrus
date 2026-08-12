@@ -199,7 +199,7 @@ func (s *Store) docPath(doc *gyrus.Document) string {
 		categorySubdir = string(doc.Category)
 	}
 
-	return filepath.Join(".gyrus", "docs", "okf", ownerGroup, categorySubdir, fmt.Sprintf("%s.md", doc.ID))
+	return filepath.Join(".gyrus", "docs", ownerGroup, categorySubdir, fmt.Sprintf("%s.md", doc.ID))
 }
 
 func (s *Store) findDocPathByID(id string) (string, error) {

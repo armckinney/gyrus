@@ -19,7 +19,7 @@ default_owner_group: armckinney
 ## 🗄️ Storage Providers
 
 ### 1. Local Filesystem (`localfs`) - Default
-Stores OKF Markdown documents directly in the repository filesystem (`.gyrus/docs/okf/<owner_group>/reference/<id>.md`).
+Stores OKF Markdown documents directly in the repository filesystem (`.gyrus/docs/<owner_group>/reference/<id>.md`).
 - **Zero Infra:** No external databases required.
 - **Git Native:** Files are committed directly into version control.
 

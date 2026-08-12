@@ -4,14 +4,15 @@ schemas_path: ./.gyrus/schemas
 
 storage:
   provider: localfs
-  root: ./.gyrus/docs
+  root: ./.gyrus
 
 index:
   provider: sqlite
-  dsn: ./.gyrus/docs/index.db
+  dsn: ./.gyrus/index.db
 
 graph:
   provider: sqlite
 
 search:
   provider: sqlite_fts5
+
