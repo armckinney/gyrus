@@ -17,9 +17,12 @@ type OllamaEmbedder struct {
 
 func NewOllamaEmbedder(url, model string) *OllamaEmbedder {
 	if url == "" {
-		url = "http://localhost:11434/api/embeddings"
-	} else if !strings.HasSuffix(url, "/api/embeddings") {
-		url = strings.TrimSuffix(url, "/") + "/api/embeddings"
+		url = "http://127.0.0.1:11434/api/embeddings"
+	} else {
+		url = strings.Replace(url, "localhost", "127.0.0.1", 1)
+		if !strings.HasSuffix(url, "/api/embeddings") {
+			url = strings.TrimSuffix(url, "/") + "/api/embeddings"
+		}
 	}
 	if model == "" {
 		model = "nomic-embed-text"

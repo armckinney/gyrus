@@ -40,7 +40,7 @@ Target: Expand data providers, transport interfaces, context hygiene, and embed 
 - [x] **PostgreSQL Index & Storage Driver (`postgres`)**: Centralized PostgreSQL database backend (`GYRUS-203`) for enterprise deployments using `pgx/v5`.
 - [x] **PostgreSQL FTS Search Engine (`postgres_fts`)**: Native PostgreSQL `tsvector` and `tsquery` full-text search engine (`GYRUS-204`).
 - [x] **Vector Embedding Search Driver (`vector`)**: Semantic vector search provider (`GYRUS-205`) supporting Local Ollama, OpenAI embeddings, and Reciprocal Rank Fusion (RRF) hybrid search.
-- [ ] **DevContainer Ollama Sidecar**: Implement DevContainer Docker Compose sidecar service (`ollama/ollama`) with pre-configured embedding models (`nomic-embed-text`) for zero-setup local vector search testing.
+- [x] **DevContainer Ollama Sidecar**: Implement DevContainer Docker Compose sidecar service (`ollama/ollama`) with pre-configured embedding models (`nomic-embed-text`) for zero-setup local vector search testing.
 
 ### 2.2 Transport & Networking Enhancements
 - [ ] **MCP SSE/HTTP Listener Mode (`gyrus mcp serve --transport sse`)**: Server-Sent Events (SSE) and HTTP listener mode for remote MCP server consumption over network endpoints.

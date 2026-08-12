@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/armckinney/gyrus/internal/provider/blob"
@@ -193,7 +194,11 @@ func NewSearchProvider(cfg *localfs.Config, storageRoot string) (gyrus.SearchPro
 		} else {
 			endpoint := cfg.Vector.OllamaEndpoint
 			if endpoint == "" {
-				endpoint = "http://localhost:11434/api/embeddings"
+				if host := os.Getenv("OLLAMA_HOST"); host != "" {
+					endpoint = host
+				} else {
+					endpoint = "http://localhost:11434/api/embeddings"
+				}
 			}
 			model := cfg.Vector.Model
 			if model == "" {
