@@ -8,10 +8,10 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /bin/gyrus ./cmd/gyrus
 
-# Stage 2: Minimal runtime image
+# Stage 2: Minimal production runtime image
 FROM alpine:3.20
 
-RUN apk add --no-ca-certificates ca-certificates bash curl
+RUN apk add --no-cache ca-certificates bash curl
 
 COPY --from=builder /bin/gyrus /usr/local/bin/gyrus
 

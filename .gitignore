@@ -68,7 +68,7 @@ coverage.out
 
 # Explicitly preserve codebase packages and skill paths
 !/pkg/gyrus/**
-!/skills/gyrus/**
+!/packaging/skills/**
 !/docs/agents/skills/gyrus/**
 !/.agents/skills/gyrus/**
 !*/.gyrus/**

@@ -5,7 +5,7 @@ category: technical
 type: prd
 format: ""
 owner_group: armckinney
-version: 2
+version: 3
 status: active
 tags:
   - roadmap
@@ -42,20 +42,22 @@ Target: Expand data providers, transport interfaces, context hygiene, and embed 
 - [x] **Vector Embedding Search Driver (`vector`)**: Semantic vector search provider (`GYRUS-205`) supporting Local Ollama, OpenAI embeddings, and Reciprocal Rank Fusion (RRF) hybrid search.
 - [x] **DevContainer Ollama Sidecar**: Implement DevContainer Docker Compose sidecar service (`ollama/ollama`) with pre-configured embedding models (`nomic-embed-text`) for zero-setup local vector search testing.
 
-### 2.2 Transport & Networking Enhancements
+### 2.2 Core Refactoring & OOP Architecture
+- [ ] **Refactor repo to OOP structure and cleanup**: Refactor Go core packages and CLI command handlers to clean OOP structural patterns, consolidate provider factories, and clean up technical debt.
+
+### 2.3 Transport & Networking Enhancements
 - [ ] **MCP SSE/HTTP Listener Mode (`gyrus mcp serve --transport sse`)**: Server-Sent Events (SSE) and HTTP listener mode for remote MCP server consumption over network endpoints.
 
-### 2.3 Web UI & Visualization Surface
+### 2.4 Web UI & Visualization Surface
 - [ ] **Embedded Web Dashboard (`gyrus ui`)**: Embedded single-page application (SPA) for visual graph topology exploration, ADR browsing, and document editing.
 - [ ] **Interactive Dependency Graph Visualizer**: D3.js or Cytoscape.js interactive node-edge graph visualization of document links (`depends_on`, `supersedes`, `implements`).
 - [ ] **AI Context Retrieval & Search Chatbot Agent**: Embedded conversational AI agent in the Web UI for natural language query answering, interactive context retrieval, multi-document synthesis (integrating `gyrus suggest-context`), and guided contract/ADR drafting.
 
-### 2.4 Context Hygiene & Governance
+### 2.5 Context Hygiene & Governance
 - [ ] **Stale & Low-Quality Context Cleanup**: Automated staleness detection, decay/quality scoring, garbage collection routines, and `deprecated`/`archived` state sweeps.
 
-### 2.5 Refactoring, Global Configuration & Branding
+### 2.6 Global Configuration, Packaging & Schema Storage
 - [ ] **Add Global Config support for gyrus (`~/.gyrus.yaml`)**: Support user-wide global configuration files in user home (`~/.gyrus.yaml` and `~/.config/gyrus/config.yaml`) for setting user-level defaults across workspace boundaries.
-- [ ] **Refactor repo to OOP structure and cleanup**: Refactor Go core packages and CLI command handlers to clean OOP structural patterns, consolidate provider factories, and clean up technical debt.
 - [ ] **Add demo reference to README**: Add interactive demo recording/GIF showcase to `README.md` highlighting `gyrus init`, `gyrus suggest-context`, and agent MCP workflows.
 - [ ] **Agent Plugin Packaging**: Package Gyrus skills, subagents, and MCP tools into official Agent Plugins supporting both the [Agent Plugins Standard](https://agent-plugins.org/) format (Google Developers: https://developers.googleblog.com/agent-plugins-package-your-skills-tools-and-more/) and full compatibility with the [Google Antigravity CLI Spec](https://antigravity.google/docs/cli/plugins) via `plugin.json` for zero-config agent discovery, distribution, and runtime sidecar loading.
 - [ ] **Persistence Layer Schema Storage & Remote Linkage**: Implement core interface (CLI and MCP commands) for storing OKF contract schemas directly in the persistence layer (`storage_provider`), with schemas stored remotely and linked to the active storage provider via enforced locations (`.gyrus/schemas/`).
