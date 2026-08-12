@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/armckinney/gyrus/internal/provider/localfs"
-	"github.com/armckinney/gyrus/internal/provider/sqlite"
+	"github.com/armckinney/gyrus/internal/provider/index/sqlite"
+	"github.com/armckinney/gyrus/internal/provider/storage/localfs"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 

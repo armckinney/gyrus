@@ -6,17 +6,22 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/armckinney/gyrus/internal/provider/blob"
-	"github.com/armckinney/gyrus/internal/provider/git"
-	"github.com/armckinney/gyrus/internal/provider/localfs"
-	"github.com/armckinney/gyrus/internal/provider/postgres"
-	"github.com/armckinney/gyrus/internal/provider/sqlite"
-	"github.com/armckinney/gyrus/internal/provider/vector"
+	graphpostgres "github.com/armckinney/gyrus/internal/provider/graph/postgres"
+	graphsqlite "github.com/armckinney/gyrus/internal/provider/graph/sqlite"
+	indexpostgres "github.com/armckinney/gyrus/internal/provider/index/postgres"
+	indexsqlite "github.com/armckinney/gyrus/internal/provider/index/sqlite"
+	fts5search "github.com/armckinney/gyrus/internal/provider/search/fts5"
+	postgresfts "github.com/armckinney/gyrus/internal/provider/search/postgres_fts"
+	vectorsearch "github.com/armckinney/gyrus/internal/provider/search/vector"
+	"github.com/armckinney/gyrus/internal/provider/storage/blob"
+	"github.com/armckinney/gyrus/internal/provider/storage/git"
+	"github.com/armckinney/gyrus/internal/provider/storage/localfs"
+	"github.com/armckinney/gyrus/internal/provider/storage/postgres"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
 // NewDocumentStore creates the appropriate gyrus.DocumentStore implementation
-// based on the configuration settings in .gyrus.yaml.
+// based on configuration settings in .gyrus.yaml.
 func NewDocumentStore(cfg *localfs.Config, storageRoot string) (gyrus.DocumentStore, error) {
 	if cfg == nil {
 		cfg = &localfs.Config{}
@@ -122,11 +127,11 @@ func NewIndexStore(cfg *localfs.Config, storageRoot string) (gyrus.IndexStore, e
 		if cfg.Postgres.ConnectionString == "" {
 			return nil, fmt.Errorf("postgres index provider selected but postgres.connection_string is empty")
 		}
-		return postgres.NewStore(context.Background(), cfg.Postgres.ConnectionString)
+		return indexpostgres.NewIndexer(context.Background(), cfg.Postgres.ConnectionString)
 
 	default:
 		dbPath := filepath.Join(storageRoot, "index.db")
-		return sqlite.NewIndexer(dbPath)
+		return indexsqlite.NewIndexer(dbPath)
 	}
 }
 
@@ -142,36 +147,20 @@ func NewGraphStore(cfg *localfs.Config, storageRoot string) (gyrus.GraphStore, e
 		if cfg.Postgres.ConnectionString == "" {
 			return nil, fmt.Errorf("postgres index provider selected but postgres.connection_string is empty")
 		}
-		return postgres.NewStore(context.Background(), cfg.Postgres.ConnectionString)
+		pgIndexer, err := indexpostgres.NewIndexer(context.Background(), cfg.Postgres.ConnectionString)
+		if err != nil {
+			return nil, err
+		}
+		return graphpostgres.NewGraphStore(pgIndexer.Pool()), nil
 
 	default:
 		dbPath := filepath.Join(storageRoot, "index.db")
-		return sqlite.NewIndexer(dbPath)
+		indexer, err := indexsqlite.NewIndexer(dbPath)
+		if err != nil {
+			return nil, err
+		}
+		return graphsqlite.NewGraphStore(indexer.DB()), nil
 	}
-}
-
-type sqliteSearchAdapter struct {
-	indexer *sqlite.Indexer
-}
-
-func (a *sqliteSearchAdapter) Search(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
-	return a.indexer.Search(ctx, gyrus.SearchQuery{
-		Query:      query,
-		Filter:     filter,
-		MaxResults: 50,
-	})
-}
-
-type postgresSearchAdapter struct {
-	store *postgres.Store
-}
-
-func (a *postgresSearchAdapter) Search(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
-	return a.store.Search(ctx, gyrus.SearchQuery{
-		Query:      query,
-		Filter:     filter,
-		MaxResults: 50,
-	})
 }
 
 // NewSearchProvider creates the appropriate gyrus.SearchProvider implementation
@@ -184,13 +173,13 @@ func NewSearchProvider(cfg *localfs.Config, storageRoot string) (gyrus.SearchPro
 	switch cfg.SearchProvider {
 	case "vector":
 		dbPath := filepath.Join(storageRoot, "index.db")
-		sqliteStore, err := sqlite.NewIndexer(dbPath)
+		sqliteStore, err := indexsqlite.NewIndexer(dbPath)
 		if err != nil {
 			return nil, err
 		}
-		var embedder vector.EmbeddingProvider
+		var embedder vectorsearch.EmbeddingProvider
 		if cfg.Vector.EmbeddingProvider == "openai" {
-			embedder = vector.NewOpenAIEmbedder("")
+			embedder = vectorsearch.NewOpenAIEmbedder("")
 		} else {
 			endpoint := cfg.Vector.OllamaEndpoint
 			if endpoint == "" {
@@ -204,12 +193,11 @@ func NewSearchProvider(cfg *localfs.Config, storageRoot string) (gyrus.SearchPro
 			if model == "" {
 				model = "nomic-embed-text"
 			}
-			embedder = vector.NewOllamaEmbedder(endpoint, model)
+			embedder = vectorsearch.NewOllamaEmbedder(endpoint, model)
 		}
-		adapter := &sqliteSearchAdapter{indexer: sqliteStore}
-		vStore := vector.NewStore(adapter, embedder)
+		ftsAdapter := fts5search.NewSearchProvider(sqliteStore)
+		vStore := vectorsearch.NewStore(ftsAdapter, embedder)
 
-		// Load documents from storage into vector store for similarity scoring
 		store, err := NewDocumentStore(cfg, storageRoot)
 		if err == nil {
 			if docs, err := sqliteStore.Search(context.Background(), gyrus.SearchQuery{MaxResults: 100}); err == nil {
@@ -226,18 +214,14 @@ func NewSearchProvider(cfg *localfs.Config, storageRoot string) (gyrus.SearchPro
 		if cfg.Postgres.ConnectionString == "" {
 			return nil, fmt.Errorf("postgres_fts search provider selected but postgres.connection_string is empty")
 		}
-		store, err := postgres.NewStore(context.Background(), cfg.Postgres.ConnectionString)
-		if err != nil {
-			return nil, err
-		}
-		return &postgresSearchAdapter{store: store}, nil
+		return postgresfts.NewSearchProvider(context.Background(), cfg.Postgres.ConnectionString)
 
 	default: // "sqlite" or empty
 		dbPath := filepath.Join(storageRoot, "index.db")
-		indexer, err := sqlite.NewIndexer(dbPath)
+		indexer, err := indexsqlite.NewIndexer(dbPath)
 		if err != nil {
 			return nil, err
 		}
-		return &sqliteSearchAdapter{indexer: indexer}, nil
+		return fts5search.NewSearchProvider(indexer), nil
 	}
 }

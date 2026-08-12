@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
-	"time"
 
-	"github.com/armckinney/gyrus/internal/okf"
+	"github.com/armckinney/gyrus/internal/domain/okf"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -109,12 +107,10 @@ func (s *Server) handleCreate(ctx context.Context, req mcp.CallToolRequest) (*mc
 		Content:    content,
 	}
 
-	ref, err := s.store.Create(ctx, doc)
+	ref, err := s.engine.Create(ctx, doc)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("create failed: %v", err)), nil
 	}
-
-	_ = s.indexer.Index(ctx, doc)
 
 	data, _ := json.Marshal(ref)
 	return mcp.NewToolResultText(string(data)), nil
@@ -122,7 +118,7 @@ func (s *Server) handleCreate(ctx context.Context, req mcp.CallToolRequest) (*mc
 
 func (s *Server) handleGet(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	id := getArgString(req, "id")
-	doc, err := s.store.Get(ctx, id)
+	doc, err := s.engine.Get(ctx, id)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("document not found: %v", err)), nil
 	}
@@ -136,16 +132,12 @@ func (s *Server) handleSearch(ctx context.Context, req mcp.CallToolRequest) (*mc
 	catStr := getArgString(req, "category")
 	typeStr := getArgString(req, "type")
 
-	q := gyrus.SearchQuery{
-		Query: queryStr,
-		Filter: gyrus.SearchFilter{
-			Category: gyrus.Category(catStr),
-			Type:     gyrus.DocumentType(typeStr),
-		},
-		MaxResults: 10,
+	filter := gyrus.SearchFilter{
+		Category: gyrus.Category(catStr),
+		Type:     gyrus.DocumentType(typeStr),
 	}
 
-	results, err := s.indexer.Search(ctx, q)
+	results, err := s.engine.Search(ctx, queryStr, filter)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("search failed: %v", err)), nil
 	}
@@ -156,19 +148,12 @@ func (s *Server) handleSearch(ctx context.Context, req mcp.CallToolRequest) (*mc
 
 func (s *Server) handleSuggest(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	prompt := getArgString(req, "prompt")
-	results, err := s.indexer.Search(ctx, gyrus.SearchQuery{Query: prompt, MaxResults: 5})
+	contextLayer, err := s.engine.SuggestContext(ctx, prompt, "", 5)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("suggest failed: %v", err)), nil
 	}
 
-	var sb strings.Builder
-	for _, res := range results {
-		if doc, err := s.store.Get(ctx, res.Document.ID); err == nil {
-			sb.WriteString(fmt.Sprintf("--- %s (%s) ---\n%s\n\n", doc.ID, doc.Title, doc.Content))
-		}
-	}
-
-	return mcp.NewToolResultText(sb.String()), nil
+	return mcp.NewToolResultText(contextLayer), nil
 }
 
 func (s *Server) handleLink(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -181,15 +166,7 @@ func (s *Server) handleLink(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 		relType = gyrus.RelDependsOn
 	}
 
-	edge := gyrus.DocumentEdge{
-		FromDocumentID:   fromID,
-		ToDocumentID:     toID,
-		RelationshipType: relType,
-		CreatedBy:        "mcp",
-		CreatedAt:        time.Now().Truncate(time.Second),
-	}
-
-	if err := s.indexer.UpsertEdges(ctx, []gyrus.DocumentEdge{edge}); err != nil {
+	if err := s.engine.Link(ctx, fromID, toID, relType); err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("link failed: %v", err)), nil
 	}
 
@@ -198,10 +175,9 @@ func (s *Server) handleLink(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 
 func (s *Server) handleArchive(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	id := getArgString(req, "id")
-	if err := s.store.Archive(ctx, id); err != nil {
+	if err := s.engine.Archive(ctx, id); err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("archive failed: %v", err)), nil
 	}
-	_ = s.indexer.Remove(ctx, id)
 
 	return mcp.NewToolResultText(fmt.Sprintf("Archived document '%s'", id)), nil
 }
