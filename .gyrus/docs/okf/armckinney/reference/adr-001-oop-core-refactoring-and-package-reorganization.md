@@ -6,9 +6,9 @@ type: adr
 format: ""
 owner_group: armckinney
 version: 1
-status: proposed
-last_modified_by: ""
-last_updated: 2026-08-12T03:06:59Z
+status: accepted
+last_modified_by: armckinney
+last_updated: 2026-08-12T04:14:35Z
 tags:
     - adr
     - refactoring

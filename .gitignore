@@ -11,6 +11,8 @@
 # Logs
 *.log
 *.db
+*.db-wal
+*.db-shm
 
 # VS Code
 .vscode/*
