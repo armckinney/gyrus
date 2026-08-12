@@ -3,10 +3,9 @@ package mcp
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
-	"github.com/armckinney/gyrus/internal/provider/localfs"
-	"github.com/armckinney/gyrus/internal/provider/sqlite"
+	"github.com/armckinney/gyrus/internal/app"
+	"github.com/armckinney/gyrus/internal/domain/lifecycle"
 	"github.com/mark3labs/mcp-go/server"
 )
 
@@ -14,35 +13,29 @@ import (
 type Server struct {
 	mcpServer   *server.MCPServer
 	storageRoot string
-	store       *localfs.Store
-	indexer     *sqlite.Indexer
+	app         *app.App
+	engine      *lifecycle.Engine
 }
 
 // NewServer initializes a new MCP stdio server targeting storageRoot.
 func NewServer(storageRoot string) (*Server, error) {
-	absRoot, err := localfs.ResolveStoragePath(storageRoot)
+	application, err := app.New(storageRoot)
 	if err != nil {
-		return nil, fmt.Errorf("failed resolving storage root: %w", err)
+		return nil, fmt.Errorf("failed creating app container: %w", err)
 	}
 
-	store, err := localfs.NewStore(absRoot)
+	engine, err := application.Engine()
 	if err != nil {
-		return nil, fmt.Errorf("failed initializing localfs store: %w", err)
-	}
-
-	dbPath := filepath.Join(absRoot, "index.db")
-	indexer, err := sqlite.NewIndexer(dbPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed initializing sqlite indexer: %w", err)
+		return nil, fmt.Errorf("failed initializing lifecycle engine: %w", err)
 	}
 
 	mcpServer := server.NewMCPServer("gyrus-memory", "1.0.0")
 
 	s := &Server{
 		mcpServer:   mcpServer,
-		storageRoot: absRoot,
-		store:       store,
-		indexer:     indexer,
+		storageRoot: application.StorageRoot(),
+		app:         application,
+		engine:      engine,
 	}
 
 	s.registerTools()
@@ -54,6 +47,5 @@ func NewServer(storageRoot string) (*Server, error) {
 
 // ServeStdio starts serving MCP requests over stdio.
 func (s *Server) ServeStdio(ctx context.Context) error {
-	defer s.indexer.Close()
 	return server.ServeStdio(s.mcpServer)
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/armckinney/gyrus/internal/okf"
+	"github.com/armckinney/gyrus/internal/domain/okf"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
@@ -26,7 +26,7 @@ func (s *Server) handleReadResource(ctx context.Context, req mcp.ReadResourceReq
 		return nil, fmt.Errorf("invalid document URI: %s", uri)
 	}
 
-	doc, err := s.store.Get(ctx, id)
+	doc, err := s.engine.Get(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("document not found: %w", err)
 	}

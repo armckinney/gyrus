@@ -11,6 +11,8 @@
 # Logs
 *.log
 *.db
+*.db-wal
+*.db-shm
 
 # VS Code
 .vscode/*
@@ -68,7 +70,7 @@ coverage.out
 
 # Explicitly preserve codebase packages and skill paths
 !/pkg/gyrus/**
-!/skills/gyrus/**
+!/packaging/skills/**
 !/docs/agents/skills/gyrus/**
 !/.agents/skills/gyrus/**
 !*/.gyrus/**

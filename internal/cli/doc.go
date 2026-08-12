@@ -1,2 +1,2 @@
-// Package cli contains Cobra command definitions, flag parsers, and exit code mappings for the gyrus executable.
+// Package commands contains individual Cobra command definitions and CLI handlers for gyrus CLI executable.
 package cli

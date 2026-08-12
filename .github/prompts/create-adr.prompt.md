@@ -1,1 +1,0 @@
-../../docs/agents/skills/create-adr/SKILL.md

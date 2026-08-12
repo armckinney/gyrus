@@ -1,10 +1,15 @@
-# Gyrus Makefile
+.PHONY: all fmt lint test test-integration test-e2e clean build run
 
-all: build
+all: clean fmt lint test build
 
-build:
-	@echo "Building gyrus binary..."
-	@go build -o gyrus cmd/gyrus/main.go
+fmt:
+	@echo "Formatting Go code..."
+	@go fmt ./...
+
+lint:
+	@echo "Linting Go code..."
+	@gofmt -l .
+	@go vet ./...
 
 test:
 	@echo "Running Gyrus tests..."
@@ -16,20 +21,13 @@ test-integration: build
 
 test-e2e: test-integration
 
-fmt:
-	@echo "Formatting Go code..."
-	@go fmt ./...
-
-lint:
-	@echo "Linting Go code..."
-	@gofmt -l .
-	@go vet ./...
-
 clean:
 	@echo "Cleaning build artifacts..."
 	@rm -rf gyrus bin/ dist/ coverage.out coverage.html
 
+build:
+	@echo "Building gyrus binary..."
+	@go build -o gyrus cmd/gyrus/main.go
+
 run:
 	@go run cmd/gyrus/main.go
-
-.PHONY: all build test test-integration test-e2e fmt lint clean run

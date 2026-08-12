@@ -63,7 +63,7 @@ jobs:
     uses: armckinney/cicd/.github/workflows/rwf-container-build-and-push.yaml@main
     secrets: inherit
     with:
-      dockerfile: Dockerfile
+      dockerfile: packaging/Dockerfile
       image_name: gyrus
       image_tag: ${{ needs.release-cli.outputs.version }}
       platforms: linux/amd64,linux/arm64

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/armckinney/gyrus/internal/lifecycle"
-	"github.com/armckinney/gyrus/internal/okf"
+	"github.com/armckinney/gyrus/internal/domain/lifecycle"
+	"github.com/armckinney/gyrus/internal/domain/okf"
 )
 
 const (
