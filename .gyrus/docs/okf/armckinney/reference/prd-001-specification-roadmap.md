@@ -5,7 +5,7 @@ category: technical
 type: prd
 format: ""
 owner_group: armckinney
-version: 3
+version: 4
 status: active
 tags:
   - roadmap
@@ -43,10 +43,10 @@ Target: Expand data providers, transport interfaces, context hygiene, and embed 
 - [x] **DevContainer Ollama Sidecar**: Implement DevContainer Docker Compose sidecar service (`ollama/ollama`) with pre-configured embedding models (`nomic-embed-text`) for zero-setup local vector search testing.
 
 ### 2.2 Core Refactoring & OOP Architecture
-- [ ] **Refactor repo to OOP structure and cleanup**: Refactor Go core packages and CLI command handlers to clean OOP structural patterns, consolidate provider factories, and clean up technical debt.
+- [x] **Refactor repo to OOP structure and cleanup**: Refactor Go core packages into clean layered OOP architectures (`internal/domain/okf`, `internal/domain/lifecycle`, `internal/format`, `internal/provider/{storage,search,index,graph}`, `internal/app`, `internal/cli`, `internal/mcp`), consolidate provider factories, add shared connection pools (`internal/provider/db`), and streamline packaging.
 
-### 2.3 Transport & Networking Enhancements
-- [ ] **MCP SSE/HTTP Listener Mode (`gyrus mcp serve --transport sse`)**: Server-Sent Events (SSE) and HTTP listener mode for remote MCP server consumption over network endpoints.
+### 2.3 Transport & Networking
+- [x] **Standard Stdio MCP Transport (`gyrus mcp serve`)**: High-performance, zero-latency Stdio (standard I/O) process transport for local agent integration (`agy`, Claude Code, Cursor, Copilot) and containerized MCP execution (`docker run -i ghcr.io/armckinney/gyrus:latest`).
 
 ### 2.4 Web UI & Visualization Surface
 - [ ] **Embedded Web Dashboard (`gyrus ui`)**: Embedded single-page application (SPA) for visual graph topology exploration, ADR browsing, and document editing.
