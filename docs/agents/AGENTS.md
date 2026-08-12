@@ -18,12 +18,12 @@ You are working with this repository. Always reference the instruction files und
 ## Key Principles
 
 1. **Instructions First**: Check matching path-scoped instructions before changing code.
-2. **ADR Alignment**: Consult ADRs in [docs/architecture-design-records/](file:///workspaces/infrastructure/docs/architecture-design-records/) before making architectural changes.
-3. **Write ADRs**: Document all significant design choices as new ADRs.
+2. **ADR Alignment**: Consult ADRs in [.gyrus/docs/armckinney/reference/](file:///workspaces/gyrus/.gyrus/docs/armckinney/reference/) before making architectural changes.
+3. **Write ADRs**: Document all significant design choices as new ADRs in Gyrus.
 
 ## Architecture Design Records (ADR)
 
-- **Immutable Log**: All architectural design decisions must be documented sequentially under [docs/architecture-design-records/](file:///workspaces/infrastructure/docs/architecture-design-records/) using the three-digit sequential naming format: `adr-###-name-of-adr.md` (e.g. `adr-001-standardized-naming.md`). Once accepted, they serve as the immutable log of architecture history.
+- **Immutable Log**: All architectural design decisions must be documented sequentially under [.gyrus/docs/armckinney/reference/](file:///workspaces/gyrus/.gyrus/docs/armckinney/reference/) using the OKF ADR format (`adr-###-name-of-adr.md`). Once accepted, they serve as the immutable log of architecture history in Gyrus context memory.
 
 ## Terraform Module Structure
 

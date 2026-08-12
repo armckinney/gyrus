@@ -42,7 +42,7 @@ func (s *Store) getDocPath(doc *gyrus.Document) string {
 		categorySubdir = "workspaces/main"
 	}
 
-	return filepath.Join(s.rootDir, "okf", ownerGroup, categorySubdir, fmt.Sprintf("%s.md", doc.ID))
+	return filepath.Join(s.rootDir, "docs", ownerGroup, categorySubdir, fmt.Sprintf("%s.md", doc.ID))
 }
 
 func (s *Store) getDocPathByID(id string) (string, error) {

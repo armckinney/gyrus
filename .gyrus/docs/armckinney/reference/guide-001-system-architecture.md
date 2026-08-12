@@ -124,10 +124,10 @@ Enforces valid state transitions:
 When storing documents locally, Gyrus arranges files into a structured directory hierarchy under the storage root:
 
 ```text
-<storage-root>/
+.gyrus/
 ├── config.yaml
 ├── index.db
-└── okf/
+└── docs/
     └── <owner_group>/ (Security boundary)
           ├── reference/ (Global ref docs: ADRs, Standards, Specs)
           │     ├── adr-001-storage.md

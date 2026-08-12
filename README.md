@@ -61,7 +61,7 @@ Rather than replacing your existing tools or forcing a migration to a proprietar
 | **Vector DBs & RAG Frameworks** *(e.g. Pinecone, Chroma)* | High-dimensional semantic similarity search | Raw text chunks lack contract boundaries, explicit edges (`depends_on`), or state governance | Uses search/vector/graph DBs as replaceable derived indexes beneath a governed context model |
 | **Gyrus Context Engine** | **Shared, governed, portable context across humans & heterogeneous AI agents** | *Complements existing tools rather than replacing them* | **Provides canonical OKF contracts, context resolution, provider neutrality, & zero-infra local/cloud scale** |
 
-> 📖 *For a complete strategic comparison and deep-dive market analysis, see the official PRD: [Gyrus Product Value Proposition & Strategic Positioning](docs/.gyrus/docs/okf/armckinney/reference/prd-002-value-proposition-positioning.md).*
+> 📖 *For a complete strategic comparison and deep-dive market analysis, see the official PRD: [Gyrus Product Value Proposition & Strategic Positioning](.gyrus/docs/armckinney/reference/prd-002-value-proposition-positioning.md).*
 
 ---
 
@@ -152,7 +152,7 @@ Running `gyrus init` automatically:
 - Equips your repository with `.agents/skills/gyrus` agent skills
 - Registers stdio MCP servers for Cursor / Antigravity, Claude Desktop, OpenAI Codex, and GitHub Copilot
 
-> 📖 **Full Guide:** For advanced customization, CLI-only mode (`--no-mcp`), tool targeting (`--mcp-target claude`), and enterprise profiles (PostgreSQL, Vector, Git, S3), see the **[Gyrus Installation & Workspace Initialization Guide](file:///workspaces/gyrus/docs/.gyrus/docs/okf/armckinney/reference/guide-005-installation-and-initialization.md)**.
+> 📖 **Full Guide:** For advanced customization, CLI-only mode (`--no-mcp`), tool targeting (`--mcp-target claude`), and enterprise profiles (PostgreSQL, Vector, Git, S3), see the **[Gyrus Installation & Workspace Initialization Guide](file:///workspaces/gyrus/.gyrus/docs/armckinney/reference/guide-005-installation-and-initialization.md)**.
 
 Once initialized, AI agents have immediate access to Gyrus CLI commands and OKF frontmatter schema references.
 
@@ -195,10 +195,10 @@ Suggest linearized context matching an agent prompt:
 
 ## 📚 Documentation Sitemap
 
-- 🏛️ **[System Architecture](docs/.gyrus/docs/okf/armckinney/reference/guide-001-system-architecture.md):** Complete guide to the Gyrus Core SDK, Provider Framework, OKF directory topology, and state machines.
-- ⚙️ **[Configuration Reference](docs/.gyrus/docs/okf/armckinney/reference/tech-ref-002-config-schema.md):** Comprehensive reference for all `.gyrus.yaml` options, profiles, and path precedence.
-- 🛠️ **[CLI Reference Manual](docs/.gyrus/docs/okf/armckinney/reference/tech-ref-001-cli-manual.md):** Detailed argument and flag reference for all 11 `gyrus` CLI subcommands and exit codes.
-- 🔌 **[MCP Server Setup Guide](docs/.gyrus/docs/okf/armckinney/reference/guide-004-mcp-server-setup.md):** Native and Docker containerized MCP stdio server setup for Cursor, Claude Desktop, and VS Code.
-- 🤖 **[Agent Skills Setup Guide](docs/.gyrus/docs/okf/armckinney/reference/guide-003-agent-skills-setup.md):** Instructions for copying `.agents/skills/gyrus/SKILL.md` into code repositories for Claude Code and terminal agents.
-- 📑 **[Value Proposition & Strategic Positioning PRD](docs/.gyrus/docs/okf/armckinney/reference/prd-002-value-proposition-positioning.md):** Comprehensive market-wide strategic comparison PRD of Gyrus vs enterprise context engines, vector DBs, memory platforms, and agent skills.
-- 📋 **[Specification Implementation Roadmap](docs/.gyrus/docs/okf/armckinney/reference/prd-001-specification-roadmap.md):** Master roadmap across Phase 1 MVP, Phase 2 Version 1.0, and Phase 3 Future Extensions.
+- 🏛️ **[System Architecture](.gyrus/docs/armckinney/reference/guide-001-system-architecture.md):** Complete guide to the Gyrus Core SDK, Provider Framework, OKF directory topology, and state machines.
+- ⚙️ **[Configuration Reference](.gyrus/docs/armckinney/reference/tech-ref-002-config-schema.md):** Comprehensive reference for all `.gyrus.yaml` options, profiles, and path precedence.
+- 🛠️ **[CLI Reference Manual](.gyrus/docs/armckinney/reference/tech-ref-001-cli-manual.md):** Detailed argument and flag reference for all 11 `gyrus` CLI subcommands and exit codes.
+- 🔌 **[MCP Server Setup Guide](.gyrus/docs/armckinney/reference/guide-004-mcp-server-setup.md):** Native and Docker containerized MCP stdio server setup for Cursor, Claude Desktop, and VS Code.
+- 🤖 **[Agent Skills Setup Guide](.gyrus/docs/armckinney/reference/guide-003-agent-skills-setup.md):** Instructions for copying `.agents/skills/gyrus/SKILL.md` into code repositories for Claude Code and terminal agents.
+- 📑 **[Value Proposition & Strategic Positioning PRD](.gyrus/docs/armckinney/reference/prd-002-value-proposition-positioning.md):** Comprehensive market-wide strategic comparison PRD of Gyrus vs enterprise context engines, vector DBs, memory platforms, and agent skills.
+- 📋 **[Specification Implementation Roadmap](.gyrus/docs/armckinney/reference/prd-001-specification-roadmap.md):** Master roadmap across Phase 1 MVP, Phase 2 Version 1.0, and Phase 3 Future Extensions.
