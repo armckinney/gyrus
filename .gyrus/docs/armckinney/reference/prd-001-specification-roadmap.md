@@ -90,6 +90,10 @@ Target: Expand data providers, transport interfaces, backend provider IaC, test 
   - **CI Validation & QA Testing Registration**: Register test module instantiations in test configuration (`tests.tf`) to enforce linting (`tflint`, `terraform validate`), security static analysis (`tfsec`/`checkov`), and validation during CI static-analysis QA checks.
   - *Target Test Requirements*: `terraform fmt -check`, `terraform validate`, and `tflint` syntax/linting assertions; `tfsec`/`checkov` security scanning; automated provisioning and destroy test harness against test environments and local cloud emulators (LocalStack, Azurite, GCP Storage Emulator) and containerized PostgreSQL.
 
+### 2.10 Repository-Focused Context & Reference Scoping
+- [ ] **Workspace & Repository-Scoped Context Retrieval**: Scope context retrieval in `gyrus suggest-context` and `gyrus search` to prioritize local workspace repository context (codebase contracts, active PRDs, workspace ADRs) first before referencing broader contexts.
+- [ ] **Reference Fallback & Cross-Boundary Retrieval**: Implement hierarchical search scoring and reference resolution that isolates local workspace boundaries while cleanly linking back to global technical references, enterprise standards, and upstream governance models.
+
 ---
 
 ## 🔮 Phase 3: Future & Enterprise Extensions
