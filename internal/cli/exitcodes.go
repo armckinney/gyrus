@@ -33,6 +33,11 @@ func MapErrorToExitCode(err error) int {
 		return ExitTransitionError
 	}
 
+	var immutErr *lifecycle.ImmutabilityError
+	if errors.As(err, &immutErr) {
+		return ExitTransitionError
+	}
+
 	errMsg := err.Error()
 	if strings.Contains(errMsg, "concurrency error") || strings.Contains(errMsg, "expected version") {
 		return ExitConcurrencyError
