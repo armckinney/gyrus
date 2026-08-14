@@ -1,6 +1,6 @@
 ---
 id: prd-001-specification-roadmap
-title: Gyrus Specification Implementation Roadmap & TODOs
+title: Gyrus Specification Implementation Roadmap
 category: technical
 type: prd
 format: ""
