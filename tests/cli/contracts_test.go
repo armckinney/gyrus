@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 	defer os.RemoveAll(tempDir)
 
 	binPath := filepath.Join(tempDir, "gyrus")
-	buildCmd := exec.Command("go", "build", "-o", binPath, "cmd/gyrus/main.go")
+	buildCmd := exec.Command("go", "build", "-buildvcs=false", "-o", binPath, "cmd/gyrus/main.go")
 	buildCmd.Dir = repoRoot
 	if out, err := buildCmd.CombinedOutput(); err != nil {
 		panic("failed building gyrus binary for tests: " + string(out))

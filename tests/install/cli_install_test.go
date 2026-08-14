@@ -77,7 +77,7 @@ func TestStaticBinaryBuild(t *testing.T) {
 	tempDir := t.TempDir()
 	binPath := filepath.Join(tempDir, "gyrus_static")
 
-	cmd := exec.Command("go", "build", "-trimpath", "-ldflags=-s -w", "-o", binPath, "./cmd/gyrus")
+	cmd := exec.Command("go", "build", "-buildvcs=false", "-trimpath", "-ldflags=-s -w", "-o", binPath, "./cmd/gyrus")
 	cmd.Dir = repoRoot
 	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 

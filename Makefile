@@ -29,7 +29,7 @@ clean:
 
 build:
 	@echo "Building gyrus binary..."
-	@go build -o gyrus cmd/gyrus/main.go
+	@go build -buildvcs=false -o gyrus cmd/gyrus/main.go
 
 run:
 	@go run cmd/gyrus/main.go

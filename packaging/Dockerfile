@@ -6,7 +6,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /bin/gyrus ./cmd/gyrus
+RUN CGO_ENABLED=0 GOOS=linux go build -buildvcs=false -trimpath -ldflags="-s -w" -o /bin/gyrus ./cmd/gyrus
 
 # Stage 2: Minimal production runtime image
 FROM alpine:3.20

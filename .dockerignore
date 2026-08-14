@@ -1,6 +1,11 @@
-# remove everything by default
-**
-
-# include go.mod and go.sum
-!go.mod
-!go.sum
+.git
+.github
+.devcontainer
+.gyrus
+.agents
+bin/
+dist/
+coverage.out
+coverage.html
+gyrus
+*.tmp
