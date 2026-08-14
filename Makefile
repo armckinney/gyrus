@@ -1,4 +1,4 @@
-.PHONY: all fmt lint test test-integration test-e2e clean build run
+.PHONY: all fmt lint test test-unit test-integration clean build run
 
 all: clean fmt lint test build
 
@@ -12,14 +12,16 @@ lint:
 	@go vet ./...
 
 test:
-	@echo "Running Gyrus tests..."
+	@echo "Running all Gyrus tests..."
 	@go test ./... -v
 
-test-integration: build
-	@echo "Running Live Antigravity Integration Tests..."
-	@RUN_INTEGRATION_TESTS=1 go test ./tests/skills/... -v -run TestAntigravityIntegration
+test-unit:
+	@echo "Running Unit Tests (internal/...)..."
+	@go test ./internal/... -v
 
-test-e2e: test-integration
+test-integration: build
+	@echo "Running Integration Tests (tests/...)..."
+	@go test ./tests/... -v
 
 clean:
 	@echo "Cleaning build artifacts..."
