@@ -5,12 +5,15 @@ category: technical
 type: prd
 format: ""
 owner_group: armckinney
-version: 10
+version: 11
 status: active
 tags:
   - roadmap
   - release-phases
   - specification
+  - terraform
+  - iac
+  - infrastructure
 dependencies: []
 ---
 
@@ -32,7 +35,7 @@ Target: Complete core automated release workflows and visual branding to finaliz
 
 ## 🌟 Phase 2: Version 1.0 Release Scope
 
-Target: Expand data providers, transport interfaces, context hygiene, test suite modernization, agent plugin distribution, global config, embedded visualization surface, and repository-scoped context retrieval.
+Target: Expand data providers, transport interfaces, backend provider IaC, context hygiene, test suite modernization, agent plugin distribution, global config, embedded visualization surface, and repository-scoped context retrieval.
 
 ### 2.1 Additional Storage & Search Provider Drivers
 - [x] **Git Storage Driver (`git`)**: Direct remote Git repository persistence via `go-git` (`GYRUS-201`) without requiring local workspace clones.
@@ -81,6 +84,15 @@ Target: Expand data providers, transport interfaces, context hygiene, test suite
 - [ ] **Workspace & Repository-Scoped Context Retrieval**: Scope context retrieval in `gyrus suggest-context` and `gyrus search` to prioritize local workspace repository context (codebase contracts, active PRDs, workspace ADRs) first before referencing broader contexts.
 - [ ] **Reference Fallback & Cross-Boundary Retrieval**: Implement hierarchical search scoring and reference resolution that isolates local workspace boundaries while cleanly linking back to global technical references, enterprise standards, and upstream governance models.
   - *Target Test Requirements*: Scoped search ranking tests asserting local workspace context scores higher than external references, and fallback resolution tests ensuring cross-repo links resolve cleanly.
+
+### 2.11 Terraform Infrastructure as Code (IaC) for Backend Providers
+- [ ] **Multi-Cloud Storage & Database Infrastructure Modules**: Build reusable, production-ready Terraform modules (`terraform/modules/`) conforming strictly to repository module structure guidelines (`main.tf`, `locals.tf`, `variables.tf`, `outputs.tf`, `<resource_type>.tf`, standardized naming with `module "std_names"`, and standardized resource tagging):
+  - **AWS S3 Object Storage (`storage_aws_s3`)**: Provisions S3 bucket, KMS key / AES-256 server-side encryption, bucket versioning, lifecycle tiering/expiration policies, bucket public access block, and least-privilege IAM policies for Gyrus cloud blob storage.
+  - **Azure Blob Storage (`storage_azure_blob`)**: Provisions Azure Resource Group, Storage Account, Blob Containers, TLS 1.3 enforcement, network firewall/private endpoint rules, and Managed Identity / RBAC role assignments (`Storage Blob Data Contributor`).
+  - **Google Cloud Storage (`storage_gcp_gcs`)**: Provisions GCS bucket, uniform bucket-level access, object versioning, CMEK/Google-managed encryption, and Service Account IAM role bindings.
+  - **Enterprise PostgreSQL & Vector Search (`database_postgres`)**: Provisions managed PostgreSQL instances (AWS RDS/Aurora PostgreSQL, Azure Database for PostgreSQL Flexible Server, GCP Cloud SQL PostgreSQL) configured with high availability, automated backups, connection pooling, and pre-activated `pgvector` and `pg_trgm` extensions for Gyrus index, graph, and semantic vector search.
+  - **CI Validation & QA Testing Registration**: Register test module instantiations in test configuration (`tests.tf`) to enforce linting (`tflint`, `terraform validate`), security static analysis (`tfsec`/`checkov`), and validation during CI static-analysis QA checks.
+  - *Target Test Requirements*: `terraform fmt -check`, `terraform validate`, and `tflint` syntax/linting assertions; `tfsec`/`checkov` security scanning; automated provisioning and destroy test harness against test environments and local cloud emulators (LocalStack, Azurite, GCP Storage Emulator) and containerized PostgreSQL.
 
 ---
 

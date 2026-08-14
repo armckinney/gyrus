@@ -5,7 +5,7 @@ category: technical
 type: standards
 format: markdown
 owner_group: armckinney
-version: 1
+version: 3
 status: active
 tags:
   - testing
@@ -33,6 +33,93 @@ dependencies:
 > *Note on Unit Tests*: These product and integration test suites do **not** replace package-level unit tests. Granular unit tests scattered throughout `internal/` packages continue to be maintained and executed in conjunction with this suite for rapid local development and isolated logic verification.
 > 
 > *(Future roadmap features such as `gyrus init config`/`client` subcommands, Agent Plugin Packaging `plugin.json`, `~/.gyrus.yaml` global config, `gyrus ui`, and remote schema storage have their target test requirements tracked in `prd-001-specification-roadmap.md` and are implemented during their respective releases).*
+
+---
+
+## 🏛️ Test Harness Architecture & Layers
+
+```mermaid
+graph TD
+    subgraph "Layer 1: Unit & Package Tests (In-Memory, Microsecond Feedback)"
+        U1["Domain & OKF Parser Unit Tests (internal/domain/okf)"]
+        U2["Lifecycle State Machine Unit Tests (internal/domain/lifecycle)"]
+        U3["Format Serialization Unit Tests (internal/format)"]
+        U4["Provider Algorithmic Logic (BM25, RRF Math)"]
+    end
+
+    subgraph "Layer 2: Provider Infrastructure Matrix (Integration)"
+        P1["Storage: LocalFS, Git, Postgres, Blob Mock"]
+        P2["Index & Search: SQLite FTS5, Postgres FTS, Vector Embeddings"]
+        P3["Graph: SQLite & Postgres Directed Edge Stores"]
+    end
+
+    subgraph "Layer 3: CLI Binary & Protocol Contract (Product E2E)"
+        C1["Subcommands: suggest-context, search, get, create, update, link, archive, sync, init"]
+        C2["Standardized Exit Code Protocol: 0, 1, 2, 3, 4, 5"]
+        C3["Stdio Stream Isolation: stderr logs / stdout pure JSON"]
+    end
+
+    subgraph "Layer 4: MCP Protocol & Transport (JSON-RPC 2.0 Process)"
+        M1["Stdio Subprocess Handshake & Request/Response"]
+        M2["10 MCP Tools Verification over JSON-RPC 2.0"]
+        M3["MCP Resources & Prompt Templates"]
+        M4["Docker Container Interactive MCP Serving"]
+    end
+
+    subgraph "Layer 5: Product QA, Agent Workflows & Hardening"
+        Q1["Deterministic Snapshot Linearization (Golden Markdown Fixtures)"]
+        Q2["Token Budgeting & Precision Truncation (--max-tokens)"]
+        Q3["Agent Skills & Autonomous AI Agent E2E Scenarios (agy, copilot, claude)"]
+        Q4["Race Detection (-race), Crash Consistency & 10k Scale Benchmark"]
+    end
+
+    Layer 1 --> Layer 2
+    Layer 2 --> Layer 3
+    Layer 3 --> Layer 4
+    Layer 4 --> Layer 5
+```
+
+---
+
+## ⚖️ Unit Tests vs. Product E2E Tests
+
+To ensure the system functions properly as a user and AI agent expect, Gyrus maintains a strict separation of concerns between **Unit Tests** and **Product / E2E Integration Tests**:
+
+| Dimension | Unit Tests (In-Code / Package Level) | Product / E2E Tests (Black Box / Manual User Sim) |
+| :--- | :--- | :--- |
+| **Execution Surface** | Internal Go packages (`internal/**_test.go`) | Compiled `./gyrus` binary executable and MCP subprocess (`tests/e2e/`, `tests/cli/`, `tests/mcp/`) |
+| **Primary Goal** | Validate isolated logic, mathematical formulas, regexes, and data transformations. | Validate the product as a human developer or AI agent interacts with it manually. |
+| **I/O & Environment** | In-memory mocks, zero external process overhead, microsecond runtimes. | Real filesystem, real CLI flags, real process exit codes, real stdio JSON-RPC streaming. |
+| **Example Scenarios** | - YAML unmarshaling edge cases<br>- Document ID regex validation (`^[a-z0-9-_]+$`)<br>- State machine transition truth tables<br>- BM25 score calculation | - `gyrus init --profile postgres` creates `.gyrus.yaml` and `.agents/skills/`<br>- `gyrus update adr-001 --status proposed` exits with code `2`<br>- Spawning `gyrus mcp serve` and calling `suggest_context` over JSON-RPC stdin/stdout<br>- Multi-step onboarding workflow from init ➔ create ➔ link ➔ suggest-context |
+
+---
+
+## 📝 In-Code Test Documentation Standard
+
+To ensure tests remain immediately comprehensible to human contributors and AI pair programmers, **every test function in this repository must include a structured header docstring**:
+
+```go
+// -----------------------------------------------------------------------------
+// [Test Level]: Product E2E Test | Provider Integration | Unit Test
+// [Purpose]: Plain English explanation of what contract or user journey is tested.
+// [Execution Surface]: Compiled ./gyrus CLI binary | Stdio MCP Subprocess | In-Memory Package
+// [Assertions]: Explicit list of verified outcomes (e.g. Exit Code 2, pure JSON on stdout).
+// -----------------------------------------------------------------------------
+func TestExample(t *testing.T) { ... }
+```
+
+---
+
+## ☁️ Cloud Infrastructure & Integration Authentication Standards
+
+Integration tests targeting external cloud and database providers follow standardized authentication and emulation patterns:
+
+1. **Local Sidecars & Emulators (Default / Zero-Config CI)**:
+   - **PostgreSQL**: Tested against local/containerized PostgreSQL (`localhost:5432` / Docker service `postgres`).
+   - **Ollama / Vector**: Tested against local DevContainer Ollama sidecar (`http://ollama:11434` or local instance).
+   - **Cloud Blob Storage (S3 / GCS / Azure)**: Default integration tests run against `gocloud.dev/blob/fileblob` or local S3-compatible emulators (e.g. MinIO/Azurite).
+2. **Real Cloud Provider Integration (Opt-In / Environment Flags)**:
+   - Real cloud driver tests activate only when provider-specific credentials are provided in the environment (e.g. `AWS_ACCESS_KEY_ID`, `AZURE_STORAGE_KEY`, `GOOGLE_APPLICATION_CREDENTIALS`), automatically skipping when credentials are not configured.
 
 ---
 
