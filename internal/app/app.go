@@ -35,6 +35,27 @@ func New(storageRoot string) (*App, error) {
 	}, nil
 }
 
+// Reset reconfigures the App container for a new storage root path.
+func (a *App) Reset(storageRoot string) error {
+	a.engineMu.Lock()
+	defer a.engineMu.Unlock()
+
+	absRoot, err := localfs.ResolveStoragePath(storageRoot)
+	if err != nil {
+		return fmt.Errorf("failed to resolve storage path: %w", err)
+	}
+
+	cfg, _, err := localfs.LoadConfig(absRoot)
+	if err != nil {
+		cfg = &localfs.Config{}
+	}
+
+	a.storageRoot = absRoot
+	a.config = cfg
+	a.engine = nil
+	return nil
+}
+
 // StorageRoot returns the workspace storage root directory path.
 func (a *App) StorageRoot() string {
 	return a.storageRoot
