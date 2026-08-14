@@ -196,6 +196,7 @@ Suggest linearized context matching an agent prompt:
 ## 📚 Documentation Sitemap
 
 - 🏛️ **[System Architecture](.gyrus/docs/armckinney/reference/guide-001-system-architecture.md):** Complete guide to the Gyrus Core SDK, Provider Framework, OKF directory topology, and state machines.
+- 🧪 **[Testing Strategy & QA Standards](.gyrus/docs/armckinney/reference/standards-002-testing-strategy.md):** Complete guide to test tiers, CI/CD integration, benchmark standards, environment toggles, and live cloud infrastructure testing.
 - ⚙️ **[Configuration Reference](.gyrus/docs/armckinney/reference/tech-ref-002-config-schema.md):** Comprehensive reference for all `.gyrus.yaml` options, profiles, and path precedence.
 - 🛠️ **[CLI Reference Manual](.gyrus/docs/armckinney/reference/tech-ref-001-cli-manual.md):** Detailed argument and flag reference for all 11 `gyrus` CLI subcommands and exit codes.
 - 🔌 **[MCP Server Setup Guide](.gyrus/docs/armckinney/reference/guide-004-mcp-server-setup.md):** Native and Docker containerized MCP stdio server setup for Cursor, Claude Desktop, and VS Code.

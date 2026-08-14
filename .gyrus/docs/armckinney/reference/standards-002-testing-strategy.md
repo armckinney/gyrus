@@ -5,7 +5,7 @@ category: technical
 type: standards
 format: markdown
 owner_group: armckinney
-version: 4
+version: 5
 status: active
 tags:
   - testing
@@ -110,16 +110,94 @@ func TestExample(t *testing.T) { ... }
 
 ---
 
-## ☁️ Cloud Infrastructure & Integration Authentication Standards
+## 🧪 Test Execution Commands & Environment Toggles
 
-Integration tests targeting external cloud and database providers follow standardized authentication and emulation patterns:
+Gyrus provides automated test commands via `make` and standard `go test` flags:
 
-1. **Local Sidecars & Emulators (Default / Zero-Config CI)**:
-   - **PostgreSQL**: Tested against local/containerized PostgreSQL (`localhost:5432` / Docker service `postgres`).
-   - **Ollama / Vector**: Tested against local DevContainer Ollama sidecar (`http://ollama:11434` or local instance).
-   - **Cloud Blob Storage (S3 / GCS / Azure)**: Default integration tests run against `gocloud.dev/blob/fileblob` or local S3-compatible emulators (e.g. MinIO/Azurite).
-2. **Real Cloud Provider Integration (Opt-In / Environment Flags)**:
-   - Real cloud driver tests activate only when provider-specific credentials are provided in the environment (e.g. `AWS_ACCESS_KEY_ID`, `AZURE_STORAGE_KEY`, `GOOGLE_APPLICATION_CREDENTIALS`), automatically skipping when credentials are not configured.
+### 1. Standard Test Execution
+
+```bash
+# 1. Run entire test suite + clean build verification (Local Default)
+make all
+
+# 2. Run fast unit tests only (internal/...)
+make test-unit
+
+# 3. Run integration & CLI/MCP subprocess E2E tests (tests/...)
+make test-integration
+
+# 4. Run race detector across all packages
+go test -race ./...
+
+# 5. Run performance benchmarks (indexing, search, graph)
+go test -bench=. -benchmem ./tests/integration/...
+```
+
+### 2. Environment Flags & Test Toggles
+
+| Environment Variable | Default | Purpose & Description |
+| :--- | :--- | :--- |
+| `RUN_INTEGRATION_TESTS=1` | Disabled in basic CI | Injected automatically by `make test-integration` to execute all provider integration suites. |
+| `RUN_DOCKER_TESTS=1` | Disabled | Enables building and launching the live `packaging/Dockerfile` container (`TestLiveDockerContainerExecution`). |
+| `RUN_AGENT_EVAL=1` | Disabled | Enables live end-to-end evaluation with the Google Antigravity (`agy`) CLI runner (`TestAntigravityIntegration`). |
+
+---
+
+## ☁️ Live Cloud & Database Integration Testing Guide
+
+Gyrus supports seamless integration testing against live cloud infrastructure and managed databases without requiring code modifications:
+
+### 1. PostgreSQL (Neon, Supabase, AWS RDS, Azure Flexible Server, Docker)
+
+Integration tests in [`tests/integration/postgres_test.go`](file:///workspaces/gyrus/tests/integration/postgres_test.go) auto-detect PostgreSQL connection strings via `POSTGRES_URL`. When set, the test automatically connects, applies database migrations, seeds documents, executes `tsvector` / `tsquery` full-text search, and tests directed relationship graph edges.
+
+```bash
+# Local Docker Container
+export POSTGRES_URL="postgres://postgres:postgres@localhost:5432/gyrus?sslmode=disable"
+go test -v ./tests/integration -run TestIntegration_PostgresLive
+
+# Managed Cloud Postgres (Neon / Supabase / AWS Aurora / Azure)
+export POSTGRES_URL="postgres://user:password@ep-sample.us-east-2.aws.neon.tech/neondb?sslmode=require"
+go test -v ./tests/integration -run TestIntegration_PostgresLive
+```
+
+### 2. Cloud Object Storage (Azure Blob Storage, AWS S3, Google Cloud Storage)
+
+Cloud object storage integration tests in [`tests/integration/blob_test.go`](file:///workspaces/gyrus/tests/integration/blob_test.go) run by default against pure Go fileblob emulation and can target live cloud containers via Go CDK connection strings:
+
+```bash
+# Azure Blob Storage (using Account Key or Connection String)
+export AZURE_STORAGE_ACCOUNT="myazureaccount"
+export AZURE_STORAGE_KEY="mysecretaccountkey"
+export AZURE_STORAGE_CONTAINER="gyrus-docs"
+go test -v ./tests/integration -run TestIntegration_BlobProfile
+
+# AWS S3 (using IAM credentials & bucket)
+export AWS_REGION="us-east-1"
+export AWS_ACCESS_KEY_ID="AKIA..."
+export AWS_SECRET_ACCESS_KEY="..."
+export S3_BUCKET="my-gyrus-documents-bucket"
+go test -v ./tests/integration -run TestIntegration_BlobProfile
+
+# Google Cloud Storage (using Service Account Key)
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/gcp-sa-key.json"
+export GCS_BUCKET="my-gyrus-gcs-bucket"
+go test -v ./tests/integration -run TestIntegration_BlobProfile
+```
+
+### 3. Semantic Vector Search & Ollama Embeddings
+
+Vector integration tests in [`tests/integration/vector_test.go`](file:///workspaces/gyrus/tests/integration/vector_test.go) automatically ping local or sidecar Ollama services. When reachable, tests generate live 768-dimensional float32 embeddings using `nomic-embed-text` and assert cosine similarity rankings:
+
+```bash
+# Local Ollama or DevContainer sidecar (Default: http://localhost:11434)
+export OLLAMA_HOST="http://localhost:11434"
+go test -v ./tests/integration -run TestIntegration_OllamaVectorLive
+
+# OpenAI Semantic Vector Embeddings (Optional)
+export OPENAI_API_KEY="sk-..."
+go test -v ./tests/integration -run TestIntegration_VectorHybrid
+```
 
 ---
 

@@ -5,7 +5,7 @@ category: technical
 type: guide
 format: ""
 owner_group: armckinney
-version: 1
+version: 2
 status: active
 last_modified_by: ""
 last_updated: 2026-07-22T07:10:43Z
@@ -217,8 +217,67 @@ Test zero-install containerized MCP server execution via Docker:
 
 ```bash
 # Build local docker image
-docker build -t gyrus:latest .
+docker build -f packaging/Dockerfile -t gyrus:latest .
 
 # Run containerized MCP server over stdio
 docker run -i --rm -v "$(pwd):/workspace" gyrus:latest mcp serve --storage-path /workspace
+```
+
+---
+
+## 14. Automated Test Suites & Live Infrastructure Testing
+
+Gyrus includes automated Go test suites that can run locally against embedded mocks or live cloud services:
+
+### A. Running Standard Test Suites
+
+```bash
+# Run entire lifecycle (clean -> fmt -> lint -> test -> build)
+make all
+
+# Run fast in-memory unit tests
+make test-unit
+
+# Run black-box CLI/MCP integration tests
+make test-integration
+
+# Run performance benchmarks (indexing, search, graph traversal)
+go test -bench=. -benchmem ./tests/integration/...
+```
+
+### B. Running Live PostgreSQL & Cloud DB Tests
+
+```bash
+# Local Docker Postgres (localhost:5432)
+export POSTGRES_URL="postgres://postgres:postgres@localhost:5432/gyrus?sslmode=disable"
+go test -v ./tests/integration -run TestIntegration_PostgresLive
+
+# Live Cloud PostgreSQL (Neon, Supabase, AWS RDS, Azure)
+export POSTGRES_URL="postgres://user:password@ep-sample.us-east-2.aws.neon.tech/neondb?sslmode=require"
+go test -v ./tests/integration -run TestIntegration_PostgresLive
+```
+
+### C. Running Live Cloud Object Storage Tests (Azure, S3, GCS)
+
+```bash
+# Azure Blob Storage
+export AZURE_STORAGE_ACCOUNT="myaccount"
+export AZURE_STORAGE_KEY="mykey"
+export AZURE_STORAGE_CONTAINER="gyrus-docs"
+go test -v ./tests/integration -run TestIntegration_BlobProfile
+
+# AWS S3
+export AWS_REGION="us-east-1"
+export AWS_ACCESS_KEY_ID="AKIA..."
+export AWS_SECRET_ACCESS_KEY="..."
+export S3_BUCKET="my-gyrus-bucket"
+go test -v ./tests/integration -run TestIntegration_BlobProfile
+```
+
+### D. Running Live Vector Search Tests (Ollama Sidecar)
+
+```bash
+# Local Ollama or DevContainer sidecar service
+export OLLAMA_HOST="http://localhost:11434"
+go test -v ./tests/integration -run TestIntegration_OllamaVectorLive
 ```
