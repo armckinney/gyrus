@@ -21,7 +21,7 @@ test-unit:
 
 test-integration: build
 	@echo "Running Integration Tests (tests/...)..."
-	@go test ./tests/... -v
+	@RUN_INTEGRATION_TESTS=1 RUN_DOCKER_TESTS=1 go test ./tests/... -v
 
 clean:
 	@echo "Cleaning build artifacts..."
