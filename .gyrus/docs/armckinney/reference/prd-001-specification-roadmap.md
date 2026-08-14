@@ -5,7 +5,7 @@ category: technical
 type: prd
 format: ""
 owner_group: armckinney
-version: 11
+version: 12
 status: active
 tags:
   - roadmap
@@ -52,8 +52,8 @@ Target: Expand data providers, transport interfaces, backend provider IaC, conte
 - [x] **Standard Stdio MCP Transport (`gyrus mcp serve`)**: High-performance, zero-latency Stdio (standard I/O) process transport for local agent integration (`agy`, Claude Code, Cursor, Copilot) and containerized MCP execution (`docker run -i ghcr.io/armckinney/gyrus:latest`).
 
 ### 2.4 Test Suite Modernization & Stabilization
-- [ ] **Modernize Testing Suite & Coverage**: Upgrade test harness across core packages (`internal/domain`, `internal/format`, `internal/provider`, `internal/cli`, `internal/mcp`), adding comprehensive mock providers, end-to-end integration matrices, and benchmark tests.
-- [ ] **Automated Agent Integration Test Framework**: Automated test suites verifying that AI agents (`agy`, Claude Code, GitHub Copilot, Cursor) actually invoke Gyrus CLI subcommands and MCP tools correctly when prompted with realistic engineering tasks.
+- [x] **Modernize Testing Suite & Coverage**: Upgrade test harness across core packages (`internal/domain`, `internal/format`, `internal/provider`, `internal/cli`, `internal/mcp`), adding comprehensive mock providers, end-to-end integration matrices, and benchmark tests.
+- [x] **Automated Agent Integration Test Framework**: Automated test suites verifying that AI agents (`agy`, Claude Code, GitHub Copilot, Cursor) actually invoke Gyrus CLI subcommands and MCP tools correctly when prompted with realistic engineering tasks.
 
 ### 2.5 Persistence Layer Schema Storage & Remote Linkage
 - [ ] **Persistence Layer Schema Storage & Remote Linkage**: Implement core interface (CLI and MCP commands) for storing OKF contract schemas directly in the persistence layer (`storage_provider`), with schemas stored remotely and linked to the active storage provider via enforced locations (`.gyrus/schemas/`).

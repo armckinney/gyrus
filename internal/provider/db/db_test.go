@@ -7,6 +7,12 @@ import (
 	"github.com/armckinney/gyrus/internal/provider/db"
 )
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that OpenSQLite implements thread-safe connection pool sharing across services.
+// [Execution Surface]: In-Memory SQLite Connection Registry (internal/provider/db)
+// [Assertions]: Repeated OpenSQLite calls for same DB path return identical *sql.DB pointer instance.
+// -----------------------------------------------------------------------------
 func TestOpenSQLitePoolSharing(t *testing.T) {
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "test.db")

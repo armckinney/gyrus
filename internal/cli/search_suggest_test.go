@@ -6,6 +6,12 @@ import (
 	"testing"
 )
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies in-memory execution of search, suggest-context, and schema CLI subcommands.
+// [Execution Surface]: In-Memory Cobra Command Tree (internal/cli)
+// [Assertions]: Document creation indexes content, search matches keywords, suggest linearizes context, and schema prints ADR template.
+// -----------------------------------------------------------------------------
 func TestCLISearchAndSuggestAndSchema(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "gyrus-cli-search-*")
 	if err != nil {

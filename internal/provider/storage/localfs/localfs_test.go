@@ -9,6 +9,12 @@ import (
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that LocalFS Store creates, reads, updates, and deletes Markdown files on disk with optimistic concurrency locking.
+// [Execution Surface]: Real Local Filesystem
+// [Assertions]: File creation follows OKF path convention, updates increment version, concurrency conflict fails outdated versions, delete removes file.
+// -----------------------------------------------------------------------------
 func TestLocalfsStoreCRUD(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "gyrus-localfs-test-*")
 	if err != nil {
@@ -84,6 +90,12 @@ func TestLocalfsStoreCRUD(t *testing.T) {
 	}
 }
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies storage path precedence resolution when explicit flag is provided.
+// [Execution Surface]: In-Memory Path Resolution (internal/provider/storage/localfs)
+// [Assertions]: Explicit CLI storage flag takes precedence.
+// -----------------------------------------------------------------------------
 func TestResolveStoragePathPrecedence(t *testing.T) {
 	// Flag precedence
 	flagPath := "/tmp/gyrus-flag-path"
@@ -96,6 +108,12 @@ func TestResolveStoragePathPrecedence(t *testing.T) {
 	}
 }
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies storage path resolution from .gyrus.yaml configuration files in workspace.
+// [Execution Surface]: Temporary Filesystem Directory (.gyrus.yaml)
+// [Assertions]: Path declared in storage.root within .gyrus.yaml is resolved accurately.
+// -----------------------------------------------------------------------------
 func TestDotGyrusYamlConfigResolution(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "gyrus-dot-config-*")
 	if err != nil {

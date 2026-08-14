@@ -10,6 +10,12 @@ import (
 	"gocloud.dev/blob/fileblob"
 )
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that BlobStore handles document lifecycle (Create, Get, Update, Archive, Delete) via Go CDK fileblob.
+// [Execution Surface]: In-Memory / Local fileblob bucket
+// [Assertions]: Document is created, retrieved with content matching, updated with version increment, archived, and deleted.
+// -----------------------------------------------------------------------------
 func TestBlobStore(t *testing.T) {
 	ctx := context.Background()
 

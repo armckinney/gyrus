@@ -9,6 +9,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that Document envelope serializes to and deserializes from JSON format cleanly.
+// [Execution Surface]: In-Memory Unit Test (pkg/gyrus)
+// [Assertions]: JSON marshaling preserves ID, Title, Type, and metadata fields without data corruption.
+// -----------------------------------------------------------------------------
 func TestDocumentJSONSerialization(t *testing.T) {
 	now := time.Now().Truncate(time.Second)
 	doc := gyrus.Document{
@@ -45,6 +51,12 @@ func TestDocumentJSONSerialization(t *testing.T) {
 	}
 }
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that Document envelope serializes to and deserializes from YAML frontmatter format cleanly.
+// [Execution Surface]: In-Memory Unit Test (pkg/gyrus)
+// [Assertions]: YAML marshaling preserves Title, Category, Status, and Tags.
+// -----------------------------------------------------------------------------
 func TestDocumentYAMLFrontmatterSerialization(t *testing.T) {
 	doc := gyrus.Document{
 		ID:             "prd-2026-001",
