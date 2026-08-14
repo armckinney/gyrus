@@ -24,6 +24,12 @@ func (m *MockLexicalSearch) Search(ctx context.Context, query string, filter gyr
 	return m.Results, nil
 }
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that Hybrid Search fuses lexical and vector rankings using Reciprocal Rank Fusion (RRF).
+// [Execution Surface]: In-Memory Vector Store + Mock Embedder
+// [Assertions]: RRF scores are calculated accurately using standard constant k=60 across lexical and vector ranks.
+// -----------------------------------------------------------------------------
 func TestRRFAndHybridSearch(t *testing.T) {
 	embedder := &MockEmbedder{
 		EmbedFunc: func(text string) []float32 {
@@ -93,6 +99,12 @@ func TestRRFAndHybridSearch(t *testing.T) {
 	}
 }
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that cosine similarity calculates normalized dot products accurately.
+// [Execution Surface]: In-Memory Unit Test
+// [Assertions]: Identical unit vectors return cosine similarity 1.0.
+// -----------------------------------------------------------------------------
 func TestCosineSimilarity(t *testing.T) {
 	a := []float32{1.0, 0.0, 0.0}
 	b := []float32{1.0, 0.0, 0.0}

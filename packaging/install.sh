@@ -67,11 +67,11 @@ else
   unzip -q "${FILENAME}"
 fi
 
-INSTALL_DIR="/usr/local/bin"
-if [ ! -w "${INSTALL_DIR}" ]; then
+INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
+if [ ! -w "${INSTALL_DIR}" ] && [ -z "${INSTALL_DIR_EXPLICIT}" ]; then
   INSTALL_DIR="${HOME}/.local/bin"
-  mkdir -p "${INSTALL_DIR}"
 fi
+mkdir -p "${INSTALL_DIR}"
 
 echo "Installing ${BINARY} to ${INSTALL_DIR}..."
 mv "${BINARY}" "${INSTALL_DIR}/${BINARY}"

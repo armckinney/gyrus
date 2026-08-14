@@ -6,6 +6,12 @@ import (
 	"testing"
 )
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies in-memory execution of link, sync, and validate CLI subcommands.
+// [Execution Surface]: In-Memory Cobra Command Tree (internal/cli)
+// [Assertions]: Links two documents, executes workspace sync, and validates OKF Markdown file schema.
+// -----------------------------------------------------------------------------
 func TestCLILinkAndSyncAndValidate(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "gyrus-cli-maint-*")
 	if err != nil {

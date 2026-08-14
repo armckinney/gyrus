@@ -219,34 +219,160 @@ func (idx *Indexer) Sync(ctx context.Context, storageRoot string) (gyrus.SyncRep
 	return report, err
 }
 
-// Search executes an FTS5 search query.
+// Search executes an FTS5 search query with metadata filtering.
 func (idx *Indexer) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
-	sqlQuery := `
-	SELECT d.id, d.title, d.category, d.type, d.owner_group, d.version, d.status, d.last_modified_by, d.last_updated, d.tags, d.dependencies, d.content, fts.rank
-	FROM fts_documents fts
-	JOIN documents d ON fts.id = d.id
-	WHERE fts_documents MATCH ?
-	ORDER BY fts.rank
-	LIMIT ?;
-	`
 	maxRes := query.MaxResults
 	if maxRes <= 0 {
 		maxRes = 50
 	}
 
-	rows, err := idx.db.QueryContext(ctx, sqlQuery, query.Query, maxRes)
-	if err != nil {
-		// Fallback to simple title/content LIKE query if FTS query expression syntax is invalid
-		likeQuery := "%" + query.Query + "%"
-		fallbackSQL := `
-		SELECT id, title, category, type, owner_group, version, status, last_modified_by, last_updated, tags, dependencies, content, 0 AS rank
+	var rows *sql.Rows
+	var err error
+
+	if query.Query == "" {
+		// Pure metadata filter query over documents table
+		var whereClauses []string
+		var args []any
+
+		if query.Filter.Category != "" {
+			whereClauses = append(whereClauses, "category = ?")
+			args = append(args, string(query.Filter.Category))
+		}
+		if query.Filter.Type != "" {
+			whereClauses = append(whereClauses, "type = ?")
+			args = append(args, string(query.Filter.Type))
+		}
+		if query.Filter.Status != "" {
+			whereClauses = append(whereClauses, "status = ?")
+			args = append(args, query.Filter.Status)
+		}
+		if query.Filter.OwnerGroup != "" {
+			whereClauses = append(whereClauses, "owner_group = ?")
+			args = append(args, query.Filter.OwnerGroup)
+		}
+		if query.Filter.Tag != "" {
+			whereClauses = append(whereClauses, "tags LIKE ?")
+			args = append(args, "%\""+query.Filter.Tag+"\"%")
+		}
+
+		whereSQL := ""
+		if len(whereClauses) > 0 {
+			whereSQL = "WHERE " + strings.Join(whereClauses, " AND ")
+		}
+
+		sqlQuery := fmt.Sprintf(`
+		SELECT id, title, category, type, owner_group, version, status, last_modified_by, last_updated, tags, dependencies, content, 0.0 AS rank
 		FROM documents
-		WHERE title LIKE ? OR content LIKE ?
+		%s
 		LIMIT ?;
-		`
-		rows, err = idx.db.QueryContext(ctx, fallbackSQL, likeQuery, likeQuery, maxRes)
+		`, whereSQL)
+
+		args = append(args, maxRes)
+		rows, err = idx.db.QueryContext(ctx, sqlQuery, args...)
 		if err != nil {
 			return nil, err
+		}
+	} else {
+		// Tokenize search query for FTS OR matching if multiple words
+		words := strings.Fields(query.Query)
+		var validTokens []string
+		for _, w := range words {
+			cleaned := strings.Map(func(r rune) rune {
+				if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' || r == '-' {
+					return r
+				}
+				return -1
+			}, w)
+			if len(cleaned) >= 2 {
+				validTokens = append(validTokens, `"`+cleaned+`"`)
+			}
+		}
+
+		ftsMatchQuery := query.Query
+		if len(validTokens) > 1 {
+			ftsMatchQuery = strings.Join(validTokens, " OR ")
+		}
+
+		var whereClauses []string
+		var args []any
+
+		whereClauses = append(whereClauses, "fts_documents MATCH ?")
+		args = append(args, ftsMatchQuery)
+
+		if query.Filter.Category != "" {
+			whereClauses = append(whereClauses, "d.category = ?")
+			args = append(args, string(query.Filter.Category))
+		}
+		if query.Filter.Type != "" {
+			whereClauses = append(whereClauses, "d.type = ?")
+			args = append(args, string(query.Filter.Type))
+		}
+		if query.Filter.Status != "" {
+			whereClauses = append(whereClauses, "d.status = ?")
+			args = append(args, query.Filter.Status)
+		}
+		if query.Filter.OwnerGroup != "" {
+			whereClauses = append(whereClauses, "d.owner_group = ?")
+			args = append(args, query.Filter.OwnerGroup)
+		}
+		if query.Filter.Tag != "" {
+			whereClauses = append(whereClauses, "d.tags LIKE ?")
+			args = append(args, "%\""+query.Filter.Tag+"\"%")
+		}
+
+		whereSQL := "WHERE " + strings.Join(whereClauses, " AND ")
+
+		sqlQuery := fmt.Sprintf(`
+		SELECT d.id, d.title, d.category, d.type, d.owner_group, d.version, d.status, d.last_modified_by, d.last_updated, d.tags, d.dependencies, d.content, fts.rank
+		FROM fts_documents fts
+		JOIN documents d ON fts.id = d.id
+		%s
+		ORDER BY fts.rank
+		LIMIT ?;
+		`, whereSQL)
+
+		ftsArgs := append(args, maxRes)
+		rows, err = idx.db.QueryContext(ctx, sqlQuery, ftsArgs...)
+		if err != nil {
+			// Fallback to title/content LIKE query
+			likeQuery := "%" + query.Query + "%"
+			fallbackClauses := []string{"(title LIKE ? OR content LIKE ?)"}
+			fallbackArgs := []any{likeQuery, likeQuery}
+
+			if query.Filter.Category != "" {
+				fallbackClauses = append(fallbackClauses, "category = ?")
+				fallbackArgs = append(fallbackArgs, string(query.Filter.Category))
+			}
+			if query.Filter.Type != "" {
+				fallbackClauses = append(fallbackClauses, "type = ?")
+				fallbackArgs = append(fallbackArgs, string(query.Filter.Type))
+			}
+			if query.Filter.Status != "" {
+				fallbackClauses = append(fallbackClauses, "status = ?")
+				fallbackArgs = append(fallbackArgs, query.Filter.Status)
+			}
+			if query.Filter.OwnerGroup != "" {
+				fallbackClauses = append(fallbackClauses, "owner_group = ?")
+				fallbackArgs = append(fallbackArgs, query.Filter.OwnerGroup)
+			}
+			if query.Filter.Tag != "" {
+				fallbackClauses = append(fallbackClauses, "tags LIKE ?")
+				fallbackArgs = append(fallbackArgs, "%\""+query.Filter.Tag+"\"%")
+			}
+
+			fallbackWhere := "WHERE " + strings.Join(fallbackClauses, " AND ")
+			fallbackSQL := fmt.Sprintf(`
+			SELECT id, title, category, type, owner_group, version, status, last_modified_by, last_updated, tags, dependencies, content, 0.0 AS rank
+			FROM documents
+			%s
+			LIMIT ?;
+			`, fallbackWhere)
+
+			fallbackArgs = append(fallbackArgs, maxRes)
+			rows, err = idx.db.QueryContext(ctx, fallbackSQL, fallbackArgs...)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	defer rows.Close()
@@ -254,7 +380,7 @@ func (idx *Indexer) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyru
 	var results []gyrus.SearchResult
 	for rows.Next() {
 		var doc gyrus.Document
-		var catStr, typeStr, lastUpdatedStr, tagsJSON, depsJSON, filePath string
+		var catStr, typeStr, lastUpdatedStr, tagsJSON, depsJSON string
 		var rank float64
 
 		err := rows.Scan(
@@ -266,7 +392,6 @@ func (idx *Indexer) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyru
 			return nil, err
 		}
 
-		_ = filePath
 		doc.Category = gyrus.Category(catStr)
 		doc.Type = gyrus.DocumentType(typeStr)
 		if lastUpdatedStr != "" {

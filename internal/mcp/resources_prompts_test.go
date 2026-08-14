@@ -7,6 +7,12 @@ import (
 	"github.com/armckinney/gyrus/internal/mcp"
 )
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that MCP Server registers standard resources (gyrus://) and prompt templates.
+// [Execution Surface]: In-Memory MCP Server
+// [Assertions]: Server initializes and attaches resources and prompt definitions without panic or error.
+// -----------------------------------------------------------------------------
 func TestMCPResourcesAndPromptsRegistration(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "gyrus-mcp-res-*")
 	if err != nil {

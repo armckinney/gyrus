@@ -9,6 +9,12 @@ import (
 	"github.com/pashagolub/pgxmock/v4"
 )
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Provider Integration Test
+// [Purpose]: Verifies that PostgreSQL Store executes full-text search against tsvector index.
+// [Execution Surface]: In-Memory PostgreSQL Mock Pool (pgxmock)
+// [Assertions]: SQL query executes with category filter and tsquery args, returning expected score and document.
+// -----------------------------------------------------------------------------
 func TestStore_SearchFTS(t *testing.T) {
 	mock, err := pgxmock.NewPool()
 	if err != nil {

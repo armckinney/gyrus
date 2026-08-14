@@ -6,6 +6,12 @@ import (
 	"testing"
 )
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies the CLI command router in-memory execution for init, create, and get subcommands.
+// [Execution Surface]: In-Memory Cobra Command Tree (internal/cli)
+// [Assertions]: Commands execute without errors and mutate memory/storage.
+// -----------------------------------------------------------------------------
 func TestCLIInitAndCreateAndGet(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "gyrus-cli-crud-*")
 	if err != nil {

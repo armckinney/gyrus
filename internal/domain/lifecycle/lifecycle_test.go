@@ -7,6 +7,12 @@ import (
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies the valid and invalid lifecycle state transition rules for Architecture Design Records (ADR).
+// [Execution Surface]: In-Memory Package (internal/domain/lifecycle)
+// [Assertions]: Permitted ADR transitions succeed; illegal transitions return a TransitionError.
+// -----------------------------------------------------------------------------
 func TestADRTransitions(t *testing.T) {
 	// Valid ADR transitions
 	validCases := []struct {
@@ -17,7 +23,7 @@ func TestADRTransitions(t *testing.T) {
 		{"proposed", "rejected"},
 		{"accepted", "superseded"},
 		{"accepted", "deprecated"},
-		{"proposed", "proposed"}, // Same status
+		{"proposed", "proposed"}, // Same status idempotent
 	}
 
 	for _, c := range validCases {
@@ -44,6 +50,12 @@ func TestADRTransitions(t *testing.T) {
 	}
 }
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies the valid and invalid lifecycle state transition rules for Improvement Proposals (IP).
+// [Execution Surface]: In-Memory Package (internal/domain/lifecycle)
+// [Assertions]: Permitted IP transitions succeed; illegal transitions return a TransitionError.
+// -----------------------------------------------------------------------------
 func TestImprovementProposalTransitions(t *testing.T) {
 	validCases := []struct {
 		from string
@@ -53,6 +65,7 @@ func TestImprovementProposalTransitions(t *testing.T) {
 		{"reviewing", "approved"},
 		{"approved", "implemented"},
 		{"reviewing", "abandoned"},
+		{"draft", "draft"},
 	}
 
 	for _, c := range validCases {
@@ -77,6 +90,12 @@ func TestImprovementProposalTransitions(t *testing.T) {
 	}
 }
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies the valid and invalid lifecycle state transition rules for general living documents (PRD, Specs, Standards).
+// [Execution Surface]: In-Memory Package (internal/domain/lifecycle)
+// [Assertions]: Permitted general document transitions succeed; illegal transitions return a TransitionError.
+// -----------------------------------------------------------------------------
 func TestGeneralTransitions(t *testing.T) {
 	validCases := []struct {
 		from string
@@ -86,6 +105,7 @@ func TestGeneralTransitions(t *testing.T) {
 		{"active", "deprecated"},
 		{"deprecated", "archived"},
 		{"draft", "archived"},
+		{"active", "active"},
 	}
 
 	for _, c := range validCases {
@@ -110,6 +130,12 @@ func TestGeneralTransitions(t *testing.T) {
 	}
 }
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies document immutability enforcement for accepted ADRs and documents marked with `immutable: true`.
+// [Execution Surface]: In-Memory Package (internal/domain/lifecycle)
+// [Assertions]: Mutating accepted ADRs or immutable-flagged documents returns an ImmutabilityError; mutable documents succeed.
+// -----------------------------------------------------------------------------
 func TestValidateMutation(t *testing.T) {
 	// Mutating accepted ADR content should fail (built-in immutable type)
 	if err := lifecycle.ValidateMutation(gyrus.TypeADR, "accepted", false, true); err == nil {

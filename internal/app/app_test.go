@@ -8,6 +8,12 @@ import (
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that App service container instantiates dependencies and provides access to Engine.
+// [Execution Surface]: In-Memory Dependency Container (internal/app)
+// [Assertions]: App initializes without error, engine creates document, and returns valid DocumentRef.
+// -----------------------------------------------------------------------------
 func TestAppContainerInstantiation(t *testing.T) {
 	tempDir := t.TempDir()
 

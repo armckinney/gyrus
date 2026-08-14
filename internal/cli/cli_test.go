@@ -9,6 +9,12 @@ import (
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that MapErrorToExitCode translates domain and storage errors into the standardized POSIX exit code contract.
+// [Execution Surface]: In-Memory Unit Test (internal/cli)
+// [Assertions]: Validation error -> 1; Transition error -> 2; Concurrency error -> 4; Auth error -> 3; Storage error -> 5.
+// -----------------------------------------------------------------------------
 func TestMapErrorToExitCode(t *testing.T) {
 	cases := []struct {
 		err          error
@@ -30,6 +36,12 @@ func TestMapErrorToExitCode(t *testing.T) {
 	}
 }
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that the root Cobra command builds successfully and renders CLI help output.
+// [Execution Surface]: In-Memory Cobra Command Tree
+// [Assertions]: BuildRootCmd succeeds and executing --help returns Exit Code 0.
+// -----------------------------------------------------------------------------
 func TestRootCommandHelp(t *testing.T) {
 	rootCmd, err := BuildRootCmd("")
 	if err != nil {

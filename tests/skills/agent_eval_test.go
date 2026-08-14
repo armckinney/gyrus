@@ -7,8 +7,12 @@ import (
 	"testing"
 )
 
-// TestAgentPromptRoutingSimulation tests that both skills provide clear, unambiguous
-// instructions so that an AI Agent (like Google Antigravity) will reliably select the correct tool.
+// -----------------------------------------------------------------------------
+// [Test Level]: Integration Test / Evaluation
+// [Purpose]: Verifies that Agent Skills (gyrus-cli and gyrus-mcp) provide clear, unambiguous instructions for LLM agent routing.
+// [Execution Surface]: Packaging Skills Manifests (SKILL.md)
+// [Assertions]: Skills contain exact command/tool names corresponding to user developer intents.
+// -----------------------------------------------------------------------------
 func TestAgentPromptRoutingSimulation(t *testing.T) {
 	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
@@ -42,7 +46,7 @@ func TestAgentPromptRoutingSimulation(t *testing.T) {
 		{
 			intent:                "Get document details for a document ID",
 			expectedCLISubcommand: "gyrus get <document-id>",
-			expectedMCPTool:       "gyrus_get_document",
+			expectedMCPTool:       "gyrus_get",
 		},
 		{
 			intent:                "Suggest context for relational SQL databases",
@@ -52,7 +56,17 @@ func TestAgentPromptRoutingSimulation(t *testing.T) {
 		{
 			intent:                "Create a new PRD for feature X",
 			expectedCLISubcommand: "gyrus create",
-			expectedMCPTool:       "gyrus_create_document",
+			expectedMCPTool:       "gyrus_create",
+		},
+		{
+			intent:                "Link two documents with relationship edge",
+			expectedCLISubcommand: "gyrus link",
+			expectedMCPTool:       "gyrus_link",
+		},
+		{
+			intent:                "Reindex workspace markdown files",
+			expectedCLISubcommand: "gyrus sync",
+			expectedMCPTool:       "gyrus_sync",
 		},
 	}
 

@@ -7,12 +7,15 @@ import (
 	"testing"
 )
 
-// TestAntigravityIntegration executes live integration evaluation against Google Antigravity.
-// This test is SKIPPED by default during standard `go test ./...` and `make test`.
-// To execute: set RUN_INTEGRATION_TESTS=1 or run `make test-integration`.
+// -----------------------------------------------------------------------------
+// [Test Level]: Live Integration Test (Optional/Explicit)
+// [Purpose]: Executes live integration evaluation against Google Antigravity agent shell script.
+// [Execution Surface]: Subprocess execution of tests/skills/e2e_antigravity_eval.sh
+// [Assertions]: Evaluation script finishes with exit code 0 when RUN_INTEGRATION_TESTS=1 is set.
+// -----------------------------------------------------------------------------
 func TestAntigravityIntegration(t *testing.T) {
-	if os.Getenv("RUN_INTEGRATION_TESTS") == "" && os.Getenv("RUN_E2E_TESTS") == "" {
-		t.Skip("Skipping live integration test (marked for explicit execution only). Set RUN_INTEGRATION_TESTS=1 to run.")
+	if os.Getenv("RUN_AGENT_EVAL") == "" && os.Getenv("RUN_E2E_TESTS") == "" {
+		t.Skip("Skipping live Antigravity agent eval script. Set RUN_AGENT_EVAL=1 to run.")
 	}
 
 	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))

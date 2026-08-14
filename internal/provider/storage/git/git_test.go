@@ -20,6 +20,12 @@ func setupTestRemote(t *testing.T) string {
 	return dir
 }
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that GitStore executes versioned commits for document Create, Update, Archive, and Delete.
+// [Execution Surface]: In-Memory / Local Bare Git Repository (go-git)
+// [Assertions]: Git commits are generated for document changes, branches track updates, and history is maintained.
+// -----------------------------------------------------------------------------
 func TestGitStore(t *testing.T) {
 	remoteURL := setupTestRemote(t)
 

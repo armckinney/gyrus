@@ -109,38 +109,51 @@ func (g *GraphStore) Neighbors(ctx context.Context, id string, filter gyrus.Edge
 	return edges, nil
 }
 
-// Traverse executes a BFS graph traversal from a start document.
+// Traverse executes a BFS graph traversal from a start document up to MaxDepth.
 func (g *GraphStore) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.GraphPath, error) {
 	if query.MaxDepth <= 0 {
 		query.MaxDepth = 1
 	}
 
-	edges, err := g.Neighbors(ctx, query.StartID, gyrus.EdgeFilter{Direction: "outgoing"})
-	if err != nil {
-		return nil, err
-	}
+	visitedNodes := make(map[string]bool)
+	visitedEdges := make(map[string]bool)
+	var allEdges []gyrus.DocumentEdge
 
-	if len(edges) == 0 {
-		return []gyrus.GraphPath{{
-			Nodes: []string{query.StartID},
-			Edges: nil,
-		}}, nil
-	}
+	visitedNodes[query.StartID] = true
+	currentLevel := []string{query.StartID}
 
-	nodesMap := make(map[string]bool)
-	nodesMap[query.StartID] = true
-	for _, e := range edges {
-		nodesMap[e.FromDocumentID] = true
-		nodesMap[e.ToDocumentID] = true
+	for depth := 0; depth < query.MaxDepth && len(currentLevel) > 0; depth++ {
+		var nextLevel []string
+
+		for _, nodeID := range currentLevel {
+			edges, err := g.Neighbors(ctx, nodeID, gyrus.EdgeFilter{Direction: "outgoing"})
+			if err != nil {
+				return nil, err
+			}
+
+			for _, edge := range edges {
+				edgeKey := edge.FromDocumentID + "->" + edge.ToDocumentID + ":" + string(edge.RelationshipType)
+				if !visitedEdges[edgeKey] {
+					visitedEdges[edgeKey] = true
+					allEdges = append(allEdges, edge)
+				}
+
+				if !visitedNodes[edge.ToDocumentID] {
+					visitedNodes[edge.ToDocumentID] = true
+					nextLevel = append(nextLevel, edge.ToDocumentID)
+				}
+			}
+		}
+		currentLevel = nextLevel
 	}
 
 	var nodes []string
-	for n := range nodesMap {
+	for n := range visitedNodes {
 		nodes = append(nodes, n)
 	}
 
 	return []gyrus.GraphPath{{
 		Nodes: nodes,
-		Edges: edges,
+		Edges: allEdges,
 	}}, nil
 }

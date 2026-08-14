@@ -10,6 +10,12 @@ import (
 	"github.com/pashagolub/pgxmock/v4"
 )
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Provider Integration Test
+// [Purpose]: Verifies that PostgreSQL Store creates a document and appends an entry to documents_history.
+// [Execution Surface]: In-Memory PostgreSQL Mock Pool (pgxmock)
+// [Assertions]: INSERT queries for documents and documents_history execute in a transaction.
+// -----------------------------------------------------------------------------
 func TestStore_Create(t *testing.T) {
 	mock, err := pgxmock.NewPool()
 	if err != nil {
@@ -44,6 +50,12 @@ func TestStore_Create(t *testing.T) {
 	}
 }
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Provider Integration Test
+// [Purpose]: Verifies that PostgreSQL Store fetches document frontmatter JSON and content.
+// [Execution Surface]: In-Memory PostgreSQL Mock Pool (pgxmock)
+// [Assertions]: SELECT query returns frontmatter and content fields without error.
+// -----------------------------------------------------------------------------
 func TestStore_Get(t *testing.T) {
 	mock, err := pgxmock.NewPool()
 	if err != nil {
@@ -83,6 +95,12 @@ func TestStore_Get(t *testing.T) {
 	}
 }
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Provider Integration Test
+// [Purpose]: Verifies that PostgreSQL Store updates document content with row locking (SELECT ... FOR UPDATE) and history logging.
+// [Execution Surface]: In-Memory PostgreSQL Mock Pool (pgxmock)
+// [Assertions]: Transaction locks row, updates documents, and writes new history version.
+// -----------------------------------------------------------------------------
 func TestStore_Update(t *testing.T) {
 	mock, err := pgxmock.NewPool()
 	if err != nil {
@@ -135,6 +153,12 @@ func TestStore_Update(t *testing.T) {
 	}
 }
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Provider Integration Test
+// [Purpose]: Verifies that PostgreSQL Store upserts and queries graph relationship edges.
+// [Execution Surface]: In-Memory PostgreSQL Mock Pool (pgxmock)
+// [Assertions]: INSERT and SELECT queries on document_edges table execute cleanly.
+// -----------------------------------------------------------------------------
 func TestStore_GraphEdges(t *testing.T) {
 	mock, err := pgxmock.NewPool()
 	if err != nil {

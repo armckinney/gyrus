@@ -1,0 +1,8 @@
+# Gyrus CLI & MCP Configuration - LocalFS Profile
+storage_provider: localfs
+index_provider: sqlite
+search_provider: sqlite
+
+storage_root: .gyrus/docs
+schemas_path: .gyrus/schemas
+default_owner_group: armckinney
