@@ -303,6 +303,22 @@ func (e *Engine) Unlink(ctx context.Context, fromID string, toID string, relType
 	return e.graph.DeleteEdges(ctx, fromID, toID, relType)
 }
 
+// Neighbors retrieves neighboring relationship edges for a document.
+func (e *Engine) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilter) ([]gyrus.DocumentEdge, error) {
+	if e.graph == nil {
+		return nil, fmt.Errorf("no graph store configured")
+	}
+	return e.graph.Neighbors(ctx, id, filter)
+}
+
+// Traverse executes a graph path search from a start document.
+func (e *Engine) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.GraphPath, error) {
+	if e.graph == nil {
+		return nil, fmt.Errorf("no graph store configured")
+	}
+	return e.graph.Traverse(ctx, query)
+}
+
 // Sync scans storageRoot for Markdown files and re-indexes them.
 func (e *Engine) Sync(ctx context.Context) (gyrus.SyncReport, error) {
 	if e.indexer == nil {

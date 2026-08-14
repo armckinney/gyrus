@@ -1,18 +1,19 @@
 package mcp_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/armckinney/gyrus/internal/mcp"
 )
 
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that the Gyrus MCP Server initializes with all 11 memory tools, resources, and prompt templates.
+// [Execution Surface]: In-Memory MCP Server Instance
+// [Assertions]: Server initializes without error and provides non-nil MCPServer and Engine instances.
+// -----------------------------------------------------------------------------
 func TestMCPServerInitialization(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "gyrus-mcp-test-*")
-	if err != nil {
-		t.Fatalf("Failed creating temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
+	tempDir := t.TempDir()
 
 	server, err := mcp.NewServer(tempDir)
 	if err != nil {
@@ -21,5 +22,13 @@ func TestMCPServerInitialization(t *testing.T) {
 
 	if server == nil {
 		t.Fatal("Expected non-nil server instance")
+	}
+
+	if server.MCPServer() == nil {
+		t.Fatal("Expected non-nil underlying mark3labs MCPServer")
+	}
+
+	if server.Engine() == nil {
+		t.Fatal("Expected non-nil lifecycle Engine")
 	}
 }

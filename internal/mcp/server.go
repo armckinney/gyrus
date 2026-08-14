@@ -6,6 +6,7 @@ import (
 
 	"github.com/armckinney/gyrus/internal/app"
 	"github.com/armckinney/gyrus/internal/domain/lifecycle"
+	"github.com/armckinney/gyrus/internal/mcp/tools"
 	"github.com/mark3labs/mcp-go/server"
 )
 
@@ -38,11 +39,21 @@ func NewServer(storageRoot string) (*Server, error) {
 		engine:      engine,
 	}
 
-	s.registerTools()
+	tools.Register(s.mcpServer, s.engine)
 	s.registerResources()
 	s.registerPrompts()
 
 	return s, nil
+}
+
+// MCPServer returns the underlying mark3labs MCPServer instance.
+func (s *Server) MCPServer() *server.MCPServer {
+	return s.mcpServer
+}
+
+// Engine returns the underlying lifecycle Engine service.
+func (s *Server) Engine() *lifecycle.Engine {
+	return s.engine
 }
 
 // ServeStdio starts serving MCP requests over stdio.
