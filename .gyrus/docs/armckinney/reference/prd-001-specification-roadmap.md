@@ -5,7 +5,7 @@ category: technical
 type: prd
 format: ""
 owner_group: armckinney
-version: 8
+version: 10
 status: active
 tags:
   - roadmap
@@ -32,7 +32,7 @@ Target: Complete core automated release workflows and visual branding to finaliz
 
 ## 🌟 Phase 2: Version 1.0 Release Scope
 
-Target: Expand data providers, transport interfaces, context hygiene, test suite modernization, agent plugin distribution, global config, and embedded visualization surface.
+Target: Expand data providers, transport interfaces, context hygiene, test suite modernization, agent plugin distribution, global config, embedded visualization surface, and repository-scoped context retrieval.
 
 ### 2.1 Additional Storage & Search Provider Drivers
 - [x] **Git Storage Driver (`git`)**: Direct remote Git repository persistence via `go-git` (`GYRUS-201`) without requiring local workspace clones.
@@ -54,6 +54,7 @@ Target: Expand data providers, transport interfaces, context hygiene, test suite
 
 ### 2.5 Persistence Layer Schema Storage & Remote Linkage
 - [ ] **Persistence Layer Schema Storage & Remote Linkage**: Implement core interface (CLI and MCP commands) for storing OKF contract schemas directly in the persistence layer (`storage_provider`), with schemas stored remotely and linked to the active storage provider via enforced locations (`.gyrus/schemas/`).
+  - *Target Test Requirements*: Unit tests for remote schema CRUD operations, schema validation against remote storage paths, and integration tests confirming CLI/MCP schema retrieval from remote persistence.
 
 ### 2.6 Agent Plugin Packaging, Distribution & Init Revamp
 - [ ] **Revamp `gyrus init` CLI Entrypoint**: Reorganize `gyrus init` into explicit subcommands:
@@ -61,16 +62,25 @@ Target: Expand data providers, transport interfaces, context hygiene, test suite
   - `gyrus init client`: Explicit client distribution installer that installs Agent Plugins and equips Gyrus skills/MCP servers across target agent tools (`agy cli`, `copilot/codex cli`, `claude cli`).
 - [ ] **Agent Plugin Packaging**: Package Gyrus skills, subagents, and MCP tools into official Agent Plugins supporting both the [Agent Plugins Standard](https://agent-plugins.org/) format (Google Developers: https://developers.googleblog.com/agent-plugins-package-your-skills-tools-and-more/) and full compatibility with `agy cli`, `copilot/codex cli`, and `claude cli` via `plugin.json` for zero-config agent discovery, distribution, and runtime sidecar loading.
 - [ ] **Interactive Demo Showcase in README**: Add interactive demo recording/GIF showcase to `README.md` highlighting `gyrus init`, `gyrus suggest-context`, and agent MCP workflows.
+  - *Target Test Requirements*: Subcommand integration tests for `gyrus init config` and `gyrus init client`; schema validation tests for `plugin.json` compliance against the Agent Plugins Standard; installer tests asserting correct file topology in target agent paths (`~/.antigravity`, `.agents/`).
 
 ### 2.7 Global Configuration (`~/.gyrus.yaml`)
 - [ ] **Global Config Support (`~/.gyrus.yaml`)**: Support user-wide global configuration files in user home (`~/.gyrus.yaml` and `~/.config/gyrus/config.yaml`) for setting user-level defaults across workspace boundaries.
+  - *Target Test Requirements*: Multi-level config resolution tests verifying `CLI flags > Env Vars > Workspace .gyrus.yaml > Global ~/.gyrus.yaml > Defaults`, and fallback behavior when global config files are missing or malformed.
 
 ### 2.8 Context Hygiene & Governance
 - [ ] **Stale & Low-Quality Context Cleanup**: Automated staleness detection, decay/quality scoring, garbage collection routines, and `deprecated`/`archived` state sweeps.
+  - *Target Test Requirements*: Decay score algorithm unit tests, threshold boundary assertions, and garbage collection integration sweeps verifying archived/deprecated document retention policies.
 
 ### 2.9 Web UI & Interactive Visualization Surface
 - [ ] **Embedded Web Dashboard (`gyrus ui`)**: Embedded single-page application (SPA) for visual graph topology exploration, ADR browsing, and document editing.
 - [ ] **Interactive Dependency Graph Visualizer**: D3.js or Cytoscape.js interactive node-edge graph visualization of document links (`depends_on`, `supersedes`, `implements`).
+  - *Target Test Requirements*: E2E component tests for `gyrus ui` SPA routes, REST/WebSocket API contract tests, and graph layout rendering tests for node-edge link topologies.
+
+### 2.10 Repository-Focused Context & Reference Scoping
+- [ ] **Workspace & Repository-Scoped Context Retrieval**: Scope context retrieval in `gyrus suggest-context` and `gyrus search` to prioritize local workspace repository context (codebase contracts, active PRDs, workspace ADRs) first before referencing broader contexts.
+- [ ] **Reference Fallback & Cross-Boundary Retrieval**: Implement hierarchical search scoring and reference resolution that isolates local workspace boundaries while cleanly linking back to global technical references, enterprise standards, and upstream governance models.
+  - *Target Test Requirements*: Scoped search ranking tests asserting local workspace context scores higher than external references, and fallback resolution tests ensuring cross-repo links resolve cleanly.
 
 ---
 
@@ -79,5 +89,8 @@ Target: Expand data providers, transport interfaces, context hygiene, test suite
 Target: Multi-tenant enterprise capabilities, full web app conversational chatbot agent, RBAC, and multi-language SDK bindings.
 
 - [ ] **Full Web App Conversational AI Context Retrieval Chatbot Agent**: Embedded conversational AI agent in the Web UI for natural language query answering, interactive context retrieval, multi-document synthesis (integrating `gyrus suggest-context`), and guided contract/ADR drafting.
+  - *Target Test Requirements*: Conversational flow integration tests, prompt synthesis benchmarking, and safety/guardrail validation.
 - [ ] **gRPC Core SDK Endpoint**: High-performance gRPC service definitions for multi-language Core SDK bindings (Python, TypeScript).
+  - *Target Test Requirements*: gRPC proto schema compatibility tests, cross-language SDK client integration matrices (Go/Python/TypeScript).
 - [ ] **Owner-Group Access Control (RBAC)**: Fine-grained Role-Based Access Control enforcing read/write permissions per `owner_group`.
+  - *Target Test Requirements*: Authorization matrix unit tests enforcing read/write rejection for unauthorized owner groups (Exit Code 3).
