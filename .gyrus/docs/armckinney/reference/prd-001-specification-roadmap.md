@@ -5,7 +5,7 @@ category: technical
 type: prd
 format: ""
 owner_group: armckinney
-version: 12
+version: 13
 status: active
 tags:
   - roadmap
@@ -35,7 +35,7 @@ Target: Complete core automated release workflows and visual branding to finaliz
 
 ## 🌟 Phase 2: Version 1.0 Release Scope
 
-Target: Expand data providers, transport interfaces, backend provider IaC, context hygiene, test suite modernization, agent plugin distribution, global config, embedded visualization surface, and repository-scoped context retrieval.
+Target: Expand data providers, transport interfaces, backend provider IaC, test suite modernization, agent plugin distribution, global config, embedded visualization surface, and repository-scoped context retrieval.
 
 ### 2.1 Additional Storage & Search Provider Drivers
 - [x] **Git Storage Driver (`git`)**: Direct remote Git repository persistence via `go-git` (`GYRUS-201`) without requiring local workspace clones.
@@ -71,21 +71,17 @@ Target: Expand data providers, transport interfaces, backend provider IaC, conte
 - [ ] **Global Config Support (`~/.gyrus.yaml`)**: Support user-wide global configuration files in user home (`~/.gyrus.yaml` and `~/.config/gyrus/config.yaml`) for setting user-level defaults across workspace boundaries.
   - *Target Test Requirements*: Multi-level config resolution tests verifying `CLI flags > Env Vars > Workspace .gyrus.yaml > Global ~/.gyrus.yaml > Defaults`, and fallback behavior when global config files are missing or malformed.
 
-### 2.8 Context Hygiene & Governance
-- [ ] **Stale & Low-Quality Context Cleanup**: Automated staleness detection, decay/quality scoring, garbage collection routines, and `deprecated`/`archived` state sweeps.
-  - *Target Test Requirements*: Decay score algorithm unit tests, threshold boundary assertions, and garbage collection integration sweeps verifying archived/deprecated document retention policies.
-
-### 2.9 Web UI & Interactive Visualization Surface
+### 2.8 Web UI & Interactive Visualization Surface
 - [ ] **Embedded Web Dashboard (`gyrus ui`)**: Embedded single-page application (SPA) for visual graph topology exploration, ADR browsing, and document editing.
 - [ ] **Interactive Dependency Graph Visualizer**: D3.js or Cytoscape.js interactive node-edge graph visualization of document links (`depends_on`, `supersedes`, `implements`).
   - *Target Test Requirements*: E2E component tests for `gyrus ui` SPA routes, REST/WebSocket API contract tests, and graph layout rendering tests for node-edge link topologies.
 
-### 2.10 Repository-Focused Context & Reference Scoping
+### 2.9 Repository-Focused Context & Reference Scoping
 - [ ] **Workspace & Repository-Scoped Context Retrieval**: Scope context retrieval in `gyrus suggest-context` and `gyrus search` to prioritize local workspace repository context (codebase contracts, active PRDs, workspace ADRs) first before referencing broader contexts.
 - [ ] **Reference Fallback & Cross-Boundary Retrieval**: Implement hierarchical search scoring and reference resolution that isolates local workspace boundaries while cleanly linking back to global technical references, enterprise standards, and upstream governance models.
   - *Target Test Requirements*: Scoped search ranking tests asserting local workspace context scores higher than external references, and fallback resolution tests ensuring cross-repo links resolve cleanly.
 
-### 2.11 Terraform Infrastructure as Code (IaC) for Backend Providers
+### 2.10 Terraform Infrastructure as Code (IaC) for Backend Providers
 - [ ] **Multi-Cloud Storage & Database Infrastructure Modules**: Build reusable, production-ready Terraform modules (`terraform/modules/`) conforming strictly to repository module structure guidelines (`main.tf`, `locals.tf`, `variables.tf`, `outputs.tf`, `<resource_type>.tf`, standardized naming with `module "std_names"`, and standardized resource tagging):
   - **AWS S3 Object Storage (`storage_aws_s3`)**: Provisions S3 bucket, KMS key / AES-256 server-side encryption, bucket versioning, lifecycle tiering/expiration policies, bucket public access block, and least-privilege IAM policies for Gyrus cloud blob storage.
   - **Azure Blob Storage (`storage_azure_blob`)**: Provisions Azure Resource Group, Storage Account, Blob Containers, TLS 1.3 enforcement, network firewall/private endpoint rules, and Managed Identity / RBAC role assignments (`Storage Blob Data Contributor`).
@@ -98,8 +94,10 @@ Target: Expand data providers, transport interfaces, backend provider IaC, conte
 
 ## 🔮 Phase 3: Future & Enterprise Extensions
 
-Target: Multi-tenant enterprise capabilities, full web app conversational chatbot agent, RBAC, and multi-language SDK bindings.
+Target: Multi-tenant enterprise capabilities, full web app conversational chatbot agent, context hygiene & decay sweeps, RBAC, and multi-language SDK bindings.
 
+- [ ] **Context Hygiene & Governance (Stale & Low-Quality Context Cleanup)**: Automated staleness detection, decay/quality scoring, garbage collection routines, and `deprecated`/`archived` state sweeps.
+  - *Target Test Requirements*: Decay score algorithm unit tests, threshold boundary assertions, and garbage collection integration sweeps verifying archived/deprecated document retention policies.
 - [ ] **Full Web App Conversational AI Context Retrieval Chatbot Agent**: Embedded conversational AI agent in the Web UI for natural language query answering, interactive context retrieval, multi-document synthesis (integrating `gyrus suggest-context`), and guided contract/ADR drafting.
   - *Target Test Requirements*: Conversational flow integration tests, prompt synthesis benchmarking, and safety/guardrail validation.
 - [ ] **gRPC Core SDK Endpoint**: High-performance gRPC service definitions for multi-language Core SDK bindings (Python, TypeScript).
