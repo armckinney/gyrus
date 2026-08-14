@@ -7,12 +7,22 @@ import (
 
 	"github.com/armckinney/gyrus/internal/provider/db"
 	"github.com/armckinney/gyrus/pkg/gyrus"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
+
+// PgxPool defines the interface for pgxpool to allow mocking.
+type PgxPool interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Begin(ctx context.Context) (pgx.Tx, error)
+	Close()
+}
 
 // Indexer implements gyrus.IndexStore over PostgreSQL.
 type Indexer struct {
-	pool       *pgxpool.Pool
+	pool       PgxPool
 	connString string
 }
 
@@ -55,8 +65,8 @@ func (idx *Indexer) initSchema(ctx context.Context) error {
 	return err
 }
 
-// Pool returns the underlying *pgxpool.Pool connection.
-func (idx *Indexer) Pool() *pgxpool.Pool {
+// Pool returns the underlying PgxPool connection.
+func (idx *Indexer) Pool() PgxPool {
 	return idx.pool
 }
 

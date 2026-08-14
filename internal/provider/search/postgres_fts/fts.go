@@ -8,12 +8,22 @@ import (
 
 	"github.com/armckinney/gyrus/internal/provider/db"
 	"github.com/armckinney/gyrus/pkg/gyrus"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
+
+// PgxPool defines the interface for pgxpool to allow mocking.
+type PgxPool interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Begin(ctx context.Context) (pgx.Tx, error)
+	Close()
+}
 
 // SearchProvider implements gyrus.SearchProvider over PostgreSQL tsvector FTS.
 type SearchProvider struct {
-	pool       *pgxpool.Pool
+	pool       PgxPool
 	connString string
 }
 
@@ -28,6 +38,11 @@ func NewSearchProvider(ctx context.Context, connString string) (*SearchProvider,
 		pool:       pool,
 		connString: connString,
 	}, nil
+}
+
+// NewSearchProviderWithPool creates a SearchProvider with a custom pool.
+func NewSearchProviderWithPool(pool PgxPool) *SearchProvider {
+	return &SearchProvider{pool: pool}
 }
 
 // Search executes PostgreSQL tsvector FTS queries.
