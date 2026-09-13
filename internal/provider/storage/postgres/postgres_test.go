@@ -212,3 +212,82 @@ func TestStore_GraphEdges(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Provider Integration Test
+// [Purpose]: Verifies that PostgreSQL Store implements gyrus.SchemaStore for schema CRUD operations in the schemas table.
+// [Execution Surface]: In-Memory PostgreSQL Mock Pool (pgxmock)
+// [Assertions]: Executes INSERT/ON CONFLICT for SaveSchema, SELECT for GetSchema, SELECT for ListSchemas, and DELETE for DeleteSchema.
+// -----------------------------------------------------------------------------
+func TestStore_SchemaStore(t *testing.T) {
+	mock, err := pgxmock.NewPool()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer mock.Close()
+
+	store := &Store{pool: mock}
+	ctx := context.Background()
+
+	content := `---
+id: <unique-id>
+title: <Title>
+category: operations
+type: runbook
+owner_group: ops
+version: 1
+status: active
+---
+
+# Runbook
+`
+
+	// 1. SaveSchema
+	mock.ExpectExec("INSERT INTO schemas").
+		WithArgs("runbook", content).
+		WillReturnResult(pgxmock.NewResult("INSERT", 1))
+
+	if err := store.SaveSchema(ctx, "runbook", content); err != nil {
+		t.Errorf("SaveSchema failed: %v", err)
+	}
+
+	// 2. GetSchema
+	schemaRows := pgxmock.NewRows([]string{"content"}).AddRow(content)
+	mock.ExpectQuery("SELECT content FROM schemas WHERE id = \\$1").
+		WithArgs("runbook").
+		WillReturnRows(schemaRows)
+
+	fetched, err := store.GetSchema(ctx, "runbook")
+	if err != nil {
+		t.Errorf("GetSchema failed: %v", err)
+	}
+	if fetched != content {
+		t.Errorf("GetSchema content mismatch")
+	}
+
+	// 3. ListSchemas
+	listRows := pgxmock.NewRows([]string{"id"}).AddRow("adr").AddRow("runbook")
+	mock.ExpectQuery("SELECT id FROM schemas ORDER BY id").
+		WillReturnRows(listRows)
+
+	list, err := store.ListSchemas(ctx)
+	if err != nil {
+		t.Errorf("ListSchemas failed: %v", err)
+	}
+	if len(list) != 2 || list[0] != "adr" || list[1] != "runbook" {
+		t.Errorf("ListSchemas unexpected result: %v", list)
+	}
+
+	// 4. DeleteSchema
+	mock.ExpectExec("DELETE FROM schemas WHERE id = \\$1").
+		WithArgs("runbook").
+		WillReturnResult(pgxmock.NewResult("DELETE", 1))
+
+	if err := store.DeleteSchema(ctx, "runbook"); err != nil {
+		t.Errorf("DeleteSchema failed: %v", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}

@@ -5,7 +5,7 @@ category: technical
 type: prd
 format: ""
 owner_group: armckinney
-version: 13
+version: 15
 status: active
 tags:
   - roadmap
@@ -56,7 +56,7 @@ Target: Expand data providers, transport interfaces, backend provider IaC, test 
 - [x] **Automated Agent Integration Test Framework**: Automated test suites verifying that AI agents (`agy`, Claude Code, GitHub Copilot, Cursor) actually invoke Gyrus CLI subcommands and MCP tools correctly when prompted with realistic engineering tasks.
 
 ### 2.5 Persistence Layer Schema Storage & Remote Linkage
-- [ ] **Persistence Layer Schema Storage & Remote Linkage**: Implement core interface (CLI and MCP commands) for storing OKF contract schemas directly in the persistence layer (`storage_provider`), with schemas stored remotely and linked to the active storage provider via enforced locations (`.gyrus/schemas/`).
+- [x] **Persistence Layer Schema Storage & Remote Linkage**: Implement core interface (CLI and MCP commands) for storing OKF contract schemas directly in the persistence layer (`storage_provider`), with schemas stored remotely and linked to the active storage provider via enforced locations (`.gyrus/schemas/`).
   - *Target Test Requirements*: Unit tests for remote schema CRUD operations, schema validation against remote storage paths, and integration tests confirming CLI/MCP schema retrieval from remote persistence.
 
 ### 2.6 Agent Plugin Packaging, Distribution & Init Revamp
@@ -71,15 +71,15 @@ Target: Expand data providers, transport interfaces, backend provider IaC, test 
 - [ ] **Global Config Support (`~/.gyrus.yaml`)**: Support user-wide global configuration files in user home (`~/.gyrus.yaml` and `~/.config/gyrus/config.yaml`) for setting user-level defaults across workspace boundaries.
   - *Target Test Requirements*: Multi-level config resolution tests verifying `CLI flags > Env Vars > Workspace .gyrus.yaml > Global ~/.gyrus.yaml > Defaults`, and fallback behavior when global config files are missing or malformed.
 
-### 2.8 Web UI & Interactive Visualization Surface
-- [ ] **Embedded Web Dashboard (`gyrus ui`)**: Embedded single-page application (SPA) for visual graph topology exploration, ADR browsing, and document editing.
-- [ ] **Interactive Dependency Graph Visualizer**: D3.js or Cytoscape.js interactive node-edge graph visualization of document links (`depends_on`, `supersedes`, `implements`).
-  - *Target Test Requirements*: E2E component tests for `gyrus ui` SPA routes, REST/WebSocket API contract tests, and graph layout rendering tests for node-edge link topologies.
-
-### 2.9 Repository-Focused Context & Reference Scoping
+### 2.8 Repository-Focused Context & Reference Scoping
 - [ ] **Workspace & Repository-Scoped Context Retrieval**: Scope context retrieval in `gyrus suggest-context` and `gyrus search` to prioritize local workspace repository context (codebase contracts, active PRDs, workspace ADRs) first before referencing broader contexts.
 - [ ] **Reference Fallback & Cross-Boundary Retrieval**: Implement hierarchical search scoring and reference resolution that isolates local workspace boundaries while cleanly linking back to global technical references, enterprise standards, and upstream governance models.
   - *Target Test Requirements*: Scoped search ranking tests asserting local workspace context scores higher than external references, and fallback resolution tests ensuring cross-repo links resolve cleanly.
+
+### 2.9 Web UI & Interactive Visualization Surface
+- [ ] **Embedded Web Dashboard (`gyrus ui`)**: Embedded single-page application (SPA) for visual graph topology exploration, ADR browsing, and document editing.
+- [ ] **Interactive Dependency Graph Visualizer**: D3.js or Cytoscape.js interactive node-edge graph visualization of document links (`depends_on`, `supersedes`, `implements`).
+  - *Target Test Requirements*: E2E component tests for `gyrus ui` SPA routes, REST/WebSocket API contract tests, and graph layout rendering tests for node-edge link topologies.
 
 ### 2.10 Terraform Infrastructure as Code (IaC) for Backend Providers
 - [ ] **Multi-Cloud Storage & Database Infrastructure Modules**: Build reusable, production-ready Terraform modules (`terraform/modules/`) conforming strictly to repository module structure guidelines (`main.tf`, `locals.tf`, `variables.tf`, `outputs.tf`, `<resource_type>.tf`, standardized naming with `module "std_names"`, and standardized resource tagging):

@@ -145,3 +145,80 @@ storage:
 		t.Errorf("Expected resolved path '%s', got '%s'", expected, resolved)
 	}
 }
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that LocalFS Store implements gyrus.SchemaStore for CRUD operations under .gyrus/schemas/.
+// [Execution Surface]: Real Local Filesystem
+// [Assertions]: Saves schema to .gyrus/schemas/<docType>.md, lists persisted schemas, retrieves content, and deletes schema.
+// -----------------------------------------------------------------------------
+func TestLocalfsSchemaStoreCRUD(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "gyrus-localfs-schema-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	store, err := localfs.NewStore(tempDir)
+	if err != nil {
+		t.Fatalf("Failed to initialize Store: %v", err)
+	}
+
+	var schemaStore gyrus.SchemaStore = store
+	ctx := context.Background()
+
+	// 1. Initially empty
+	schemas, err := schemaStore.ListSchemas(ctx)
+	if err != nil {
+		t.Fatalf("ListSchemas failed: %v", err)
+	}
+	if len(schemas) != 0 {
+		t.Errorf("Expected 0 schemas initially, got %d", len(schemas))
+	}
+
+	// 2. Save schema
+	content := `---
+id: <unique-id>
+title: <Title>
+category: operations
+type: runbook
+owner_group: ops
+version: 1
+status: active
+---
+
+# Runbook Template
+`
+	if err := schemaStore.SaveSchema(ctx, "runbook", content); err != nil {
+		t.Fatalf("SaveSchema failed: %v", err)
+	}
+
+	// 3. List schemas
+	schemas, err = schemaStore.ListSchemas(ctx)
+	if err != nil {
+		t.Fatalf("ListSchemas failed: %v", err)
+	}
+	if len(schemas) != 1 || schemas[0] != "runbook" {
+		t.Errorf("Expected ['runbook'], got: %v", schemas)
+	}
+
+	// 4. Get schema
+	fetched, err := schemaStore.GetSchema(ctx, "runbook")
+	if err != nil {
+		t.Fatalf("GetSchema failed: %v", err)
+	}
+	if fetched != content {
+		t.Errorf("Fetched schema content mismatch")
+	}
+
+	// 5. Delete schema
+	if err := schemaStore.DeleteSchema(ctx, "runbook"); err != nil {
+		t.Fatalf("DeleteSchema failed: %v", err)
+	}
+
+	// 6. Verify deleted
+	_, err = schemaStore.GetSchema(ctx, "runbook")
+	if err == nil {
+		t.Fatal("Expected error getting deleted schema, got nil")
+	}
+}

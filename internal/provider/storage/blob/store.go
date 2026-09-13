@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
+	"github.com/armckinney/gyrus/internal/domain/okf"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 	"gocloud.dev/blob"
 	_ "gocloud.dev/blob/azureblob"
@@ -239,4 +241,81 @@ func (s *Store) Archive(ctx context.Context, id string) error {
 		Status: &archived,
 	}, doc.Version)
 	return err
+}
+
+func (s *Store) schemaPrefix() string {
+	prefix := s.prefix
+	if prefix != "" && !strings.HasSuffix(prefix, "/") {
+		prefix += "/"
+	}
+	return fmt.Sprintf("%s.gyrus/schemas/", prefix)
+}
+
+func (s *Store) schemaKey(docType string) string {
+	return fmt.Sprintf("%s%s.md", s.schemaPrefix(), docType)
+}
+
+// GetSchema retrieves a persisted schema template for a document type from blob storage.
+func (s *Store) GetSchema(ctx context.Context, docType string) (string, error) {
+	key := s.schemaKey(docType)
+	if err := okf.ValidateSchemaPath(key); err != nil {
+		return "", err
+	}
+
+	data, err := s.bucket.ReadAll(ctx, key)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// SaveSchema persists an OKF schema template to the enforced .gyrus/schemas/ path in blob storage.
+func (s *Store) SaveSchema(ctx context.Context, docType string, content string) error {
+	if err := okf.ValidateSchemaContent(docType, content); err != nil {
+		return err
+	}
+
+	key := s.schemaKey(docType)
+	if err := okf.ValidateSchemaPath(key); err != nil {
+		return err
+	}
+
+	return s.bucket.WriteAll(ctx, key, []byte(content), &blob.WriterOptions{
+		ContentType: "text/markdown",
+	})
+}
+
+// ListSchemas enumerates all persisted schema template types under .gyrus/schemas/ in blob storage.
+func (s *Store) ListSchemas(ctx context.Context) ([]string, error) {
+	prefix := s.schemaPrefix()
+	iter := s.bucket.List(&blob.ListOptions{
+		Prefix: prefix,
+	})
+
+	var list []string
+	for {
+		obj, err := iter.Next(ctx)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		name := strings.TrimPrefix(obj.Key, prefix)
+		if strings.HasSuffix(name, ".md") {
+			list = append(list, strings.TrimSuffix(name, ".md"))
+		}
+	}
+	sort.Strings(list)
+	return list, nil
+}
+
+// DeleteSchema removes a persisted schema template from blob storage.
+func (s *Store) DeleteSchema(ctx context.Context, docType string) error {
+	key := s.schemaKey(docType)
+	if err := okf.ValidateSchemaPath(key); err != nil {
+		return err
+	}
+
+	return s.bucket.Delete(ctx, key)
 }

@@ -22,7 +22,6 @@ This document provides a detailed reference for all configuration options suppor
 ```yaml
 version: 1
 profile: small # test | local_full | small | medium | large
-schemas_path: ./.gyrus/schemas # Path to custom user schema templates directory
 
 storage:
   provider: localfs # localfs | git | blob | sqlite | postgres
@@ -49,7 +48,8 @@ search:
 | :--- | :--- | :--- | :--- |
 | **`version`** | Integer | `1` | Configuration schema version identifier. Must be set to `1`. |
 | **`profile`** | String | `small` | Preset deployment profile. Options: `test`, `local_full`, `small`, `medium`, `large`. |
-| **`schemas_path`** | String | `""` | Optional relative or absolute directory path containing custom document schema templates (`<doc-type>.md`). Overrides pre-packaged binary templates. |
+| **`schemas_path`** | String | `""` | *(Obsolete / Deprecated)* Schemas are now stored directly in the persistence layer under `.gyrus/schemas/`. |
+
 
 
 ---

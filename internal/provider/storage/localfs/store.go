@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -211,4 +213,102 @@ func (s *Store) Delete(ctx context.Context, id string) error {
 func (s *Store) Archive(ctx context.Context, id string) error {
 	// For localfs, archiving deletes the document file from disk
 	return s.Delete(ctx, id)
+}
+
+func (s *Store) schemasDir() string {
+	if filepath.Base(s.rootDir) == "docs" {
+		return filepath.Join(filepath.Dir(s.rootDir), "schemas")
+	}
+	return filepath.Join(s.rootDir, "schemas")
+}
+
+func (s *Store) schemaPath(docType string) string {
+	return filepath.Join(s.schemasDir(), fmt.Sprintf("%s.md", docType))
+}
+
+// GetSchema retrieves a persisted schema template for a document type.
+func (s *Store) GetSchema(ctx context.Context, docType string) (string, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	targetPath := s.schemaPath(docType)
+	if err := okf.ValidateSchemaPath(filepath.ToSlash(targetPath)); err != nil {
+		return "", err
+	}
+
+	data, err := os.ReadFile(targetPath)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// SaveSchema persists an OKF schema template to the enforced .gyrus/schemas/ path.
+func (s *Store) SaveSchema(ctx context.Context, docType string, content string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if err := okf.ValidateSchemaContent(docType, content); err != nil {
+		return err
+	}
+
+	dir := s.schemasDir()
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create schemas directory: %w", err)
+	}
+
+	targetPath := s.schemaPath(docType)
+	if err := okf.ValidateSchemaPath(filepath.ToSlash(targetPath)); err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(targetPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed writing schema file: %w", err)
+	}
+
+	return nil
+}
+
+// ListSchemas enumerates all persisted schema template types under .gyrus/schemas/.
+func (s *Store) ListSchemas(ctx context.Context) ([]string, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	dir := s.schemasDir()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var list []string
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".md") {
+			name := strings.TrimSuffix(e.Name(), ".md")
+			list = append(list, name)
+		}
+	}
+	sort.Strings(list)
+	return list, nil
+}
+
+// DeleteSchema removes a persisted schema template from .gyrus/schemas/.
+func (s *Store) DeleteSchema(ctx context.Context, docType string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	targetPath := s.schemaPath(docType)
+	if err := okf.ValidateSchemaPath(filepath.ToSlash(targetPath)); err != nil {
+		return err
+	}
+
+	if err := os.Remove(targetPath); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("schema '%s' not found: %w", docType, err)
+		}
+		return err
+	}
+	return nil
 }

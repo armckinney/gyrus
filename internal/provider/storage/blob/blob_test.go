@@ -117,3 +117,83 @@ func TestBlobStore(t *testing.T) {
 		t.Fatalf("expected error getting deleted document")
 	}
 }
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that Blob Store implements gyrus.SchemaStore for remote schema CRUD operations.
+// [Execution Surface]: In-Memory / Local fileblob bucket
+// [Assertions]: Saves schema to enforced .gyrus/schemas/<docType>.md key, lists schemas, retrieves content, and deletes schema.
+// -----------------------------------------------------------------------------
+func TestBlobSchemaStore(t *testing.T) {
+	ctx := context.Background()
+
+	dir, err := os.MkdirTemp("", "blobstore-schema-*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(dir)
+
+	bucket, err := fileblob.OpenBucket(dir, &fileblob.Options{})
+	if err != nil {
+		t.Fatalf("failed to open fileblob bucket: %v", err)
+	}
+	defer bucket.Close()
+
+	store := NewStoreWithBucket(bucket, "testprefix")
+	var schemaStore gyrus.SchemaStore = store
+
+	// 1. Initial list empty
+	list, err := schemaStore.ListSchemas(ctx)
+	if err != nil {
+		t.Fatalf("ListSchemas failed: %v", err)
+	}
+	if len(list) != 0 {
+		t.Errorf("expected 0 schemas initially, got %d", len(list))
+	}
+
+	// 2. Save schema
+	content := `---
+id: <unique-id>
+title: <Title>
+category: product
+type: spec
+owner_group: product
+version: 1
+status: active
+---
+
+# Product Spec Template
+`
+	if err := schemaStore.SaveSchema(ctx, "spec", content); err != nil {
+		t.Fatalf("SaveSchema failed: %v", err)
+	}
+
+	// 3. List schemas
+	list, err = schemaStore.ListSchemas(ctx)
+	if err != nil {
+		t.Fatalf("ListSchemas failed: %v", err)
+	}
+	if len(list) != 1 || list[0] != "spec" {
+		t.Errorf("expected ['spec'], got %v", list)
+	}
+
+	// 4. Get schema
+	fetched, err := schemaStore.GetSchema(ctx, "spec")
+	if err != nil {
+		t.Fatalf("GetSchema failed: %v", err)
+	}
+	if fetched != content {
+		t.Errorf("fetched schema content mismatch")
+	}
+
+	// 5. Delete schema
+	if err := schemaStore.DeleteSchema(ctx, "spec"); err != nil {
+		t.Fatalf("DeleteSchema failed: %v", err)
+	}
+
+	// 6. Verify deleted
+	_, err = schemaStore.GetSchema(ctx, "spec")
+	if err == nil {
+		t.Fatal("expected error getting deleted schema, got nil")
+	}
+}

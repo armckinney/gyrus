@@ -107,3 +107,81 @@ func TestGitStore(t *testing.T) {
 		t.Errorf("expected error getting deleted doc")
 	}
 }
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that Git Store implements gyrus.SchemaStore for schema CRUD operations under .gyrus/schemas/.
+// [Execution Surface]: In-Memory / Local Bare Git Repository (go-git)
+// [Assertions]: Git commits are generated for schema Save, Get reads file, List enumerates schemas, and Delete commits removal.
+// -----------------------------------------------------------------------------
+func TestGitSchemaStore(t *testing.T) {
+	remoteURL := setupTestRemote(t)
+
+	opts := Options{
+		RepoURL: remoteURL,
+		Branch:  "main",
+	}
+
+	store, err := NewStore(opts)
+	if err != nil {
+		t.Fatalf("failed to create store: %v", err)
+	}
+
+	var schemaStore gyrus.SchemaStore = store
+	ctx := context.Background()
+
+	// 1. Initial list empty
+	list, err := schemaStore.ListSchemas(ctx)
+	if err != nil {
+		t.Fatalf("ListSchemas failed: %v", err)
+	}
+	if len(list) != 0 {
+		t.Errorf("expected 0 schemas initially, got %d", len(list))
+	}
+
+	// 2. Save schema
+	content := `---
+id: <unique-id>
+title: <Title>
+category: technical
+type: guide
+owner_group: dev
+version: 1
+status: active
+---
+
+# Developer Guide Template
+`
+	if err := schemaStore.SaveSchema(ctx, "guide", content); err != nil {
+		t.Fatalf("SaveSchema failed: %v", err)
+	}
+
+	// 3. List schemas
+	list, err = schemaStore.ListSchemas(ctx)
+	if err != nil {
+		t.Fatalf("ListSchemas failed: %v", err)
+	}
+	if len(list) != 1 || list[0] != "guide" {
+		t.Errorf("expected ['guide'], got: %v", list)
+	}
+
+	// 4. Get schema
+	fetched, err := schemaStore.GetSchema(ctx, "guide")
+	if err != nil {
+		t.Fatalf("GetSchema failed: %v", err)
+	}
+	if fetched != content {
+		t.Errorf("fetched schema content mismatch")
+	}
+
+	// 5. Delete schema
+	if err := schemaStore.DeleteSchema(ctx, "guide"); err != nil {
+		t.Fatalf("DeleteSchema failed: %v", err)
+	}
+
+	// 6. Verify deleted
+	_, err = schemaStore.GetSchema(ctx, "guide")
+	if err == nil {
+		t.Fatal("expected error getting deleted schema, got nil")
+	}
+}

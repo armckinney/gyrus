@@ -163,36 +163,9 @@ func ResolveStoragePath(flagPath string) (string, error) {
 	return filepath.Abs("./.gyrus")
 }
 
-// ResolveSchemasPath evaluates custom schemas directory path from config files.
+// ResolveSchemasPath returns empty string as schemas_path is obsolete.
+// Schema storage is managed directly by the persistence provider under .gyrus/schemas/.
 func ResolveSchemasPath() (string, error) {
-	pwd, err := os.Getwd()
-	if err == nil {
-		curr := pwd
-		for {
-			configCandidates := []string{
-				filepath.Join(curr, ".gyrus.yaml"),
-				filepath.Join(curr, ".gyrus.yml"),
-				filepath.Join(curr, ".gyrus", "config.yaml"),
-				filepath.Join(curr, ".gyrus", "config.yml"),
-			}
-
-			for _, candidate := range configCandidates {
-				if data, err := os.ReadFile(candidate); err == nil {
-					var cfg Config
-					if err := yaml.Unmarshal(data, &cfg); err == nil && cfg.SchemasPath != "" {
-						return expandAndAbsRelative(cfg.SchemasPath, curr)
-					}
-				}
-			}
-
-			parent := filepath.Dir(curr)
-			if parent == curr {
-				break
-			}
-			curr = parent
-		}
-	}
-
 	return "", nil
 }
 

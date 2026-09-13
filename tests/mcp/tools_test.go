@@ -210,4 +210,95 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 	if !strings.Contains(archiveText, "Archived") {
 		t.Errorf("Expected archive confirmation, got: %s", archiveText)
 	}
+
+	// 13. gyrus_schema_get
+	schemaGetResp := client.Call(t, "tools/call", map[string]any{
+		"name": "gyrus_schema_get",
+		"arguments": map[string]any{
+			"type": "adr",
+		},
+	})
+	schemaGetText := parseToolContent(t, schemaGetResp)
+	if !strings.Contains(schemaGetText, "Architecture Decision Record") {
+		t.Errorf("Expected ADR schema template, got: %s", schemaGetText)
+	}
+
+	// 14. gyrus_schema_set
+	customRunbook := `---
+id: <unique-id>
+title: <Runbook>
+category: operations
+type: runbook
+owner_group: ops
+version: 1
+status: active
+---
+
+# Runbook Template
+`
+	schemaSetResp := client.Call(t, "tools/call", map[string]any{
+		"name": "gyrus_schema_set",
+		"arguments": map[string]any{
+			"type":    "runbook",
+			"content": customRunbook,
+		},
+	})
+	schemaSetText := parseToolContent(t, schemaSetResp)
+	if !strings.Contains(schemaSetText, "saved") {
+		t.Errorf("Expected saved status, got: %s", schemaSetText)
+	}
+
+	// 15. gyrus_schema_list
+	schemaListResp := client.Call(t, "tools/call", map[string]any{
+		"name":      "gyrus_schema_list",
+		"arguments": map[string]any{},
+	})
+	schemaListText := parseToolContent(t, schemaListResp)
+	if !strings.Contains(schemaListText, "runbook") || !strings.Contains(schemaListText, "persisted") {
+		t.Errorf("Expected runbook persisted in schema list, got: %s", schemaListText)
+	}
+
+	// 16. Read resource memory://schema/runbook
+	readResResp := client.Call(t, "resources/read", map[string]any{
+		"uri": "memory://schema/runbook",
+	})
+	if readResResp.Error != nil {
+		t.Fatalf("resources/read memory://schema/runbook returned error: %+v", readResResp.Error)
+	}
+
+	// 17. gyrus_schema_delete
+	schemaDelResp := client.Call(t, "tools/call", map[string]any{
+		"name": "gyrus_schema_delete",
+		"arguments": map[string]any{
+			"type": "runbook",
+		},
+	})
+	schemaDelText := parseToolContent(t, schemaDelResp)
+	if !strings.Contains(schemaDelText, "deleted") {
+		t.Errorf("Expected deleted status, got: %s", schemaDelText)
+	}
+
+	// 18. gyrus_schema_get for non-existent schema returns isError: true
+	schemaGetDeletedResp := client.Call(t, "tools/call", map[string]any{
+		"name": "gyrus_schema_get",
+		"arguments": map[string]any{
+			"type": "runbook",
+		},
+	})
+	var toolErrRes struct {
+		Content []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"content"`
+		IsError bool `json:"isError"`
+	}
+	if err := json.Unmarshal(schemaGetDeletedResp.Result, &toolErrRes); err != nil {
+		t.Fatalf("Failed unmarshaling tool call result: %v", err)
+	}
+	if !toolErrRes.IsError {
+		t.Errorf("Expected isError=true for non-existent schema, got false")
+	}
+	if len(toolErrRes.Content) == 0 || !strings.Contains(toolErrRes.Content[0].Text, "not found") {
+		t.Errorf("Expected 'not found' error text, got: %+v", toolErrRes.Content)
+	}
 }

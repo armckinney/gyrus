@@ -38,7 +38,7 @@ func TestMasterSetupWorkflow(t *testing.T) {
 	}
 
 	// 2. Verify Storage Dir path string
-	expectedStorageDir := filepath.Join(tempDir, "docs", ".gyrus", "docs")
+	expectedStorageDir := filepath.Join(tempDir, ".gyrus")
 	if result.StorageDir != expectedStorageDir {
 		t.Errorf("Expected storage root path %s, got %s", expectedStorageDir, result.StorageDir)
 	}

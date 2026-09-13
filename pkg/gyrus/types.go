@@ -134,3 +134,10 @@ type SyncReport struct {
 	RemovedFiles   int      `json:"removed_files"`
 	Errors         []string `json:"errors,omitempty"`
 }
+
+// SchemaInfo represents metadata about an OKF schema template.
+type SchemaInfo struct {
+	Type     string `json:"type"`
+	Source   string `json:"source"` // "persisted" or "embedded"
+	Location string `json:"location,omitempty"`
+}
