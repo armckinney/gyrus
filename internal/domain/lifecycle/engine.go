@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -141,6 +142,7 @@ func ValidateMutation(docType gyrus.DocumentType, currentStatus string, isExplic
 // Engine orchestrates document lifecycle, indexing, search, and knowledge graph edge operations.
 type Engine struct {
 	store       gyrus.DocumentStore
+	schemaStore gyrus.SchemaStore
 	search      gyrus.SearchProvider
 	indexer     gyrus.IndexStore
 	graph       gyrus.GraphStore
@@ -149,8 +151,14 @@ type Engine struct {
 
 // NewEngine constructs a new lifecycle Engine.
 func NewEngine(store gyrus.DocumentStore, search gyrus.SearchProvider, indexer gyrus.IndexStore, graph gyrus.GraphStore, storageRoot string) *Engine {
+	var schemaStore gyrus.SchemaStore
+	if ss, ok := store.(gyrus.SchemaStore); ok {
+		schemaStore = ss
+	}
+
 	return &Engine{
 		store:       store,
+		schemaStore: schemaStore,
 		search:      search,
 		indexer:     indexer,
 		graph:       graph,
@@ -325,4 +333,69 @@ func (e *Engine) Sync(ctx context.Context) (gyrus.SyncReport, error) {
 		return gyrus.SyncReport{}, fmt.Errorf("no index store configured")
 	}
 	return e.indexer.Sync(ctx, e.storageRoot)
+}
+
+// GetSchema retrieves the schema template for a document type.
+// Precedence: Active Persistence Layer -> Pre-compiled Binary Embedded Templates.
+// Returns an error if the schema template is not found in either source.
+func (e *Engine) GetSchema(ctx context.Context, docType string) (string, error) {
+	if e.schemaStore != nil {
+		if content, err := e.schemaStore.GetSchema(ctx, docType); err == nil && strings.TrimSpace(content) != "" {
+			return content, nil
+		}
+	}
+	return okf.GetTemplate(docType, "")
+}
+
+// SaveSchema persists an OKF schema template into the active persistence layer.
+func (e *Engine) SaveSchema(ctx context.Context, docType string, content string) error {
+	if e.schemaStore == nil {
+		return fmt.Errorf("active storage provider does not support schema persistence")
+	}
+	return e.schemaStore.SaveSchema(ctx, docType, content)
+}
+
+// ListSchemas enumerates all available schemas across persistence layer and embedded templates.
+func (e *Engine) ListSchemas(ctx context.Context) ([]gyrus.SchemaInfo, error) {
+	seen := make(map[string]gyrus.SchemaInfo)
+
+	// 1. Embedded binary templates
+	for _, t := range okf.ListEmbeddedTemplates() {
+		seen[t] = gyrus.SchemaInfo{
+			Type:   t,
+			Source: "embedded",
+		}
+	}
+
+	// 2. Persisted schemas from active storage provider
+	if e.schemaStore != nil {
+		persisted, err := e.schemaStore.ListSchemas(ctx)
+		if err == nil {
+			for _, p := range persisted {
+				seen[p] = gyrus.SchemaInfo{
+					Type:     p,
+					Source:   "persisted",
+					Location: fmt.Sprintf(".gyrus/schemas/%s.md", p),
+				}
+			}
+		}
+	}
+
+	var result []gyrus.SchemaInfo
+	for _, info := range seen {
+		result = append(result, info)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Type < result[j].Type
+	})
+
+	return result, nil
+}
+
+// DeleteSchema removes a custom schema template from the persistence layer.
+func (e *Engine) DeleteSchema(ctx context.Context, docType string) error {
+	if e.schemaStore == nil {
+		return fmt.Errorf("active storage provider does not support schema persistence")
+	}
+	return e.schemaStore.DeleteSchema(ctx, docType)
 }

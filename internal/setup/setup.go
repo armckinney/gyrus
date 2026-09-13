@@ -58,7 +58,7 @@ func RunSetup(opts SetupOptions) (*SetupResult, error) {
 	result := &SetupResult{}
 
 	// 1. Resolve storage root directory path
-	storageDir := filepath.Join(opts.WorkspaceDir, "docs", ".gyrus", "docs")
+	storageDir := filepath.Join(opts.WorkspaceDir, ".gyrus")
 	result.StorageDir = storageDir
 
 	// 2. Generate .gyrus.yaml config file (if not skipped)

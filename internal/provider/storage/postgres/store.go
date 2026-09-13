@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/armckinney/gyrus/internal/domain/okf"
 	"github.com/armckinney/gyrus/internal/provider/db"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 	"github.com/jackc/pgx/v5"
@@ -77,6 +78,12 @@ func (s *Store) initSchema(ctx context.Context) error {
 		modified_by TEXT,
 		modified_at TIMESTAMPTZ DEFAULT NOW(),
 		PRIMARY KEY (id, version)
+	);
+
+	CREATE TABLE IF NOT EXISTS schemas (
+		id TEXT PRIMARY KEY,
+		content TEXT NOT NULL,
+		updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 	);
 	`
 	_, err := s.pool.Exec(ctx, ddl)
@@ -527,4 +534,66 @@ func (s *Store) SearchProviderSearch(ctx context.Context, query string, filter g
 // Wrapper for the exact interface method
 func (s *Store) SearchDocuments(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
 	return s.SearchFTS(ctx, query, filter)
+}
+
+// --- SchemaStore ---
+
+// GetSchema retrieves a persisted schema template for a document type from PostgreSQL.
+func (s *Store) GetSchema(ctx context.Context, docType string) (string, error) {
+	var content string
+	err := s.pool.QueryRow(ctx, "SELECT content FROM schemas WHERE id = $1", docType).Scan(&content)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return "", fmt.Errorf("schema '%s' not found: %w", docType, err)
+		}
+		return "", err
+	}
+	return content, nil
+}
+
+// SaveSchema persists an OKF schema template to the schemas table in PostgreSQL.
+func (s *Store) SaveSchema(ctx context.Context, docType string, content string) error {
+	if err := okf.ValidateSchemaContent(docType, content); err != nil {
+		return err
+	}
+
+	query := `
+	INSERT INTO schemas (id, content, updated_at)
+	VALUES ($1, $2, NOW())
+	ON CONFLICT (id) DO UPDATE
+	SET content = EXCLUDED.content, updated_at = NOW()
+	`
+	_, err := s.pool.Exec(ctx, query, docType, content)
+	return err
+}
+
+// ListSchemas enumerates all persisted schema template types in PostgreSQL.
+func (s *Store) ListSchemas(ctx context.Context) ([]string, error) {
+	rows, err := s.pool.Query(ctx, "SELECT id FROM schemas ORDER BY id")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		list = append(list, id)
+	}
+	return list, nil
+}
+
+// DeleteSchema removes a persisted schema template from PostgreSQL.
+func (s *Store) DeleteSchema(ctx context.Context, docType string) error {
+	tag, err := s.pool.Exec(ctx, "DELETE FROM schemas WHERE id = $1", docType)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("schema '%s' not found", docType)
+	}
+	return nil
 }

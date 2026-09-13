@@ -1,6 +1,5 @@
 version: 1
 profile: local_full
-schemas_path: ./.gyrus/schemas
 
 storage:
   provider: localfs

@@ -38,3 +38,11 @@ type StorageProvider interface {
 	SaveDocument(ctx context.Context, doc *Document) error
 	SearchDocuments(ctx context.Context, query string, userGroups []string) ([]SearchResult, error)
 }
+
+// SchemaStore manages durable CRUD persistence for OKF contract schema templates in the storage provider.
+type SchemaStore interface {
+	GetSchema(ctx context.Context, docType string) (string, error)
+	SaveSchema(ctx context.Context, docType string, content string) error
+	ListSchemas(ctx context.Context) ([]string, error)
+	DeleteSchema(ctx context.Context, docType string) error
+}

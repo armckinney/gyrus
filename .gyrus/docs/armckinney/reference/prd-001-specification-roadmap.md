@@ -5,7 +5,7 @@ category: technical
 type: prd
 format: ""
 owner_group: armckinney
-version: 13
+version: 14
 status: active
 tags:
   - roadmap
@@ -56,7 +56,7 @@ Target: Expand data providers, transport interfaces, backend provider IaC, test 
 - [x] **Automated Agent Integration Test Framework**: Automated test suites verifying that AI agents (`agy`, Claude Code, GitHub Copilot, Cursor) actually invoke Gyrus CLI subcommands and MCP tools correctly when prompted with realistic engineering tasks.
 
 ### 2.5 Persistence Layer Schema Storage & Remote Linkage
-- [ ] **Persistence Layer Schema Storage & Remote Linkage**: Implement core interface (CLI and MCP commands) for storing OKF contract schemas directly in the persistence layer (`storage_provider`), with schemas stored remotely and linked to the active storage provider via enforced locations (`.gyrus/schemas/`).
+- [x] **Persistence Layer Schema Storage & Remote Linkage**: Implement core interface (CLI and MCP commands) for storing OKF contract schemas directly in the persistence layer (`storage_provider`), with schemas stored remotely and linked to the active storage provider via enforced locations (`.gyrus/schemas/`).
   - *Target Test Requirements*: Unit tests for remote schema CRUD operations, schema validation against remote storage paths, and integration tests confirming CLI/MCP schema retrieval from remote persistence.
 
 ### 2.6 Agent Plugin Packaging, Distribution & Init Revamp

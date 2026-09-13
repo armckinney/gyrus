@@ -149,4 +149,50 @@ func TestToolsExecution(t *testing.T) {
 	if err != nil || archiveRes.IsError {
 		t.Fatalf("HandleArchive failed: %v", err)
 	}
+
+	// 9. Schema Tools: Get, Set, List, Delete
+	schemaGetReq := mcp_sdk.CallToolRequest{}
+	schemaGetReq.Params.Name = "gyrus_schema_get"
+	schemaGetReq.Params.Arguments = map[string]any{"type": "adr"}
+	schemaGetRes, err := handler.HandleSchemaGet(ctx, schemaGetReq)
+	if err != nil || schemaGetRes.IsError {
+		t.Fatalf("HandleSchemaGet failed: %v", err)
+	}
+
+	schemaSetReq := mcp_sdk.CallToolRequest{}
+	schemaSetReq.Params.Name = "gyrus_schema_set"
+	schemaSetReq.Params.Arguments = map[string]any{
+		"type": "runbook",
+		"content": `---
+id: <unique-id>
+title: <Title>
+category: operations
+type: runbook
+owner_group: ops
+version: 1
+status: active
+---
+
+# Runbook MCP Content
+`,
+	}
+	schemaSetRes, err := handler.HandleSchemaSet(ctx, schemaSetReq)
+	if err != nil || schemaSetRes.IsError {
+		t.Fatalf("HandleSchemaSet failed: %v", err)
+	}
+
+	schemaListReq := mcp_sdk.CallToolRequest{}
+	schemaListReq.Params.Name = "gyrus_schema_list"
+	schemaListRes, err := handler.HandleSchemaList(ctx, schemaListReq)
+	if err != nil || schemaListRes.IsError {
+		t.Fatalf("HandleSchemaList failed: %v", err)
+	}
+
+	schemaDelReq := mcp_sdk.CallToolRequest{}
+	schemaDelReq.Params.Name = "gyrus_schema_delete"
+	schemaDelReq.Params.Arguments = map[string]any{"type": "runbook"}
+	schemaDelRes, err := handler.HandleSchemaDelete(ctx, schemaDelReq)
+	if err != nil || schemaDelRes.IsError {
+		t.Fatalf("HandleSchemaDelete failed: %v", err)
+	}
 }

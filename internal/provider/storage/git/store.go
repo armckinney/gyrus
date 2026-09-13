@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -473,4 +474,136 @@ func (s *Store) push() error {
 		return fmt.Errorf("failed to push to remote git repository (%s): %w", s.repoURL, err)
 	}
 	return nil
+}
+
+func (s *Store) schemaPath(docType string) string {
+	return filepath.ToSlash(filepath.Join(".gyrus", "schemas", fmt.Sprintf("%s.md", docType)))
+}
+
+// GetSchema retrieves a persisted schema template for a document type from Git storage.
+func (s *Store) GetSchema(ctx context.Context, docType string) (string, error) {
+	path := s.schemaPath(docType)
+	if err := okf.ValidateSchemaPath(path); err != nil {
+		return "", err
+	}
+
+	f, err := s.fs.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// SaveSchema persists an OKF schema template to .gyrus/schemas/ in Git storage.
+func (s *Store) SaveSchema(ctx context.Context, docType string, content string) error {
+	if err := okf.ValidateSchemaContent(docType, content); err != nil {
+		return err
+	}
+
+	path := s.schemaPath(docType)
+	if err := okf.ValidateSchemaPath(path); err != nil {
+		return err
+	}
+
+	dir := filepath.Dir(path)
+	if err := s.fs.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create schemas dir: %w", err)
+	}
+
+	f, err := s.fs.Create(path)
+	if err != nil {
+		return fmt.Errorf("failed to create schema file: %w", err)
+	}
+	_, err = f.Write([]byte(content))
+	f.Close()
+	if err != nil {
+		return fmt.Errorf("failed to write schema file: %w", err)
+	}
+
+	wt, err := s.repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	if _, err := wt.Add(path); err != nil {
+		return fmt.Errorf("failed to add schema file to git: %w", err)
+	}
+
+	msg := fmt.Sprintf("chore(schemas): save %s schema template", docType)
+	if _, err := wt.Commit(msg, &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  s.authorName,
+			Email: s.authorEmail,
+			When:  time.Now(),
+		},
+	}); err != nil {
+		return fmt.Errorf("failed to commit schema: %w", err)
+	}
+
+	return s.push()
+}
+
+// ListSchemas enumerates all persisted schema template types under .gyrus/schemas/ in Git storage.
+func (s *Store) ListSchemas(ctx context.Context) ([]string, error) {
+	infos, err := s.fs.ReadDir(".gyrus/schemas")
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var list []string
+	for _, info := range infos {
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".md") {
+			list = append(list, strings.TrimSuffix(info.Name(), ".md"))
+		}
+	}
+	sort.Strings(list)
+	return list, nil
+}
+
+// DeleteSchema removes a persisted schema template from Git storage.
+func (s *Store) DeleteSchema(ctx context.Context, docType string) error {
+	path := s.schemaPath(docType)
+	if err := okf.ValidateSchemaPath(path); err != nil {
+		return err
+	}
+
+	if _, err := s.fs.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("schema '%s' not found: %w", docType, err)
+		}
+		return err
+	}
+
+	if err := s.fs.Remove(path); err != nil {
+		return fmt.Errorf("failed to remove schema file: %w", err)
+	}
+
+	wt, err := s.repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	_, _ = wt.Remove(path)
+
+	msg := fmt.Sprintf("chore(schemas): delete %s schema template", docType)
+	if _, err := wt.Commit(msg, &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  s.authorName,
+			Email: s.authorEmail,
+			When:  time.Now(),
+		},
+	}); err != nil {
+		return fmt.Errorf("failed to commit schema deletion: %w", err)
+	}
+
+	return s.push()
 }

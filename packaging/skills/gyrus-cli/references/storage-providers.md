@@ -9,8 +9,7 @@ storage_provider: localfs  # Options: localfs, git, blob
 index_provider: sqlite      # Options: sqlite, postgres
 search_provider: sqlite     # Options: sqlite, postgres_fts, vector
 
-storage_root: .gyrus/docs
-schemas_path: .gyrus/schemas
+storage_root: .gyrus
 default_owner_group: armckinney
 ```
 

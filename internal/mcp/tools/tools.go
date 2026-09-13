@@ -16,13 +16,14 @@ func NewHandler(engine *lifecycle.Engine) *Handler {
 	return &Handler{engine: engine}
 }
 
-// Register registers all 11 Gyrus memory MCP tools with the server.
+// Register registers all Gyrus memory MCP tools with the server.
 func Register(s *server.MCPServer, engine *lifecycle.Engine) {
 	h := NewHandler(engine)
 	h.registerDocumentTools(s)
 	h.registerSearchTools(s)
 	h.registerGraphTools(s)
 	h.registerSyncTools(s)
+	h.registerSchemaTools(s)
 }
 
 func getArgString(req mcp.CallToolRequest, key string) string {

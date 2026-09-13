@@ -33,8 +33,7 @@ storage_provider: git
 index_provider: sqlite
 search_provider: sqlite
 
-storage_root: .gyrus/docs
-schemas_path: .gyrus/schemas
+storage_root: .gyrus
 default_owner_group: %s
 
 git:
@@ -48,8 +47,7 @@ storage_provider: s3
 index_provider: sqlite
 search_provider: sqlite
 
-storage_root: .gyrus/docs
-schemas_path: .gyrus/schemas
+storage_root: .gyrus
 default_owner_group: %s
 
 s3:
@@ -63,8 +61,7 @@ storage_provider: azure_blob
 index_provider: sqlite
 search_provider: sqlite
 
-storage_root: .gyrus/docs
-schemas_path: .gyrus/schemas
+storage_root: .gyrus
 default_owner_group: %s
 
 azure_blob:
@@ -78,8 +75,7 @@ storage_provider: gcs
 index_provider: sqlite
 search_provider: sqlite
 
-storage_root: .gyrus/docs
-schemas_path: .gyrus/schemas
+storage_root: .gyrus
 default_owner_group: %s
 
 gcs:
@@ -92,8 +88,7 @@ storage_provider: blob
 index_provider: sqlite
 search_provider: sqlite
 
-storage_root: .gyrus/docs
-schemas_path: .gyrus/schemas
+storage_root: .gyrus
 default_owner_group: %s
 
 blob:
@@ -106,8 +101,7 @@ storage_provider: postgres
 index_provider: postgres
 search_provider: postgres_fts
 
-storage_root: .gyrus/docs
-schemas_path: .gyrus/schemas
+storage_root: .gyrus
 default_owner_group: %s
 
 postgres:
@@ -120,8 +114,7 @@ storage_provider: localfs
 index_provider: sqlite
 search_provider: vector
 
-storage_root: .gyrus/docs
-schemas_path: .gyrus/schemas
+storage_root: .gyrus
 default_owner_group: %s
 
 vector:
@@ -136,8 +129,7 @@ storage_provider: localfs
 index_provider: sqlite
 search_provider: sqlite
 
-storage_root: .gyrus/docs
-schemas_path: .gyrus/schemas
+storage_root: .gyrus
 default_owner_group: %s
 `, ownerGroup)
 	}

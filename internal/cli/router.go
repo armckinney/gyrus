@@ -17,9 +17,11 @@ func BuildRootCmd(storagePath string) (*cobra.Command, error) {
 	}
 
 	rootCmd := &cobra.Command{
-		Use:   "gyrus",
-		Short: "Gyrus: Unified Context & Memory Engine",
-		Long:  "Gyrus is a high-performance local-first memory and context engine for software development teams and AI agents.",
+		Use:           "gyrus",
+		Short:         "Gyrus: Unified Context & Memory Engine",
+		Long:          "Gyrus is a high-performance local-first memory and context engine for software development teams and AI agents.",
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if commands.GlobalStoragePath != "" {
 				return application.Reset(commands.GlobalStoragePath)

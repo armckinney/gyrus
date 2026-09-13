@@ -249,6 +249,7 @@ func TestMCP_CapabilitiesListing(t *testing.T) {
 		"gyrus_create", "gyrus_get", "gyrus_update", "gyrus_archive",
 		"gyrus_search", "gyrus_suggest_context", "gyrus_link", "gyrus_unlink",
 		"gyrus_neighbors", "gyrus_traverse", "gyrus_sync",
+		"gyrus_schema_get", "gyrus_schema_set", "gyrus_schema_list", "gyrus_schema_delete",
 	}
 
 	toolMap := make(map[string]bool)
