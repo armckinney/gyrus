@@ -38,12 +38,12 @@ docs/agents/plugins/gyrus/
 ├── rules/
 │   └── AGENTS.md        # Context Control Plane rules & instructions
 └── skills/
-    ├── gyrus-cli/
-    │   ├── SKILL.md     # CLI tool usage & OKF schema reference (Open Skill Format)
-    │   └── references/
-    └── gyrus-mcp/
-        ├── SKILL.md     # Native MCP tool definitions & schema reference (Open Skill Format)
+    └── gyrus/
+        ├── SKILL.md     # Unified Agent Skill (MCP tools primary, CLI subcommands fallback)
         └── references/
+            ├── okf-schemas.md
+            ├── mcp-setup.md
+            └── storage-providers.md
 ```
 
 ---

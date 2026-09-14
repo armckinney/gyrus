@@ -47,9 +47,8 @@ Canonical plugin assets reside in `packaging/plugins/gyrus/` and are embedded di
 - **`mcp.json`**: Agent Plugins Standard 1.0.0 MCP manifest referencing `$schema: https://agent-plugins.org/schemas/1.0.0/mcp.schema.json`, configuring the standard I/O (`stdio`) `gyrus mcp` server executable and arguments.
 - **`mcp_config.json`**: Antigravity/Gemini CLI client MCP configuration format.
 - **`rules/AGENTS.md`**: Context control plane rules instructing agents on memory retrieval, search, and context management protocols.
-- **`skills/`**: Packaged skills conforming to the Open Skill Format:
-  - `skills/gyrus-cli/SKILL.md`: Instructions and reference documentation for the Gyrus CLI toolset.
-  - `skills/gyrus-mcp/SKILL.md`: Instructions and reference documentation for native Gyrus Model Context Protocol tools.
+- **`skills/`**: Packaged unified skill conforming to the Open Skill Format:
+  - `skills/gyrus/SKILL.md`: Comprehensive agent skill establishing native MCP tools as the primary interface, CLI subcommands as the resilient fallback and administration interface, and OKF contract governance rules.
 
 ### 2. Complete Deprecation of Standalone Legacy Skills
 - All loose legacy skill packaging directories (`packaging/skills/`, `docs/agents/skills/gyrus-cli`, `docs/agents/skills/gyrus-mcp`) are removed.
