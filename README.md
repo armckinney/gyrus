@@ -76,7 +76,7 @@ graph LR
     end
 
     subgraph Interface ["Adapters & Application Surfaces"]
-        Skill["Skill (Open Skill Format)"]
+        Plugin["Agent Plugin (Agent Plugins Standard)\n- Skills (Open Skill Format)\n- MCP Server (stdio)\n- Rules (AGENTS.md)"]
         CLI["Gyrus CLI"]
         MCP["Gyrus MCP Server"]
         Apps["Applications\ni.e. Serverless Content Navigator Web App\n- Implements AI Chatbot"]
@@ -99,10 +99,10 @@ graph LR
 
     %% Client and Adapter Relations
     CICD -->|invokes| CLI
-    AgentTools -->|invokes| Skill
-    Skill -->|invokes| CLI
+    AgentTools -->|loads plugin| Plugin
+    Plugin -->|invokes| CLI
+    Plugin -->|registers| MCP
     CLI -->|implements| CoreSDK
-    AgentTools -->|OR invokes| MCP
     MCP -->|implements| CoreSDK
     Humans -->|invokes| Apps
     Apps -->|Implements| CoreSDK
@@ -141,18 +141,21 @@ This compiles the standalone `gyrus` executable into the workspace root.
 
 ### 2. Initialize Workspace
 
-Initialize Gyrus in your repository workspace:
+Gyrus decouples workspace repository configuration from client tool distribution using explicit initialization subcommands:
 
+#### Step 2a: Initialize Workspace Configuration
 ```bash
-gyrus init
+gyrus init config
 ```
+Generates `.gyrus.yaml` in the workspace root with your desired storage profile (`localfs`, `git`, `s3`, `azure_blob`, `gcs`, or `postgres`) and security boundaries (`owner_group`).
 
-Running `gyrus init` automatically:
-- Generates `.gyrus.yaml` configuration in the workspace root
-- Equips your repository with `.agents/skills/gyrus` agent skills
-- Registers stdio MCP servers for Cursor / Antigravity, Claude Desktop, OpenAI Codex, and GitHub Copilot
+#### Step 2b: Install Agent Plugin & Register MCP Server
+```bash
+gyrus init client --target antigravity
+```
+Installs the Gyrus Agent Plugin package (compliant with the [Agent Plugins Standard 1.0.0](https://agent-plugins.org/)) into your project or user environment, equipping skills (`gyrus-cli`, `gyrus-mcp`), instructions (`rules/AGENTS.md`), and registering stdio MCP servers for your target AI coding assistant (`antigravity`, `claude`, `codex`, or `copilot`).
 
-> 📖 **Full Guide:** For advanced customization, CLI-only mode (`--no-mcp`), tool targeting (`--mcp-target claude`), and enterprise profiles (PostgreSQL, Vector, Git, S3), see the **[Gyrus Installation & Workspace Initialization Guide](file:///workspaces/gyrus/.gyrus/docs/armckinney/reference/guide-005-installation-and-initialization.md)**.
+> 📖 **Full Guide:** For advanced customization, multi-client options, global user-home installation (`--global`), Docker execution (`--mode docker`), and enterprise storage profiles, see the **[Gyrus Installation & Initialization Guide](.gyrus/docs/armckinney/reference/guide-005-installation-and-initialization.md)**.
 
 Once initialized, AI agents have immediate access to Gyrus CLI commands and OKF frontmatter schema references.
 
@@ -200,6 +203,7 @@ Suggest linearized context matching an agent prompt:
 - ⚙️ **[Configuration Reference](.gyrus/docs/armckinney/reference/tech-ref-002-config-schema.md):** Comprehensive reference for all `.gyrus.yaml` options, profiles, and path precedence.
 - 🛠️ **[CLI Reference Manual](.gyrus/docs/armckinney/reference/tech-ref-001-cli-manual.md):** Detailed argument and flag reference for all 11 `gyrus` CLI subcommands and exit codes.
 - 🔌 **[MCP Server Setup Guide](.gyrus/docs/armckinney/reference/guide-004-mcp-server-setup.md):** Native and Docker containerized MCP stdio server setup for Cursor, Claude Desktop, and VS Code.
-- 🤖 **[Agent Skills Setup Guide](.gyrus/docs/armckinney/reference/guide-003-agent-skills-setup.md):** Instructions for copying `.agents/skills/gyrus/SKILL.md` into code repositories for Claude Code and terminal agents.
+- 🤖 **[Agent Plugins & Skills Setup Guide](.gyrus/docs/armckinney/reference/guide-003-agent-skills-setup.md):** Instructions for installing the Gyrus Agent Plugin and equipping skills for Antigravity, Copilot, Codex, and Claude.
+- 📜 **[ADR-004: Agent Plugin Packaging, Distribution & Init Revamp](.gyrus/docs/armckinney/reference/adr-004-agent-plugin-packaging-distribution-and-init-revamp.md):** Architecture Decision Record formalizing the Agent Plugins Standard 1.0.0, canonical embedded plugins, and explicit init subcommands.
 - 📑 **[Value Proposition & Strategic Positioning PRD](.gyrus/docs/armckinney/reference/prd-002-value-proposition-positioning.md):** Comprehensive market-wide strategic comparison PRD of Gyrus vs enterprise context engines, vector DBs, memory platforms, and agent skills.
 - 📋 **[Specification Implementation Roadmap](.gyrus/docs/armckinney/reference/prd-001-specification-roadmap.md):** Master roadmap across Phase 1 MVP, Phase 2 Version 1.0, and Phase 3 Future Extensions.

@@ -19,12 +19,12 @@ func TestAgentPromptRoutingSimulation(t *testing.T) {
 		t.Fatalf("Failed to resolve repo root: %v", err)
 	}
 
-	cliSkillBytes, err := os.ReadFile(filepath.Join(repoRoot, "packaging", "skills", "gyrus-cli", "SKILL.md"))
+	cliSkillBytes, err := os.ReadFile(filepath.Join(repoRoot, "packaging", "plugins", "gyrus", "skills", "gyrus-cli", "SKILL.md"))
 	if err != nil {
 		t.Fatalf("Failed reading gyrus-cli SKILL.md: %v", err)
 	}
 
-	mcpSkillBytes, err := os.ReadFile(filepath.Join(repoRoot, "packaging", "skills", "gyrus-mcp", "SKILL.md"))
+	mcpSkillBytes, err := os.ReadFile(filepath.Join(repoRoot, "packaging", "plugins", "gyrus", "skills", "gyrus-mcp", "SKILL.md"))
 	if err != nil {
 		t.Fatalf("Failed reading gyrus-mcp SKILL.md: %v", err)
 	}

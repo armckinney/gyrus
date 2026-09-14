@@ -54,7 +54,7 @@ func TestSkillStaticAnalysis(t *testing.T) {
 
 	for _, s := range skills {
 		t.Run(s.name, func(t *testing.T) {
-			skillDir := filepath.Join(repoRoot, "packaging", "skills", s.name)
+			skillDir := filepath.Join(repoRoot, "packaging", "plugins", "gyrus", "skills", s.name)
 			skillMD := filepath.Join(skillDir, "SKILL.md")
 
 			// a. Verify SKILL.md existence & readable frontmatter

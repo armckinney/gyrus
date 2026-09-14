@@ -12,55 +12,141 @@ import (
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies that RunSetup executes the complete initialization workflow across configuration, skills, and MCP targeting.
+// [Purpose]: Verifies that RunConfigSetup creates .gyrus.yaml with designated profile and owner group.
 // [Execution Surface]: In-Memory / Temporary Filesystem
-// [Assertions]: Creates .gyrus.yaml, installs agent skill files, and registers MCP server config JSON.
+// [Assertions]: Creates .gyrus.yaml in workspace and returns correct status fields.
 // -----------------------------------------------------------------------------
-func TestMasterSetupWorkflow(t *testing.T) {
+func TestRunConfigSetup(t *testing.T) {
 	tempDir := t.TempDir()
 
-	result, err := setup.RunSetup(setup.SetupOptions{
+	res, err := setup.RunConfigSetup(setup.ConfigSetupOptions{
 		WorkspaceDir: tempDir,
 		Profile:      setup.ProfileLocal,
 		OwnerGroup:   "test-group",
-		MCPTarget:    setup.MCPTargetAll,
-		SkillTarget:  setup.SkillTargetAll,
-		BinaryCmd:    "gyrus",
 	})
 	if err != nil {
-		t.Fatalf("RunSetup failed: %v", err)
+		t.Fatalf("RunConfigSetup failed: %v", err)
 	}
 
-	// 1. Verify .gyrus.yaml
 	configPath := filepath.Join(tempDir, ".gyrus.yaml")
+	if res.ConfigFile != configPath {
+		t.Errorf("Expected config file %s, got %s", configPath, res.ConfigFile)
+	}
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		t.Errorf("Expected .gyrus.yaml to exist at %s", configPath)
 	}
 
-	// 2. Verify Storage Dir path string
 	expectedStorageDir := filepath.Join(tempDir, ".gyrus")
-	if result.StorageDir != expectedStorageDir {
-		t.Errorf("Expected storage root path %s, got %s", expectedStorageDir, result.StorageDir)
+	if res.StorageDir != expectedStorageDir {
+		t.Errorf("Expected storage root path %s, got %s", expectedStorageDir, res.StorageDir)
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that RunClientSetup installs the complete Agent Plugin package and registers MCP.
+// [Execution Surface]: In-Memory / Temporary Filesystem
+// [Assertions]: Creates plugin.json, mcp.json, mcp_config.json, rules/AGENTS.md, skills/, and .antigravity/mcp.json.
+// -----------------------------------------------------------------------------
+func TestRunClientSetupAntigravity(t *testing.T) {
+	tempDir := t.TempDir()
+
+	result, err := setup.RunClientSetup(setup.ClientSetupOptions{
+		WorkspaceDir: tempDir,
+		Target:       setup.ClientTargetAntigravity,
+		Mode:         setup.MCPModeLocal,
+		BinaryCmd:    "gyrus",
+	})
+	if err != nil {
+		t.Fatalf("RunClientSetup failed: %v", err)
 	}
 
-	// 3. Verify Agent Skill Files
-	cliSkillFile := filepath.Join(tempDir, ".agents", "skills", "gyrus-cli", "SKILL.md")
-	if _, err := os.Stat(cliSkillFile); os.IsNotExist(err) {
-		t.Errorf("Expected CLI skill file at %s", cliSkillFile)
+	pluginDir := filepath.Join(tempDir, ".agents", "plugins", "gyrus")
+	if result.PluginDir != pluginDir {
+		t.Errorf("Expected plugin dir %s, got %s", pluginDir, result.PluginDir)
 	}
 
-	mcpSkillFile := filepath.Join(tempDir, ".agents", "skills", "gyrus-mcp", "SKILL.md")
-	if _, err := os.Stat(mcpSkillFile); os.IsNotExist(err) {
-		t.Errorf("Expected MCP skill file at %s", mcpSkillFile)
+	// 1. Verify plugin.json
+	pluginJSONPath := filepath.Join(pluginDir, "plugin.json")
+	pluginData, err := os.ReadFile(pluginJSONPath)
+	if err != nil {
+		t.Fatalf("Failed reading plugin.json: %v", err)
+	}
+	var manifest map[string]interface{}
+	if err := json.Unmarshal(pluginData, &manifest); err != nil {
+		t.Fatalf("plugin.json is invalid JSON: %v", err)
+	}
+	if manifest["name"] != "gyrus" {
+		t.Errorf("Expected manifest name 'gyrus', got %v", manifest["name"])
+	}
+	if manifest["$schema"] != "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json" {
+		t.Errorf("Expected standard schema, got %v", manifest["$schema"])
 	}
 
-	// 4. Verify MCP Registration
+	// 2. Verify mcp.json (Standard)
+	mcpJSONPath := filepath.Join(pluginDir, "mcp.json")
+	if _, err := os.Stat(mcpJSONPath); os.IsNotExist(err) {
+		t.Errorf("Expected mcp.json at %s", mcpJSONPath)
+	}
+
+	// 3. Verify mcp_config.json (Antigravity)
+	mcpConfigPath := filepath.Join(pluginDir, "mcp_config.json")
+	if _, err := os.Stat(mcpConfigPath); os.IsNotExist(err) {
+		t.Errorf("Expected mcp_config.json at %s", mcpConfigPath)
+	}
+
+	// 4. Verify rules/AGENTS.md
+	rulesPath := filepath.Join(pluginDir, "rules", "AGENTS.md")
+	if _, err := os.Stat(rulesPath); os.IsNotExist(err) {
+		t.Errorf("Expected rules/AGENTS.md at %s", rulesPath)
+	}
+
+	// 5. Verify skills
+	cliSkill := filepath.Join(pluginDir, "skills", "gyrus-cli", "SKILL.md")
+	if _, err := os.Stat(cliSkill); os.IsNotExist(err) {
+		t.Errorf("Expected CLI skill at %s", cliSkill)
+	}
+	mcpSkill := filepath.Join(pluginDir, "skills", "gyrus-mcp", "SKILL.md")
+	if _, err := os.Stat(mcpSkill); os.IsNotExist(err) {
+		t.Errorf("Expected MCP skill at %s", mcpSkill)
+	}
+
+	// 6. Verify client MCP registration
 	antigravityMCP := filepath.Join(tempDir, ".antigravity", "mcp.json")
 	if _, err := os.Stat(antigravityMCP); os.IsNotExist(err) {
 		t.Errorf("Expected Antigravity MCP config at %s", antigravityMCP)
 	}
-	if len(result.InstalledMCP) == 0 {
-		t.Errorf("Expected non-empty InstalledMCP slice")
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that explicit client targets are validated and invalid targets are rejected.
+// [Execution Surface]: Pure Go Logic
+// [Assertions]: 'all' or random strings return an error; valid targets succeed.
+// -----------------------------------------------------------------------------
+func TestClientTargetValidation(t *testing.T) {
+	invalidTargets := []string{"all", "invalid", "", "other"}
+	for _, it := range invalidTargets {
+		_, err := setup.ValidateClientTarget(it)
+		if err == nil {
+			t.Errorf("Expected error for invalid target '%s', got nil", it)
+		}
+	}
+
+	validTargets := []setup.ClientTarget{
+		setup.ClientTargetAntigravity,
+		setup.ClientTargetClaude,
+		setup.ClientTargetCodex,
+		setup.ClientTargetCopilot,
+	}
+	for _, vt := range validTargets {
+		res, err := setup.ValidateClientTarget(string(vt))
+		if err != nil {
+			t.Errorf("Expected valid target for '%s', got error: %v", vt, err)
+		}
+		if res != vt {
+			t.Errorf("Expected %s, got %s", vt, res)
+		}
 	}
 }
 
@@ -176,23 +262,31 @@ func TestRegisterMCPServerModes(t *testing.T) {
 func TestSetupIdempotencyAndPreservation(t *testing.T) {
 	tempDir := t.TempDir()
 
-	opts := setup.SetupOptions{
+	// Config setup 1 & 2
+	cfgOpts := setup.ConfigSetupOptions{
 		WorkspaceDir: tempDir,
 		Profile:      setup.ProfileLocal,
 		OwnerGroup:   "core-eng",
-		MCPTarget:    setup.MCPTargetAll,
-		SkillTarget:  setup.SkillTargetAll,
+	}
+	if _, err := setup.RunConfigSetup(cfgOpts); err != nil {
+		t.Fatalf("Config run 1 failed: %v", err)
+	}
+	if _, err := setup.RunConfigSetup(cfgOpts); err != nil {
+		t.Fatalf("Config run 2 failed: %v", err)
+	}
+
+	// Client setup 1 & 2
+	clientOpts := setup.ClientSetupOptions{
+		WorkspaceDir: tempDir,
+		Target:       setup.ClientTargetAntigravity,
+		Mode:         setup.MCPModeLocal,
 		BinaryCmd:    "gyrus",
 	}
-
-	// Run 1
-	if _, err := setup.RunSetup(opts); err != nil {
-		t.Fatalf("Run 1 failed: %v", err)
+	if _, err := setup.RunClientSetup(clientOpts); err != nil {
+		t.Fatalf("Client run 1 failed: %v", err)
 	}
-
-	// Run 2 (Idempotent replay)
-	if _, err := setup.RunSetup(opts); err != nil {
-		t.Fatalf("Run 2 failed (idempotency violation): %v", err)
+	if _, err := setup.RunClientSetup(clientOpts); err != nil {
+		t.Fatalf("Client run 2 failed: %v", err)
 	}
 
 	// Verify .gyrus.yaml remains intact

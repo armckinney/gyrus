@@ -21,7 +21,7 @@ import (
 func TestCLI_Init(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
-	cmd := exec.Command(gyrusBinPath, "init", "--profile", "local", "--no-mcp", "--no-skill")
+	cmd := exec.Command(gyrusBinPath, "init", "config", "--profile", "local")
 	cmd.Dir = tempWorkspace
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -47,7 +47,7 @@ func TestCLI_CreateAndGet(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
 	// Init
-	initCmd := exec.Command(gyrusBinPath, "init", "--profile", "local", "--no-mcp", "--no-skill")
+	initCmd := exec.Command(gyrusBinPath, "init", "config", "--profile", "local")
 	initCmd.Dir = tempWorkspace
 	if out, err := initCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Init failed: %v\nOutput: %s", err, string(out))
@@ -110,7 +110,7 @@ func TestCLI_Update(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
 	// Init
-	initCmd := exec.Command(gyrusBinPath, "init", "--profile", "local", "--no-mcp", "--no-skill")
+	initCmd := exec.Command(gyrusBinPath, "init", "config", "--profile", "local")
 	initCmd.Dir = tempWorkspace
 	if out, err := initCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Init failed: %v\nOutput: %s", err, string(out))
@@ -178,7 +178,7 @@ func TestCLI_Archive(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
 	// Init
-	initCmd := exec.Command(gyrusBinPath, "init", "--profile", "local", "--no-mcp", "--no-skill")
+	initCmd := exec.Command(gyrusBinPath, "init", "config", "--profile", "local")
 	initCmd.Dir = tempWorkspace
 	if out, err := initCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Init failed: %v\nOutput: %s", err, string(out))

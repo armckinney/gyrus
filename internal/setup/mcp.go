@@ -16,7 +16,6 @@ const (
 	MCPTargetAntigravity MCPTarget = "antigravity"
 	MCPTargetCodex       MCPTarget = "codex"
 	MCPTargetCopilot     MCPTarget = "copilot"
-	MCPTargetAll         MCPTarget = "all"
 )
 
 // MCPMode specifies local binary execution vs containerized stdio execution.
@@ -47,10 +46,14 @@ func RegisterMCPServer(workspaceDir string, target MCPTarget, mode MCPMode, isGl
 		containerImage = "ghcr.io/armckinney/gyrus:latest"
 	}
 
-	targets := []MCPTarget{target}
-	if target == MCPTargetAll {
-		targets = []MCPTarget{MCPTargetAntigravity, MCPTargetClaude, MCPTargetCodex, MCPTargetCopilot}
+	switch target {
+	case MCPTargetClaude, MCPTargetAntigravity, MCPTargetCodex, MCPTargetCopilot:
+		// valid
+	default:
+		return nil, fmt.Errorf("invalid MCP target '%s'. Valid targets: antigravity, claude, codex, copilot", target)
 	}
+
+	targets := []MCPTarget{target}
 
 	var command string
 	var args []string

@@ -30,7 +30,7 @@ graph LR
     end
 
     subgraph Interface ["Adapters & Application Surfaces"]
-        Skill["Skill (Open Skill Format)"]
+        Plugin["Agent Plugin (Agent Plugins Standard)\n- Skills (Open Skill Format)\n- MCP Server (stdio)\n- Rules (AGENTS.md)"]
         CLI["Gyrus CLI"]
         MCP["Gyrus MCP Server"]
         Apps["Applications\ni.e. Serverless Content Navigator Web App\n- Implements AI Chatbot"]
@@ -53,10 +53,10 @@ graph LR
 
     %% Client and Adapter Relations
     CICD -->|invokes| CLI
-    AgentTools -->|invokes| Skill
-    Skill -->|invokes| CLI
+    AgentTools -->|loads plugin| Plugin
+    Plugin -->|invokes| CLI
+    Plugin -->|registers| MCP
     CLI -->|implements| CoreSDK
-    AgentTools -->|OR invokes| MCP
     MCP -->|implements| CoreSDK
     Humans -->|invokes| Apps
     Apps -->|Implements| CoreSDK

@@ -14,9 +14,10 @@ echo "=== 🪐 Starting Live Google Antigravity Skill Integration Test ==="
 # 1. Initialize workspace with Antigravity target
 echo "1. Initializing test workspace..."
 cd "$TEMP_DIR"
-"${REPO_ROOT}/gyrus" init --mcp-target antigravity --skill-target antigravity --json
+"${REPO_ROOT}/gyrus" init config --profile local --json
+"${REPO_ROOT}/gyrus" init client --target antigravity --mode local --json
 
-# 2. Assert .antigravity/mcp.json and agent skills exist
+# 2. Assert .antigravity/mcp.json and agent plugin exist
 if [ -f "${TEMP_DIR}/.antigravity/mcp.json" ]; then
   echo "✅ Dedicated .antigravity/mcp.json verified"
 else
@@ -24,10 +25,10 @@ else
   exit 1
 fi
 
-if [ -f "${TEMP_DIR}/.agents/skills/gyrus-cli/SKILL.md" ] && [ -f "${TEMP_DIR}/.agents/skills/gyrus-mcp/SKILL.md" ]; then
-  echo "✅ Equipped gyrus-cli and gyrus-mcp skills verified"
+if [ -f "${TEMP_DIR}/.agents/plugins/gyrus/plugin.json" ] && [ -f "${TEMP_DIR}/.agents/plugins/gyrus/skills/gyrus-cli/SKILL.md" ]; then
+  echo "✅ Equipped Gyrus Agent Plugin and skills verified"
 else
-  echo "❌ Error: Agent skill files missing in .agents/skills/"
+  echo "❌ Error: Agent plugin files missing in .agents/plugins/gyrus/"
   exit 1
 fi
 

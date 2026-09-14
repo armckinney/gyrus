@@ -60,11 +60,11 @@ Target: Expand data providers, transport interfaces, backend provider IaC, test 
   - *Target Test Requirements*: Unit tests for remote schema CRUD operations, schema validation against remote storage paths, and integration tests confirming CLI/MCP schema retrieval from remote persistence.
 
 ### 2.6 Agent Plugin Packaging, Distribution & Init Revamp
-- [ ] **Revamp `gyrus init` CLI Entrypoint**: Reorganize `gyrus init` into explicit subcommands:
+- [x] **Revamp `gyrus init` CLI Entrypoint**: Reorganize `gyrus init` into explicit subcommands:
   - `gyrus init config`: Interactive or flag-driven creation wizard for `.gyrus.yaml` workspace configuration (setting storage backend `localfs`, `git`, `blob`, `postgres`, `vector`, default owner group, and search provider).
   - `gyrus init client`: Explicit client distribution installer that installs Agent Plugins and equips Gyrus skills/MCP servers across target agent tools (`agy cli`, `copilot/codex cli`, `claude cli`).
-- [ ] **Agent Plugin Packaging**: Package Gyrus skills, subagents, and MCP tools into official Agent Plugins supporting both the [Agent Plugins Standard](https://agent-plugins.org/) format (Google Developers: https://developers.googleblog.com/agent-plugins-package-your-skills-tools-and-more/) and full compatibility with `agy cli`, `copilot/codex cli`, and `claude cli` via `plugin.json` for zero-config agent discovery, distribution, and runtime sidecar loading.
-- [ ] **Interactive Demo Showcase in README**: Add interactive demo recording/GIF showcase to `README.md` highlighting `gyrus init`, `gyrus suggest-context`, and agent MCP workflows.
+- [x] **Agent Plugin Packaging**: Package Gyrus skills, subagents, and MCP tools into official Agent Plugins supporting both the [Agent Plugins Standard](https://agent-plugins.org/) format (Google Developers: https://developers.googleblog.com/agent-plugins-package-your-skills-tools-and-more/) and full compatibility with `agy cli`, `copilot/codex cli`, and `claude cli` via `plugin.json` for zero-config agent discovery, distribution, and runtime sidecar loading.
+- [x] **README Quick Start & Architecture Documentation**: Update `README.md` with explicit initialization subcommands (`gyrus init config`, `gyrus init client`) and updated architecture diagrams highlighting agent plugin delivery.
   - *Target Test Requirements*: Subcommand integration tests for `gyrus init config` and `gyrus init client`; schema validation tests for `plugin.json` compliance against the Agent Plugins Standard; installer tests asserting correct file topology in target agent paths (`~/.antigravity`, `.agents/`).
 
 ### 2.7 Global Configuration (`~/.gyrus.yaml`)

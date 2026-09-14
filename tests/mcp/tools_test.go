@@ -17,7 +17,7 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 	workspaceDir := t.TempDir()
 
 	// Init workspace
-	initCmd := exec.Command(gyrusBinPath, "init", "--profile", "local", "--no-mcp", "--no-skill")
+	initCmd := exec.Command(gyrusBinPath, "init", "config", "--profile", "local")
 	initCmd.Dir = workspaceDir
 	if out, err := initCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Init failed: %v\nOutput: %s", err, string(out))

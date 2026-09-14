@@ -19,11 +19,21 @@ The CLI tool (`gyrus`) is a compiled standalone Go binary that serves as the exe
 
 ## 1. CLI Command Reference
 
-### `gyrus init`
-* **Description:** Bootstraps Gyrus configuration in the target environment.
+### `gyrus init config`
+* **Description:** Bootstraps Gyrus workspace configuration (`.gyrus.yaml`) and storage layout.
 * **Flags:**
-  * `--storage-path <path>` (optional): Custom storage directory (default: `~/.gyrus/` or `./.gyrus/` or `docs/gyrus/`).
-  * `--profile <local|team|enterprise>` (optional): Sets backend profile (default: `local`).
+  * `-p, --profile <profile>` (optional): Configuration profile (`default`, `remote-git`, `remote-s3`, `remote-azure`, `remote-gcs`, `remote-postgres`).
+  * `-o, --owner-group <group>` (optional): Default security owner group.
+  * `--storage-path <path>` (optional): Custom storage directory path.
+
+### `gyrus init client`
+* **Description:** Installs the Gyrus Agent Plugin and registers MCP server integration for an AI coding assistant.
+* **Flags:**
+  * `-t, --target <target>` (required): Explicit client target (`antigravity`, `claude`, `codex`, `copilot`).
+  * `-m, --mode <mode>` (optional): Execution mode (`stdio` or `docker`).
+  * `--mcp-container-image <image>` (optional): Container image tag for docker mode.
+  * `-g, --global` (optional): Install globally in user home instead of workspace.
+  * `--plugin-dir <dir>` (optional): Custom plugin destination directory.
 
 ### `gyrus create`
 * **Description:** Creates a new OKF document. Metadata is passed as CLI flags; content is passed inline or via a file.

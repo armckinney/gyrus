@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "gyrus": {
+      "command": "gyrus",
+      "args": [
+        "mcp",
+        "serve"
+      ]
+    }
+  }
+}
+

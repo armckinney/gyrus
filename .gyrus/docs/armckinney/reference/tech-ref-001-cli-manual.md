@@ -47,11 +47,15 @@ Gyrus CLI commands return deterministic exit codes so shell scripts and AI agent
 
 ## 3. Subcommand Reference
 
-### 1. `gyrus init`
-Initializes Gyrus storage directory and configuration.
+### 1. `gyrus init config` & `gyrus init client`
+Initializes Gyrus workspace configuration or installs client plugins and MCP servers.
 
 ```bash
-gyrus init [--storage-path <path>]
+# Initialize workspace configuration
+gyrus init config [-p <profile>] [-o <owner_group>] [--storage-path <path>]
+
+# Install Agent Plugin and configure MCP client
+gyrus init client -t <antigravity|claude|codex|copilot> [-m <stdio|docker>] [-g] [--plugin-dir <dir>]
 ```
 
 ### 2. `gyrus create`
