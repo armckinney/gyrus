@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/armckinney/gyrus/internal/app"
@@ -119,17 +120,39 @@ func NewInitClientCmd(application *app.App) *cobra.Command {
 				targetDir = filepath.Dir(GlobalStoragePath)
 			}
 
+			// Determine execution mode fallback if docker is not installed
+			resolvedMode := mode
+			if !cmd.Flags().Changed("mode") {
+				if _, err := exec.LookPath("docker"); err != nil {
+					resolvedMode = string(setup.MCPModeLocal)
+				}
+			}
+
+			// Resolve binary path if gyrus is not in PATH
+			binaryCmd := "gyrus"
+			if _, err := exec.LookPath("gyrus"); err != nil {
+				if self, err := os.Executable(); err == nil && filepath.IsAbs(self) {
+					binaryCmd = self
+				}
+			}
+
 			res, err := setup.RunClientSetup(setup.ClientSetupOptions{
 				WorkspaceDir:   targetDir,
 				Target:         clientTarget,
-				Mode:           setup.MCPMode(mode),
+				Mode:           setup.MCPMode(resolvedMode),
 				Global:         global,
 				ContainerImage: image,
-				BinaryCmd:      "gyrus",
+				BinaryCmd:      binaryCmd,
 				PluginDir:      pluginDir,
 			})
 			if err != nil {
 				return err
+			}
+
+			// If targeting Antigravity and agy CLI is present, register into Antigravity plugin registry
+			agyRegistered := false
+			if clientTarget == setup.ClientTargetAntigravity && res.PluginDir != "" {
+				agyRegistered = registerWithAntigravity(res.PluginDir)
 			}
 
 			if !GlobalJSONOutput {
@@ -137,7 +160,10 @@ func NewInitClientCmd(application *app.App) *cobra.Command {
 				if res.PluginDir != "" {
 					fmt.Printf("   - Agent Plugin:  %s (%d files written)\n", res.PluginDir, len(res.PluginFiles))
 				}
-				modeDesc := fmt.Sprintf("Mode: %s", mode)
+				if agyRegistered {
+					fmt.Printf("   - Antigravity:   Registered in plugin registry (agy plugin list)\n")
+				}
+				modeDesc := fmt.Sprintf("Mode: %s", resolvedMode)
 				if global {
 					modeDesc += ", Global: ~"
 				}
@@ -146,8 +172,8 @@ func NewInitClientCmd(application *app.App) *cobra.Command {
 					fmt.Printf("      • %s\n", f)
 				}
 			} else {
-				fmt.Printf("{\"status\":\"equipped\",\"target\":\"%s\",\"mode\":\"%s\",\"plugin_dir\":\"%s\",\"plugin_files_count\":%d,\"mcp_files_count\":%d}\n",
-					clientTarget, mode, res.PluginDir, len(res.PluginFiles), len(res.InstalledMCP))
+				fmt.Printf("{\"status\":\"equipped\",\"target\":\"%s\",\"mode\":\"%s\",\"plugin_dir\":\"%s\",\"plugin_files_count\":%d,\"mcp_files_count\":%d,\"agy_registered\":%t}\n",
+					clientTarget, resolvedMode, res.PluginDir, len(res.PluginFiles), len(res.InstalledMCP), agyRegistered)
 			}
 			return nil
 		},
@@ -223,4 +249,31 @@ func NewMCPCmd(application *app.App) *cobra.Command {
 	mcpCmd.AddCommand(mcpSetupCmd)
 
 	return mcpCmd
+}
+
+// registerWithAntigravity attempts to register the plugin using the agy CLI if present on the machine.
+func registerWithAntigravity(pluginDir string) bool {
+	agyPath := "agy"
+	if _, err := exec.LookPath("agy"); err != nil {
+		userHome, _ := os.UserHomeDir()
+		candidates := []string{
+			filepath.Join(userHome, ".gemini", "bin", "agy"),
+			"/usr/local/bin/agy",
+			"/root/.gemini/bin/agy",
+		}
+		found := false
+		for _, c := range candidates {
+			if _, err := os.Stat(c); err == nil {
+				agyPath = c
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	cmd := exec.Command(agyPath, "plugin", "install", pluginDir)
+	return cmd.Run() == nil
 }
