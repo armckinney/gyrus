@@ -7,11 +7,8 @@
 	"workspaceFolder": "/workspaces/gyrus",
 	"features": {
 		"https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-vscode-customizations.tgz": {},
-		"https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-copilot.tgz": {},
-		"https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-antigravity.tgz": {},
-		"https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-antigravity-remote.tgz": {
-			"registrationName": "gyrus"
-		}
+    	"https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-docker-in-docker.tgz": {},
+		"https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-antigravity.tgz": {}
 	},
 	"customizations": {
 		"vscode": {

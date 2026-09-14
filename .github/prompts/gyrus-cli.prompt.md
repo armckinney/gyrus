@@ -1,1 +1,0 @@
-../../docs/agents/skills/gyrus-cli/SKILL.md
