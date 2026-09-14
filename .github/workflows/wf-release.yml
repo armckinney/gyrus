@@ -67,3 +67,28 @@ jobs:
       image_name: gyrus
       image_tag: ${{ needs.release-cli.outputs.version }}
       platforms: linux/amd64,linux/arm64
+
+  release-container-latest:
+    needs: [release-cli, release-container]
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and Push latest Image
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          VERSION="${{ needs.release-cli.outputs.version }}"
+          echo "Publishing latest tag for ghcr.io/${OWNER}/gyrus:${VERSION}"
+          docker buildx imagetools create \
+            --tag "ghcr.io/${OWNER}/gyrus:latest" \
+            "ghcr.io/${OWNER}/gyrus:${VERSION}"
