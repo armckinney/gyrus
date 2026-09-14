@@ -153,7 +153,7 @@ Generates `.gyrus.yaml` in the workspace root with your desired storage profile 
 ```bash
 gyrus init client --target antigravity
 ```
-Installs the Gyrus Agent Plugin package (compliant with the [Agent Plugins Standard 1.0.0](https://agent-plugins.org/)) into your project or user environment, equipping skills (`gyrus-cli`, `gyrus-mcp`), instructions (`rules/AGENTS.md`), and registering stdio MCP servers for your target AI coding assistant (`antigravity`, `claude`, `codex`, or `copilot`).
+Installs the Gyrus Agent Plugin package (compliant with the [Agent Plugins Standard 1.0.0](https://agent-plugins.org/)) into your project or user environment, equipping the unified Gyrus skill (`skills/gyrus/SKILL.md`), instructions (`rules/AGENTS.md`), and registering stdio MCP servers for your target AI coding assistant (`antigravity`, `claude`, `codex`, or `copilot`).
 
 > 📖 **Full Guide:** For advanced customization, multi-client options, global user-home installation (`--global`), Docker execution (`--mode docker`), and enterprise storage profiles, see the **[Gyrus Installation & Initialization Guide](.gyrus/docs/armckinney/reference/guide-005-installation-and-initialization.md)**.
 

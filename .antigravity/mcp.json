@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "gyrus": {
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-v",
+        "/workspaces/gyrus:/workspace",
+        "-w",
+        "/workspace",
+        "ghcr.io/armckinney/gyrus:latest",
+        "mcp",
+        "serve"
+      ],
+      "command": "docker"
+    }
+  }
+}

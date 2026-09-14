@@ -82,14 +82,9 @@ func TestCLI_Init_MCPAndPluginEquipping(t *testing.T) {
 		t.Errorf("Expected rules/AGENTS.md at %s", rulesFile)
 	}
 
-	cliSkill := filepath.Join(pluginDir, "skills", "gyrus-cli", "SKILL.md")
-	if _, err := os.Stat(cliSkill); os.IsNotExist(err) {
-		t.Errorf("Expected CLI skill in plugin at %s", cliSkill)
-	}
-
-	mcpSkill := filepath.Join(pluginDir, "skills", "gyrus-mcp", "SKILL.md")
-	if _, err := os.Stat(mcpSkill); os.IsNotExist(err) {
-		t.Errorf("Expected MCP skill in plugin at %s", mcpSkill)
+	gyrusSkill := filepath.Join(pluginDir, "skills", "gyrus", "SKILL.md")
+	if _, err := os.Stat(gyrusSkill); os.IsNotExist(err) {
+		t.Errorf("Expected Gyrus skill in plugin at %s", gyrusSkill)
 	}
 
 	// 2. Verify MCP registration

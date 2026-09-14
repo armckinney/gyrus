@@ -25,7 +25,7 @@ else
   exit 1
 fi
 
-if [ -f "${TEMP_DIR}/.agents/plugins/gyrus/plugin.json" ] && [ -f "${TEMP_DIR}/.agents/plugins/gyrus/skills/gyrus-cli/SKILL.md" ]; then
+if [ -f "${TEMP_DIR}/.agents/plugins/gyrus/plugin.json" ] && [ -f "${TEMP_DIR}/.agents/plugins/gyrus/skills/gyrus/SKILL.md" ]; then
   echo "✅ Equipped Gyrus Agent Plugin and skills verified"
 else
   echo "❌ Error: Agent plugin files missing in .agents/plugins/gyrus/"

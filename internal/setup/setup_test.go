@@ -102,13 +102,9 @@ func TestRunClientSetupAntigravity(t *testing.T) {
 	}
 
 	// 5. Verify skills
-	cliSkill := filepath.Join(pluginDir, "skills", "gyrus-cli", "SKILL.md")
-	if _, err := os.Stat(cliSkill); os.IsNotExist(err) {
-		t.Errorf("Expected CLI skill at %s", cliSkill)
-	}
-	mcpSkill := filepath.Join(pluginDir, "skills", "gyrus-mcp", "SKILL.md")
-	if _, err := os.Stat(mcpSkill); os.IsNotExist(err) {
-		t.Errorf("Expected MCP skill at %s", mcpSkill)
+	gyrusSkill := filepath.Join(pluginDir, "skills", "gyrus", "SKILL.md")
+	if _, err := os.Stat(gyrusSkill); os.IsNotExist(err) {
+		t.Errorf("Expected Gyrus skill at %s", gyrusSkill)
 	}
 
 	// 6. Verify client MCP registration

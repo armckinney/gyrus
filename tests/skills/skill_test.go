@@ -25,9 +25,16 @@ func TestSkillStaticAnalysis(t *testing.T) {
 		expectedActions []string
 	}{
 		{
-			name:       "gyrus-cli",
+			name:       "gyrus",
 			references: []string{"okf-schemas.md", "mcp-setup.md", "storage-providers.md"},
 			expectedActions: []string{
+				"gyrus_suggest_context",
+				"gyrus_search",
+				"gyrus_get_document",
+				"gyrus_create_document",
+				"gyrus_update_document",
+				"gyrus_link_documents",
+				"gyrus_sync",
 				"suggest-context",
 				"search",
 				"get",
@@ -35,19 +42,6 @@ func TestSkillStaticAnalysis(t *testing.T) {
 				"update",
 				"link",
 				"sync",
-			},
-		},
-		{
-			name:       "gyrus-mcp",
-			references: []string{"okf-schemas.md", "mcp-setup.md", "storage-providers.md"},
-			expectedActions: []string{
-				"gyrus_suggest_context",
-				"gyrus_search",
-				"gyrus_get",
-				"gyrus_create",
-				"gyrus_update",
-				"gyrus_link",
-				"gyrus_sync",
 			},
 		},
 	}

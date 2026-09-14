@@ -151,46 +151,36 @@ func InstallAgentPlugin(opts PluginInstallOptions) ([]string, error) {
 	}
 	createdFiles = append(createdFiles, rulesPath)
 
-	// 6. Write skills/
-	skillTypes := []struct {
-		folderName string
-		content    string
-	}{
-		{folderName: "gyrus-cli", content: embeddedSkillMD},
-		{folderName: "gyrus-mcp", content: embeddedMCPSkillMD},
+	// 6. Write skills/gyrus
+	skillDir := filepath.Join(opts.TargetDir, "skills", "gyrus")
+	refDir := filepath.Join(skillDir, "references")
+	if err := os.MkdirAll(refDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed creating skill dir %s: %w", refDir, err)
 	}
 
-	for _, st := range skillTypes {
-		dir := filepath.Join(opts.TargetDir, "skills", st.folderName)
-		refDir := filepath.Join(dir, "references")
-		if err := os.MkdirAll(refDir, 0755); err != nil {
-			return nil, fmt.Errorf("failed creating skill dir %s: %w", refDir, err)
-		}
-
-		skillFile := filepath.Join(dir, "SKILL.md")
-		if err := os.WriteFile(skillFile, []byte(st.content), 0644); err != nil {
-			return nil, err
-		}
-		createdFiles = append(createdFiles, skillFile)
-
-		schemasRef := filepath.Join(refDir, "okf-schemas.md")
-		if err := os.WriteFile(schemasRef, []byte(embeddedSchemasRef), 0644); err != nil {
-			return nil, err
-		}
-		createdFiles = append(createdFiles, schemasRef)
-
-		mcpRef := filepath.Join(refDir, "mcp-setup.md")
-		if err := os.WriteFile(mcpRef, []byte(embeddedMcpRef), 0644); err != nil {
-			return nil, err
-		}
-		createdFiles = append(createdFiles, mcpRef)
-
-		storageRef := filepath.Join(refDir, "storage-providers.md")
-		if err := os.WriteFile(storageRef, []byte(embeddedStorageRef), 0644); err != nil {
-			return nil, err
-		}
-		createdFiles = append(createdFiles, storageRef)
+	skillFile := filepath.Join(skillDir, "SKILL.md")
+	if err := os.WriteFile(skillFile, []byte(embeddedSkillMD), 0644); err != nil {
+		return nil, err
 	}
+	createdFiles = append(createdFiles, skillFile)
+
+	schemasRef := filepath.Join(refDir, "okf-schemas.md")
+	if err := os.WriteFile(schemasRef, []byte(embeddedSchemasRef), 0644); err != nil {
+		return nil, err
+	}
+	createdFiles = append(createdFiles, schemasRef)
+
+	mcpRef := filepath.Join(refDir, "mcp-setup.md")
+	if err := os.WriteFile(mcpRef, []byte(embeddedMcpRef), 0644); err != nil {
+		return nil, err
+	}
+	createdFiles = append(createdFiles, mcpRef)
+
+	storageRef := filepath.Join(refDir, "storage-providers.md")
+	if err := os.WriteFile(storageRef, []byte(embeddedStorageRef), 0644); err != nil {
+		return nil, err
+	}
+	createdFiles = append(createdFiles, storageRef)
 
 	return createdFiles, nil
 }
@@ -229,117 +219,59 @@ This document instructs AI agents (Antigravity, Claude Code, GitHub Copilot, Ope
 
 const (
 	embeddedSkillMD = `---
-name: gyrus-cli
-description: Gyrus Unified Context & Memory Engine CLI agent skill. Use to search, retrieve, create, update, link, and suggest relevant OKF codebase context for tasks via gyrus CLI subcommands.
+name: gyrus
+description: Gyrus Unified Context Control Plane & Memory Engine agent skill. Discovers, retrieves, creates, and maintains OKF codebase context (ADRs, PRDs, specs) using native MCP tools (primary) or CLI subcommands (fallback).
 applyTo:
   - "**"
 ---
 
-# Gyrus Agent Skill Specification & CLI Reference
+# Gyrus Agent Skill: Context Control Plane & Memory Engine
 
-This skill equips AI agents (Antigravity, Claude Code, Codex, GitHub Copilot) to interact directly with Gyrus codebase memory via the ` + "`" + `gyrus` + "`" + ` CLI executable.
+This skill equips AI coding assistants (Google Antigravity, GitHub Copilot, OpenAI Codex, Claude) to discover, synthesize, create, and maintain codebase context through the **Gyrus Context Control Plane**.
 
 ---
 
 ## 💡 Core Agent Guidelines
 
-1. **Before Modifying Code:** Always run ` + "`" + `gyrus suggest-context --prompt "<task description>"` + "`" + ` or ` + "`" + `gyrus search --query "<keyword>"` + "`" + ` to read relevant ADRs and technical contracts.
-2. **Machine Parsing:** Pass global ` + "`" + `--json` + "`" + ` flag to receive structured JSON envelopes instead of terminal formatted text.
-3. **ID Naming Rule:** Document IDs MUST match lower-case pattern ` + "`" + `^[a-z0-9-_]+$` + "`" + ` (e.g., ` + "`" + `adr-001-storage-engine` + "`" + `).
-4. **Exit Codes Protocol:** ` + "`" + `0` + "`" + `: Success, ` + "`" + `1` + "`" + `: Schema/ID validation error, ` + "`" + `2` + "`" + `: Illegal state transition, ` + "`" + `3` + "`" + `: Permission error, ` + "`" + `4` + "`" + `: Lock conflict, ` + "`" + `5` + "`" + `: Record/Storage error.
+1. **Context First Before Editing Code**:
+   - Always resolve relevant architectural and design context before modifying codebase implementation.
+   - **Primary Interface (Native MCP):** Call ` + "`" + `gyrus_suggest_context({ prompt: "<task description>" })` + "`" + ` or ` + "`" + `gyrus_search({ query: "<keywords>" })` + "`" + `.
+   - **Fallback Interface (CLI):** If MCP tools are unavailable or in shell-only environments, run ` + "`" + `gyrus suggest-context --prompt "<task description>"` + "`" + ` or ` + "`" + `gyrus search --query "<keywords>" --json` + "`" + `.
+2. **Document Mutability & Immutability Rules**:
+   - 🌿 **Living Documents** (` + "`" + `prd` + "`" + `, ` + "`" + `specification` + "`" + `, ` + "`" + `guide` + "`" + `, ` + "`" + `standards` + "`" + `, ` + "`" + `glossary` + "`" + `, ` + "`" + `product` + "`" + `, ` + "`" + `technical-reference` + "`" + `): Capture active system state. Agents MUST update living specs and standards when implementation or design evolves.
+   - 📜 **Immutable Decision Logs** (` + "`" + `adr` + "`" + `, ` + "`" + `improvement-proposal` + "`" + `, ` + "`" + `release-note` + "`" + `): Historical snapshots. Once accepted or published (` + "`" + `status: accepted` + "`" + ` / ` + "`" + `status: active` + "`" + `), they are strictly immutable (` + "`" + `immutable: true` + "`" + `). When architectural decisions change:
+     1. Propose a NEW ADR (` + "`" + `gyrus_create_document` + "`" + ` or ` + "`" + `gyrus create` + "`" + `).
+     2. Link the new ADR to supersede the old one (` + "`" + `gyrus_link_documents` + "`" + ` or ` + "`" + `gyrus link` + "`" + `).
+     3. Update the old ADR status to ` + "`" + `superseded` + "`" + ` (` + "`" + `gyrus_update_document` + "`" + ` or ` + "`" + `gyrus update` + "`" + `).
+3. **OKF Contract Schema Compliance**:
+   - Document IDs MUST match lower-case pattern ` + "`" + `^[a-z0-9-_]+$` + "`" + ` (e.g., ` + "`" + `adr-001-storage-engine` + "`" + `).
+   - Every contract requires YAML frontmatter defining ` + "`" + `id` + "`" + `, ` + "`" + `title` + "`" + `, ` + "`" + `category` + "`" + `, ` + "`" + `type` + "`" + `, ` + "`" + `owner_group` + "`" + `, ` + "`" + `version` + "`" + `, ` + "`" + `status` + "`" + `.
 
 ---
 
-## 🛠️ Complete CLI Command Reference
+## 🛠️ Primary Interface: Model Context Protocol (MCP) Tools
 
-### 1. ` + "`" + `gyrus suggest-context` + "`" + `
-Linearizes top relevant documents matching a task prompt (Recommended first step).
-
-### 2. ` + "`" + `gyrus search` + "`" + `
-Executes FTS5 lexical keyword search across documents.
-
-### 3. ` + "`" + `gyrus get` + "`" + `
-Retrieves a single document by ID.
-
-### 4. ` + "`" + `gyrus create` + "`" + `
-Creates a new OKF contract document.
-
-### 5. ` + "`" + `gyrus update` + "`" + `
-Patches metadata fields or content of an existing document.
-
-### 6. ` + "`" + `gyrus link` + "`" + ` / ` + "`" + `gyrus unlink` + "`" + `
-Creates or removes a directed relationship edge between two documents.
-
-### 7. ` + "`" + `gyrus sync` + "`" + `
-Re-indexes filesystem documents and extracts dependency links.
+Use native MCP tools whenever available:
+- **` + "`" + `gyrus_suggest_context` + "`" + `**: ` + "`" + `{ "prompt": string, "limit"?: int }` + "`" + `
+- **` + "`" + `gyrus_search` + "`" + `**: ` + "`" + `{ "query": string, "limit"?: int }` + "`" + `
+- **` + "`" + `gyrus_get_document` + "`" + `**: ` + "`" + `{ "id": string }` + "`" + `
+- **` + "`" + `gyrus_create_document` + "`" + `**: ` + "`" + `{ "id": string, "title": string, "category": string, "type": string, "owner_group": string, "status": string, "content": string }` + "`" + `
+- **` + "`" + `gyrus_update_document` + "`" + `**: ` + "`" + `{ "id": string, "title"?: string, "status"?: string, "content"?: string }` + "`" + `
+- **` + "`" + `gyrus_link_documents` + "`" + `**: ` + "`" + `{ "from_id": string, "to_id": string, "rel_type": string }` + "`" + `
+- **` + "`" + `gyrus_sync` + "`" + `**: ` + "`" + `{}` + "`" + `
 
 ---
 
-## 📚 Skill Reference Guides
+## 💻 Fallback & Admin Interface: Gyrus CLI
 
-- 📄 **[OKF Schemas Reference](references/okf-schemas.md)**
-- 🔌 **[MCP Setup Guide](references/mcp-setup.md)**
-- 🗄️ **[Storage Providers](references/storage-providers.md)**
-`
-
-	embeddedMCPSkillMD = `---
-name: gyrus-mcp
-description: Gyrus Unified Context & Memory Engine MCP skill. Use native Model Context Protocol (MCP) tools and resources to search, retrieve, create, update, link, and suggest relevant OKF codebase context for tasks.
-applyTo:
-  - "**"
----
-
-# Gyrus MCP Agent Skill Specification
-
-This skill equips MCP-enabled AI agents (Cursor, Claude Desktop, OpenAI Codex, GitHub Copilot, Windsurf) to interact directly with Gyrus codebase memory via native Model Context Protocol (MCP) tool calls and resource endpoints.
-
----
-
-## 💡 Core Agent Guidelines
-
-1. **Before Modifying Code:** Always invoke ` + "`" + `gyrus_suggest_context({ prompt: "<task description>" })` + "`" + ` or ` + "`" + `gyrus_search({ query: "<keyword>" })` + "`" + ` to read relevant ADRs and technical contracts.
-2. **ID Naming Rule:** Document IDs MUST match the lower-case pattern ` + "`" + `^[a-z0-9-_]+$` + "`" + ` (e.g., ` + "`" + `adr-001-storage-engine` + "`" + `).
-3. **Linkage & Dependency Graph:** When creating or mutating contracts, link dependent documents using ` + "`" + `gyrus_link_documents({ from_id: "...", to_id: "...", rel_type: "depends_on" })` + "`" + `.
-
----
-
-## 🛠️ Complete MCP Tool Reference
-
-### 1. ` + "`" + `gyrus_suggest_context` + "`" + `
-Linearizes top relevant documents matching a task prompt (Recommended first step before writing code).
-- **Arguments:** ` + "`" + `{ "prompt": string, "limit"?: int }` + "`" + `
-
-### 2. ` + "`" + `gyrus_search` + "`" + `
-Executes FTS5 lexical keyword search across codebase context documents.
-- **Arguments:** ` + "`" + `{ "query": string, "limit"?: int }` + "`" + `
-
-### 3. ` + "`" + `gyrus_get_document` + "`" + `
-Retrieves a single document payload by ID.
-- **Arguments:** ` + "`" + `{ "id": string }` + "`" + `
-
-### 4. ` + "`" + `gyrus_create_document` + "`" + `
-Creates a new OKF contract document in context storage.
-- **Arguments:** ` + "`" + `{ "id": string, "title": string, "category": string, "type": string, "owner_group": string, "status": string, "content": string }` + "`" + `
-
-### 5. ` + "`" + `gyrus_update_document` + "`" + `
-Patches metadata fields or content of an existing contract document.
-- **Arguments:** ` + "`" + `{ "id": string, "title"?: string, "status"?: string, "content"?: string }` + "`" + `
-
-### 6. ` + "`" + `gyrus_link_documents` + "`" + `
-Creates a directed relationship edge between two documents (` + "`" + `depends_on` + "`" + `, ` + "`" + `supersedes` + "`" + `, ` + "`" + `implements` + "`" + `).
-- **Arguments:** ` + "`" + `{ "from_id": string, "to_id": string, "rel_type": string }` + "`" + `
-
-### 7. ` + "`" + `gyrus_sync` + "`" + `
-Re-indexes filesystem documents and extracts dependency links into the FTS database.
-- **Arguments:** ` + "`" + `{}` + "`" + `
-
----
-
-## 🔌 MCP Resource Endpoints
-
-- ` + "`" + `gyrus://documents/{id}` + "`" + `: Direct document payload lookup.
-- ` + "`" + `gyrus://schema/{type}` + "`" + `: OKF document template schema definition.
-- ` + "`" + `gyrus://graph/topology` + "`" + `: Complete dependency graph topology.
+When running in shell-only environments, CI pipelines, or if MCP is unavailable, use the ` + "`" + `gyrus` + "`" + ` CLI:
+- ` + "`" + `gyrus suggest-context --prompt "<task>" --json` + "`" + `
+- ` + "`" + `gyrus search --query "<query>" --json` + "`" + `
+- ` + "`" + `gyrus get <id> --json` + "`" + `
+- ` + "`" + `gyrus create --id "<id>" --title "<title>" --category "<cat>" --type "<type>" --owner-group "<grp>" --content "<md>"` + "`" + `
+- ` + "`" + `gyrus update <id> --status "<status>" --expected-version <v>` + "`" + `
+- ` + "`" + `gyrus link <from-id> <to-id> --rel-type <type>` + "`" + `
+- ` + "`" + `gyrus sync` + "`" + `
 
 ---
 

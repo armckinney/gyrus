@@ -108,13 +108,13 @@ func TestAntigravityPluginIntegration(t *testing.T) {
 	}
 
 	// 5. Validate skills inside plugin
-	cliSkillPath := filepath.Join(pluginDir, "skills", "gyrus-cli", "SKILL.md")
-	skillContent, err := os.ReadFile(cliSkillPath)
+	unifiedSkillPath := filepath.Join(pluginDir, "skills", "gyrus", "SKILL.md")
+	skillContent, err := os.ReadFile(unifiedSkillPath)
 	if err != nil {
-		t.Fatalf("Failed reading equipped CLI skill: %v", err)
+		t.Fatalf("Failed reading equipped Gyrus skill: %v", err)
 	}
 	contentStr := string(skillContent)
-	if !strings.Contains(contentStr, "name: gyrus-cli") {
+	if !strings.Contains(contentStr, "name: gyrus") {
 		t.Errorf("Skill missing valid YAML frontmatter name")
 	}
 }
