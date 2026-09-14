@@ -4,7 +4,7 @@ project_name: gyrus
 before:
   hooks:
     - go mod tidy
-    - bash -c 'TAG="${GORELEASER_CURRENT_TAG:-latest}"; tar -czf gyrus-skill.tar.gz -C packaging/skills gyrus-cli gyrus-mcp && cp gyrus-skill.tar.gz "gyrus-skill_${TAG}.tar.gz"'
+    - bash -c 'TAG="${GORELEASER_CURRENT_TAG:-latest}"; tar -czf gyrus-plugin.tar.gz -C packaging/plugins gyrus && cp gyrus-plugin.tar.gz "gyrus-plugin_${TAG}.tar.gz"'
 
 builds:
   - env:
@@ -24,11 +24,13 @@ builds:
       - -s -w -X main.version={{.Version}}
 
 archives:
-  - format: tar.gz
+  - formats:
+      - tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
-        format: zip
+        formats:
+          - zip
 
 checksum:
   name_template: "checksums.txt"
@@ -38,7 +40,7 @@ snapshot:
 
 release:
   extra_files:
-    - glob: ./gyrus-skill*.tar.gz
+    - glob: ./gyrus-plugin*.tar.gz
 
 changelog:
   sort: asc
