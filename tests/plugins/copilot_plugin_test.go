@@ -11,36 +11,35 @@ import (
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Integration Test
-// [Purpose]: Verifies GitHub Copilot, Codex, Claude Code, and VSCode multi-agent tool configuration generation.
+// [Purpose]: Verifies GitHub Copilot, Codex, and Claude Code client equipping and configuration generation.
 // [Execution Surface]: Filesystem Workspace Integration (.vscode/, .claude/, .codex/)
 // [Assertions]: Target MCP configuration JSON files exist, are valid JSON, and configure Gyrus stdio server.
 // -----------------------------------------------------------------------------
 func TestMultiAgentCopilotAndClaudeIntegration(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
-	_, err := setup.RunSetup(setup.SetupOptions{
-		WorkspaceDir: tempWorkspace,
-		Profile:      setup.ProfileLocal,
-		OwnerGroup:   "armckinney",
-		MCPTarget:    setup.MCPTargetAll,
-		SkillTarget:  setup.SkillTargetAll,
-		BinaryCmd:    "gyrus",
-	})
-	if err != nil {
-		t.Fatalf("RunSetup for all targets failed: %v", err)
-	}
-
 	targets := []struct {
+		target   setup.ClientTarget
 		name     string
 		filePath string
 	}{
-		{"VSCode/Copilot", filepath.Join(tempWorkspace, ".vscode", "mcp.json")},
-		{"Claude", filepath.Join(tempWorkspace, ".claude", "mcp.json")},
-		{"Codex", filepath.Join(tempWorkspace, ".codex", "mcp.json")},
+		{setup.ClientTargetCopilot, "VSCode/Copilot", filepath.Join(tempWorkspace, ".vscode", "mcp.json")},
+		{setup.ClientTargetClaude, "Claude", filepath.Join(tempWorkspace, ".claude", "mcp.json")},
+		{setup.ClientTargetCodex, "Codex", filepath.Join(tempWorkspace, ".codex", "mcp.json")},
 	}
 
 	for _, tc := range targets {
 		t.Run(tc.name, func(t *testing.T) {
+			_, err := setup.RunClientSetup(setup.ClientSetupOptions{
+				WorkspaceDir: tempWorkspace,
+				Target:       tc.target,
+				Mode:         setup.MCPModeLocal,
+				BinaryCmd:    "gyrus",
+			})
+			if err != nil {
+				t.Fatalf("RunClientSetup for %s failed: %v", tc.name, err)
+			}
+
 			data, err := os.ReadFile(tc.filePath)
 			if err != nil {
 				t.Fatalf("Failed to read %s config at %s: %v", tc.name, tc.filePath, err)

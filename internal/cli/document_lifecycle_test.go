@@ -26,10 +26,10 @@ func TestCLIInitAndCreateAndGet(t *testing.T) {
 		t.Fatalf("BuildRootCmd failed: %v", err)
 	}
 
-	// 1. gyrus init
-	rootCmd.SetArgs([]string{"--storage-path", storagePath, "init"})
+	// 1. gyrus init config
+	rootCmd.SetArgs([]string{"--storage-path", storagePath, "init", "config"})
 	if err := rootCmd.Execute(); err != nil {
-		t.Fatalf("gyrus init failed: %v", err)
+		t.Fatalf("gyrus init config failed: %v", err)
 	}
 
 	// 2. gyrus create

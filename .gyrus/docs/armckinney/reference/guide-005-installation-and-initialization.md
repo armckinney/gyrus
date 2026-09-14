@@ -5,22 +5,26 @@ category: technical
 type: guide
 format: markdown
 owner_group: armckinney
-version: 2
+version: 3
 status: active
+last_modified_by: antigravity
+last_updated: 2026-09-13T23:58:30Z
 tags:
   - installation
   - initialization
   - setup
+  - plugins
   - mcp
   - agent-skills
 dependencies:
   - prd-001-specification-roadmap
-  - adr-001-context-storage-architecture
+  - adr-001-oop-core-refactoring-and-package-reorganization
+  - adr-004-agent-plugin-packaging-distribution-and-init-revamp
 ---
 
 # Gyrus Installation & Workspace Initialization Guide
 
-This guide covers installing the Gyrus CLI binary on your machine and initializing your workspace or user home with custom configurations, AI agent skills, and Model Context Protocol (MCP) server registrations.
+This guide covers installing the Gyrus CLI binary on your machine and initializing your workspace or user environment with custom configurations, Agent Plugins, and Model Context Protocol (MCP) server registrations.
 
 ---
 
@@ -44,89 +48,91 @@ Download the pre-compiled binary tarball for your platform directly from [Gyrus 
 
 ---
 
-## 🚀 2. Workspace Initialization (`gyrus init`)
+## 🚀 2. Two-Step Workspace Initialization
 
-The `gyrus init` command is the master entrypoint for initializing a workspace. By default, running `gyrus init` without flags performs a complete setup:
+Gyrus cleanly decouples workspace repository configuration from client tool distribution using two explicit subcommands:
 
-```bash
-gyrus init
+```mermaid
+graph TD
+    A["gyrus init"] -->|Error: Specify subcommand| B{"Choose Workflow"}
+    B --> C["gyrus init config\n(Workspace Setup)"]
+    B --> D["gyrus init client --target <target>\n(Agent Plugin & MCP Registration)"]
+    C --> E[".gyrus.yaml Profile & Storage Root"]
+    D --> F["docs/agents/plugins/gyrus + Client MCP JSON"]
 ```
 
-### What `gyrus init` does automatically:
-1. **Generates Configuration:** Writes a `.gyrus.yaml` file in the workspace root (`storage_root: .gyrus/docs`). Storage directories are created **lazily** on document write (`gyrus create`), keeping workspace root 100% clean on `init`.
-2. **Equips Agent Skills:** Installs Gyrus Agent Skill files (`SKILL.md`, `references/`) exclusively into `.agents/skills/gyrus-cli/` and `.agents/skills/gyrus-mcp/`.
-3. **Registers MCP Servers (Containerized Stdio by Default):** Non-destructively merges Gyrus MCP stdio server configurations into agent tool JSON files for Google Antigravity, Claude, OpenAI Codex, and GitHub Copilot.
+> [!IMPORTANT]
+> Running bare `gyrus init` without a subcommand will exit with an error. Initialization must be performed explicitly via `gyrus init config` and/or `gyrus init client`.
 
 ---
 
-## 🎛️ 3. Advanced Customization & Flag Options
+## ⚙️ 3. Initializing Workspace Configuration (`gyrus init config`)
 
-### 3.1 MCP Execution Modes (`--mcp-mode`)
-Gyrus supports containerized stdio execution (default) and local binary execution:
-
-```bash
-# Containerized Stdio (Default) - Runs via Docker without local binary dependencies
-gyrus init --mcp-mode container --mcp-container-image ghcr.io/armckinney/gyrus:latest
-
-# Local Binary Execution - Uses locally installed 'gyrus' executable
-gyrus init --mcp-mode local
-```
-
-### 3.2 Global User Home MCP Setup (`--global` / `-g`)
-Register MCP server configurations globally in your user home directory (`~`) across all agent platforms instead of (or in addition to) workspace-local config files:
+Bootstraps repository configuration and sets up the local or cloud persistence profile:
 
 ```bash
-gyrus init --global
+gyrus init config
 ```
 
-### 3.3 Target Platform Selection (`--mcp-target` & `--skill-target`)
-Selectively register MCP servers or equip skills for specific AI agent platforms:
+### Flag Options
 
-| Platform Target | Flag Example | Generated MCP Configuration File |
-| :--- | :--- | :--- |
-| **Google Antigravity** | `gyrus init --mcp-target antigravity` | `.antigravity/mcp.json` |
-| **Claude Desktop / Code** | `gyrus init --mcp-target claude` | `.claude/mcp.json` & `~/.config/Claude/claude_desktop_config.json` |
-| **OpenAI Codex** | `gyrus init --mcp-target codex` | `.codex/mcp.json` |
-| **GitHub Copilot / VS Code** | `gyrus init --mcp-target copilot` | `.vscode/mcp.json` |
-| **All Active Agents** | `gyrus init --mcp-target all` | *Registers across all 4 platforms* |
+| Flag | Shorthand | Description | Default |
+| :--- | :--- | :--- | :--- |
+| `--profile` | `-p` | Configuration profile (`default`, `remote-git`, `remote-s3`, `remote-azure`, `remote-gcs`, `remote-postgres`). | `default` |
+| `--owner-group` | `-o` | Default security owner group for documents. | `armckinney` |
+| `--storage-path` | | Custom storage root directory. | `.gyrus/docs` |
 
-### 3.4 Selective Component Initialization (`--no-config`, `--no-mcp`, `--no-skill`)
-You can selectively skip setup components if you only want to equip skills or MCP configs without generating a `.gyrus.yaml` file:
+### Storage Profile Options (`--profile`)
 
 ```bash
-# Skip generating .gyrus.yaml (only equip MCP configs and agent skills)
-gyrus init --no-config
-
-# Skip MCP server registration
-gyrus init --no-mcp
-
-# Skip Agent Skill equipping
-gyrus init --no-skill
-
-# Equip ONLY MCP servers (skip config generation and agent skills)
-gyrus init --no-config --no-skill
+gyrus init config --profile default     # LocalFS Storage + SQLite FTS5
+gyrus init config --profile remote-git  # Remote Git Repository Persistence
+gyrus init config --profile remote-s3   # AWS S3 Bucket Storage
+gyrus init config --profile remote-azure # Azure Blob Container Storage
+gyrus init config --profile remote-gcs  # Google Cloud Storage Bucket
+gyrus init config --profile remote-postgres # PostgreSQL Database Backend
 ```
 
-### 3.5 Storage Profile Selection (`--profile`)
-Specify a pre-configured storage & search profile using `--profile` (`-p`):
-
-```bash
-gyrus init --profile local     # LocalFS Storage + SQLite FTS5 (Default)
-gyrus init --profile git       # Remote Git Repository Persistence
-gyrus init --profile azure     # Dedicated Azure Blob Storage Container
-gyrus init --profile s3        # Dedicated AWS S3 Storage Bucket
-gyrus init --profile gcs       # Dedicated Google Cloud Storage Bucket
-gyrus init --profile postgres  # PostgreSQL Database & FTS Search Backend
-```
-
-### 3.6 Required Cloud Storage Permissions & Access Settings
-When using cloud object storage (`azure_blob`, `s3`, `gcs`), ensure your user identity or AI agent has explicit **Data Plane Read & Write permissions** assigned:
-- **Azure Blob Storage (`azure_blob`):** Standard Azure management roles (*Owner*, *Contributor*) do **NOT** grant data access. Your Entra ID user identity or Managed Identity (`az login`) **MUST be assigned the `Storage Blob Data Contributor` or `Storage Blob Data Owner` role** on the storage account/container. Alternatively, export `AZURE_STORAGE_ACCOUNT` and `AZURE_STORAGE_KEY` (or `AZURE_STORAGE_SAS_TOKEN`).
-- **AWS S3 (`s3`):** IAM policy must grant `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`, and `s3:ListBucket` permissions.
-- **Google Cloud Storage (`gcs`):** Service account / user identity must be assigned `roles/storage.objectAdmin` or `roles/storage.objectUser`.
+### Required Cloud Storage Permissions
+When using cloud object storage (`remote-s3`, `remote-azure`, `remote-gcs`), ensure your environment has appropriate data plane access:
+- **AWS S3 (`remote-s3`):** IAM policy must grant `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`, and `s3:ListBucket`.
+- **Azure Blob (`remote-azure`):** Azure identity must be assigned `Storage Blob Data Contributor` or `Storage Blob Data Owner`.
+- **Google Cloud Storage (`remote-gcs`):** Service account must be assigned `roles/storage.objectAdmin` or `roles/storage.objectUser`.
 
 ---
 
-## 🔒 4. Safe Non-Destructive Config Merging
+## 🤖 4. Installing Agent Plugin & Registering MCP (`gyrus init client`)
 
-Gyrus unmarshals existing `mcpServers` JSON files and non-destructively merges the `"gyrus"` server definition. All pre-existing user servers (e.g. `sqlite`, `github`, `fetch`) remain completely untouched.
+Installs the packaged Gyrus Agent Plugin and registers the MCP server configuration for an explicit AI coding assistant:
+
+```bash
+gyrus init client --target antigravity
+```
+
+### Flag Options
+
+| Flag | Shorthand | Description | Default |
+| :--- | :--- | :--- | :--- |
+| `--target` | `-t` | **Required.** Client target: `antigravity`, `claude`, `codex`, or `copilot`. | None |
+| `--mode` | `-m` | Execution mode: `stdio` (local binary) or `docker` (containerized). | `stdio` |
+| `--mcp-container-image` | | Docker container image tag for containerized mode. | `ghcr.io/armckinney/gyrus:latest` |
+| `--global` | `-g` | Install into user home runtime path rather than repository workspace. | `false` |
+| `--plugin-dir` | | Custom target directory for the extracted plugin bundle. | Derived per target |
+
+> [!NOTE]
+> The ambiguous `--target all` option has been eliminated to prevent accidental mutations across disparate agent configurations. Each target must be installed explicitly.
+
+### Target Platform Mapping
+
+| Platform Target | Flag Example | Generated Plugin Location | Registered MCP Config File |
+| :--- | :--- | :--- | :--- |
+| **Google Antigravity** | `gyrus init client -t antigravity` | `docs/agents/plugins/gyrus/` | `.antigravity/mcp.json` |
+| **GitHub Copilot** | `gyrus init client -t copilot` | `docs/agents/plugins/gyrus/` | `.vscode/mcp.json` |
+| **OpenAI Codex** | `gyrus init client -t codex` | `docs/agents/plugins/gyrus/` | `.codex/mcp.json` |
+| **Claude Desktop / Code** | `gyrus init client -t claude` | *(MCP only)* | `.claude/mcp.json` (or `~/.config/Claude/claude_desktop_config.json` with `-g`) |
+
+---
+
+## 🔒 5. Safe Non-Destructive Config Merging
+
+When updating client MCP configuration files (`.antigravity/mcp.json`, `.vscode/mcp.json`, etc.), Gyrus non-destructively parses existing JSON content and adds or updates only the `"gyrus"` server entry. All other pre-existing user servers (e.g. `sqlite`, `github`, `fetch`) remain completely untouched.

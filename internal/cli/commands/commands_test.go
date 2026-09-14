@@ -18,6 +18,11 @@ import (
 // -----------------------------------------------------------------------------
 func TestCommandsRegistrationAndExecution(t *testing.T) {
 	tempDir := t.TempDir()
+	origWd, err := os.Getwd()
+	if err == nil {
+		_ = os.Chdir(tempDir)
+		defer func() { _ = os.Chdir(origWd) }()
+	}
 	storagePath := filepath.Join(tempDir, "storage")
 
 	application, err := app.New(storagePath)
@@ -28,10 +33,22 @@ func TestCommandsRegistrationAndExecution(t *testing.T) {
 	rootCmd := &cobra.Command{Use: "gyrus"}
 	commands.Register(rootCmd, application)
 
-	// 1. gyrus init
-	rootCmd.SetArgs([]string{"init", "--profile", "local", "--no-mcp", "--no-skill"})
+	// 1. gyrus init config
+	rootCmd.SetArgs([]string{"init", "config", "--profile", "local"})
 	if err := rootCmd.Execute(); err != nil {
-		t.Fatalf("Init command failed: %v", err)
+		t.Fatalf("Init config command failed: %v", err)
+	}
+
+	// 1b. gyrus init client
+	rootCmd.SetArgs([]string{"init", "client", "--target", "antigravity", "--mode", "local"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("Init client command failed: %v", err)
+	}
+
+	// 1c. gyrus init bare (must error)
+	rootCmd.SetArgs([]string{"init"})
+	if err := rootCmd.Execute(); err == nil {
+		t.Fatalf("Expected bare init command to fail, but succeeded")
 	}
 
 	// 2. gyrus create

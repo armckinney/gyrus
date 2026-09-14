@@ -40,8 +40,47 @@ func NewIndexer(dbPath string) (*Indexer, error) {
 
 	return idx, nil
 }
-
 func (idx *Indexer) initSchema() error {
+	// Migrate legacy document_edges table if it has from_id instead of from_document_id
+	var hasFromID, hasFromDocID bool
+	rows, err := idx.db.Query("PRAGMA table_info(document_edges)")
+	if err == nil {
+		for rows.Next() {
+			var cid int
+			var name, ctype string
+			var notnull, pk int
+			var dfltValue interface{}
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltValue, &pk); err == nil {
+				if name == "from_id" {
+					hasFromID = true
+				}
+				if name == "from_document_id" {
+					hasFromDocID = true
+				}
+			}
+		}
+		rows.Close()
+	}
+	if hasFromID && !hasFromDocID {
+		migration := `
+		ALTER TABLE document_edges RENAME TO old_document_edges;
+		CREATE TABLE document_edges (
+			from_document_id TEXT NOT NULL,
+			to_document_id TEXT NOT NULL,
+			relationship_type TEXT NOT NULL,
+			created_by TEXT,
+			created_at DATETIME,
+			PRIMARY KEY (from_document_id, to_document_id, relationship_type)
+		);
+		INSERT INTO document_edges (from_document_id, to_document_id, relationship_type, created_by, created_at)
+		SELECT from_id, to_id, relationship_type, created_by, created_at FROM old_document_edges;
+		DROP TABLE old_document_edges;
+		`
+		if _, err := idx.db.Exec(migration); err != nil {
+			return err
+		}
+	}
+
 	schema := `
 	CREATE TABLE IF NOT EXISTS documents (
 		id TEXT PRIMARY KEY,
@@ -81,7 +120,7 @@ func (idx *Indexer) initSchema() error {
 	CREATE INDEX IF NOT EXISTS idx_edges_from ON document_edges(from_document_id);
 	CREATE INDEX IF NOT EXISTS idx_edges_to ON document_edges(to_document_id);
 	`
-	_, err := idx.db.Exec(schema)
+	_, err = idx.db.Exec(schema)
 	return err
 }
 

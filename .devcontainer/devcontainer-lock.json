@@ -1,19 +1,14 @@
 {
   "features": {
-    "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-antigravity-remote.tgz": {
-      "version": "1.5.0",
-      "resolved": "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-antigravity-remote.tgz",
-      "integrity": "sha256:2f4bd82899b831cc1d8c2be84ac78a61f62f67c3066c0574b493409e13de8468"
-    },
     "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-antigravity.tgz": {
       "version": "1.5.0",
       "resolved": "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-antigravity.tgz",
       "integrity": "sha256:498d78ef64780ba211c91738a19c941d92f5a952093695f3c334bc129e6ee62c"
     },
-    "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-copilot.tgz": {
-      "version": "1.5.0",
-      "resolved": "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-copilot.tgz",
-      "integrity": "sha256:af5330907ece7c9a4b4899fd318b96c84bf54d7eaf5aa3f75a298c0e749e894e"
+    "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-docker-in-docker.tgz": {
+      "version": "1.1.0",
+      "resolved": "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-docker-in-docker.tgz",
+      "integrity": "sha256:ca8b92ab8b91ea6b63ea6bc9564d0a3564f5e120c4af4b5723e1d2fb79cee0e3"
     },
     "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-vscode-customizations.tgz": {
       "version": "1.1.0",

@@ -22,9 +22,9 @@ func TestDistributionArchivePackaging(t *testing.T) {
 		t.Fatalf("Failed to resolve repo root: %v", err)
 	}
 
-	skillsDir := filepath.Join(repoRoot, "packaging", "skills")
-	if _, err := os.Stat(skillsDir); os.IsNotExist(err) {
-		t.Skipf("packaging/skills directory not found at %s; skipping packaging test", skillsDir)
+	pluginsDir := filepath.Join(repoRoot, "packaging", "plugins", "gyrus")
+	if _, err := os.Stat(pluginsDir); os.IsNotExist(err) {
+		t.Skipf("packaging/plugins/gyrus directory not found at %s; skipping packaging test", pluginsDir)
 	}
 
 	// Create an in-memory tar.gz archive representing release bundle
@@ -32,9 +32,9 @@ func TestDistributionArchivePackaging(t *testing.T) {
 	gw := gzip.NewWriter(&buf)
 	tw := tar.NewWriter(gw)
 
-	// Walk and bundle skills
+	// Walk and bundle plugins
 	fileCount := 0
-	err = filepath.Walk(skillsDir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(pluginsDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -69,14 +69,14 @@ func TestDistributionArchivePackaging(t *testing.T) {
 	})
 
 	if err != nil {
-		t.Fatalf("Failed bundling skills archive: %v", err)
+		t.Fatalf("Failed bundling plugins archive: %v", err)
 	}
 
 	_ = tw.Close()
 	_ = gw.Close()
 
 	if fileCount == 0 {
-		t.Errorf("Expected at least 1 file to be packaged in skills archive")
+		t.Errorf("Expected at least 1 file to be packaged in plugins archive")
 	}
 
 	// Unpack and verify in-memory archive
@@ -95,18 +95,18 @@ func TestDistributionArchivePackaging(t *testing.T) {
 		unpackedFiles[hdr.Name] = true
 	}
 
-	hasCLI := false
-	hasMCP := false
+	hasPluginJSON := false
+	hasSkill := false
 	for name := range unpackedFiles {
-		if strings.Contains(name, "gyrus-cli/SKILL.md") {
-			hasCLI = true
+		if strings.Contains(name, "plugin.json") {
+			hasPluginJSON = true
 		}
-		if strings.Contains(name, "gyrus-mcp/SKILL.md") {
-			hasMCP = true
+		if strings.Contains(name, "skills/gyrus/SKILL.md") {
+			hasSkill = true
 		}
 	}
 
-	if !hasCLI || !hasMCP {
-		t.Errorf("Archive missing SKILL.md files: hasCLI=%v, hasMCP=%v", hasCLI, hasMCP)
+	if !hasPluginJSON || !hasSkill {
+		t.Errorf("Archive missing required plugin files: hasPluginJSON=%v, hasSkill=%v", hasPluginJSON, hasSkill)
 	}
 }

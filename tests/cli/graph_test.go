@@ -17,7 +17,7 @@ func TestCLI_LinkAndUnlink(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
 	// Init
-	initCmd := exec.Command(gyrusBinPath, "init", "--profile", "local", "--no-mcp", "--no-skill")
+	initCmd := exec.Command(gyrusBinPath, "init", "config", "--profile", "local")
 	initCmd.Dir = tempWorkspace
 	if out, err := initCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Init failed: %v\nOutput: %s", err, string(out))

@@ -19,18 +19,12 @@ func TestAgentPromptRoutingSimulation(t *testing.T) {
 		t.Fatalf("Failed to resolve repo root: %v", err)
 	}
 
-	cliSkillBytes, err := os.ReadFile(filepath.Join(repoRoot, "packaging", "skills", "gyrus-cli", "SKILL.md"))
+	skillBytes, err := os.ReadFile(filepath.Join(repoRoot, "packaging", "plugins", "gyrus", "skills", "gyrus", "SKILL.md"))
 	if err != nil {
-		t.Fatalf("Failed reading gyrus-cli SKILL.md: %v", err)
+		t.Fatalf("Failed reading gyrus SKILL.md: %v", err)
 	}
 
-	mcpSkillBytes, err := os.ReadFile(filepath.Join(repoRoot, "packaging", "skills", "gyrus-mcp", "SKILL.md"))
-	if err != nil {
-		t.Fatalf("Failed reading gyrus-mcp SKILL.md: %v", err)
-	}
-
-	cliPrompt := string(cliSkillBytes)
-	mcpPrompt := string(mcpSkillBytes)
+	prompt := string(skillBytes)
 
 	// User Intent Scenarios to test prompt instruction clarity
 	scenarios := []struct {
@@ -45,12 +39,12 @@ func TestAgentPromptRoutingSimulation(t *testing.T) {
 		},
 		{
 			intent:                "Get document details for a document ID",
-			expectedCLISubcommand: "gyrus get <document-id>",
+			expectedCLISubcommand: "gyrus get",
 			expectedMCPTool:       "gyrus_get",
 		},
 		{
 			intent:                "Suggest context for relational SQL databases",
-			expectedCLISubcommand: "gyrus suggest-context --prompt",
+			expectedCLISubcommand: "gyrus suggest-context",
 			expectedMCPTool:       "gyrus_suggest_context",
 		},
 		{
@@ -72,14 +66,14 @@ func TestAgentPromptRoutingSimulation(t *testing.T) {
 
 	for _, sc := range scenarios {
 		t.Run("CLI_Routing/"+sc.intent, func(t *testing.T) {
-			if !strings.Contains(cliPrompt, sc.expectedCLISubcommand) {
-				t.Errorf("gyrus-cli skill does not explicitly instruct agent on %s (expected %s)", sc.intent, sc.expectedCLISubcommand)
+			if !strings.Contains(prompt, sc.expectedCLISubcommand) {
+				t.Errorf("gyrus skill does not instruct agent on %s (expected %s)", sc.intent, sc.expectedCLISubcommand)
 			}
 		})
 
 		t.Run("MCP_Routing/"+sc.intent, func(t *testing.T) {
-			if !strings.Contains(mcpPrompt, sc.expectedMCPTool) {
-				t.Errorf("gyrus-mcp skill does not explicitly instruct agent on %s (expected %s)", sc.intent, sc.expectedMCPTool)
+			if !strings.Contains(prompt, sc.expectedMCPTool) {
+				t.Errorf("gyrus skill does not instruct agent on %s (expected %s)", sc.intent, sc.expectedMCPTool)
 			}
 		})
 	}
