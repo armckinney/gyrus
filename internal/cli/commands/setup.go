@@ -39,26 +39,42 @@ func NewInitConfigCmd(application *app.App) *cobra.Command {
 	var (
 		profile    string
 		ownerGroup string
+		global     bool
+		force      bool
 	)
 
 	cmd := &cobra.Command{
 		Use:   "config",
-		Short: "Generate .gyrus.yaml workspace configuration",
+		Short: "Generate .gyrus.yaml configuration",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if global {
+				cfgPath, err := setup.WriteGlobalConfigFile(setup.Profile(profile), ownerGroup, force)
+				if err != nil {
+					return err
+				}
+
+				homeDir, _ := os.UserHomeDir()
+				storageDir := filepath.Join(homeDir, ".gyrus")
+
+				if !GlobalJSONOutput {
+					fmt.Printf("🚀 Initialized Gyrus global configuration successfully!\n")
+					fmt.Printf("   - Configuration: %s (Profile: %s)\n", cfgPath, profile)
+					fmt.Printf("   - Storage Root:  %s\n", storageDir)
+					fmt.Printf("   - Default Owner: %s\n", ownerGroup)
+				} else {
+					fmt.Printf("{\"status\":\"configured\",\"config_file\":\"%s\",\"profile\":\"%s\",\"storage\":\"%s\",\"owner_group\":\"%s\",\"scope\":\"global\"}\n",
+						cfgPath, profile, storageDir, ownerGroup)
+				}
+				return nil
+			}
+
 			cwd, err := os.Getwd()
 			if err != nil {
 				return err
 			}
 
-			targetDir := cwd
-			if storageFlag, _ := cmd.Flags().GetString("storage-path"); storageFlag != "" {
-				targetDir = filepath.Dir(storageFlag)
-			} else if GlobalStoragePath != "" {
-				targetDir = filepath.Dir(GlobalStoragePath)
-			}
-
 			res, err := setup.RunConfigSetup(setup.ConfigSetupOptions{
-				WorkspaceDir: targetDir,
+				WorkspaceDir: cwd,
 				Profile:      setup.Profile(profile),
 				OwnerGroup:   ownerGroup,
 			})
@@ -72,7 +88,7 @@ func NewInitConfigCmd(application *app.App) *cobra.Command {
 				fmt.Printf("   - Storage Root:  %s\n", res.StorageDir)
 				fmt.Printf("   - Default Owner: %s\n", res.OwnerGroup)
 			} else {
-				fmt.Printf("{\"status\":\"configured\",\"config_file\":\"%s\",\"profile\":\"%s\",\"storage\":\"%s\",\"owner_group\":\"%s\"}\n",
+				fmt.Printf("{\"status\":\"configured\",\"config_file\":\"%s\",\"profile\":\"%s\",\"storage\":\"%s\",\"owner_group\":\"%s\",\"scope\":\"workspace\"}\n",
 					res.ConfigFile, profile, res.StorageDir, res.OwnerGroup)
 			}
 			return nil
@@ -80,7 +96,9 @@ func NewInitConfigCmd(application *app.App) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&profile, "profile", "p", "local", "Configuration profile: local, git, blob, s3, azure, gcs, postgres, vector")
-	cmd.Flags().StringVarP(&ownerGroup, "owner-group", "o", "armckinney", "Default owner group for context documents")
+	cmd.Flags().StringVarP(&ownerGroup, "owner-group", "o", "root", "Default owner group for context documents")
+	cmd.Flags().BoolVarP(&global, "global", "g", false, "Write configuration to global ~/.gyrus.yaml instead of workspace")
+	cmd.Flags().BoolVarP(&force, "force", "f", false, "Overwrite existing configuration file without prompting")
 
 	return cmd
 }
@@ -114,11 +132,6 @@ func NewInitClientCmd(application *app.App) *cobra.Command {
 			}
 
 			targetDir := cwd
-			if storageFlag, _ := cmd.Flags().GetString("storage-path"); storageFlag != "" {
-				targetDir = filepath.Dir(storageFlag)
-			} else if GlobalStoragePath != "" {
-				targetDir = filepath.Dir(GlobalStoragePath)
-			}
 
 			// Determine execution mode fallback if docker is not installed
 			resolvedMode := mode
@@ -201,7 +214,7 @@ func NewMCPCmd(application *app.App) *cobra.Command {
 		Use:   "serve",
 		Short: "Start embedded Gyrus MCP stdio server",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			srv, err := mcp.NewServer(application.StorageRoot())
+			srv, err := mcp.NewServer()
 			if err != nil {
 				return fmt.Errorf("failed to start MCP server: %w", err)
 			}

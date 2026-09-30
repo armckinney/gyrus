@@ -61,7 +61,7 @@ Rather than replacing your existing tools or forcing a migration to a proprietar
 | **Vector DBs & RAG Frameworks** *(e.g. Pinecone, Chroma)* | High-dimensional semantic similarity search | Raw text chunks lack contract boundaries, explicit edges (`depends_on`), or state governance | Uses search/vector/graph DBs as replaceable derived indexes beneath a governed context model |
 | **Gyrus Context Engine** | **Shared, governed, portable context across humans & heterogeneous AI agents** | *Complements existing tools rather than replacing them* | **Provides canonical OKF contracts, context resolution, provider neutrality, & zero-infra local/cloud scale** |
 
-> 📖 *For a complete strategic comparison and deep-dive market analysis, see the official PRD: [Gyrus Product Value Proposition & Strategic Positioning](.gyrus/docs/armckinney/reference/prd-002-value-proposition-positioning.md).*
+> 📖 *For a complete strategic comparison and deep-dive market analysis, see the official PRD: [Gyrus Product Value Proposition & Strategic Positioning](.gyrus/docs/root/reference/prd-002-value-proposition-positioning.md).*
 
 ---
 
@@ -143,11 +143,18 @@ This compiles the standalone `gyrus` executable into the workspace root.
 
 Gyrus decouples workspace repository configuration from client tool distribution using explicit initialization subcommands:
 
-#### Step 2a: Initialize Workspace Configuration
+#### Step 2a: Initialize Workspace or Global Configuration
 ```bash
+# Initialize workspace configuration (.gyrus.yaml in current repository)
 gyrus init config
+
+# Or initialize global user-wide defaults (~/.gyrus.yaml across all repositories)
+gyrus init config --global
+
+# Inspect the resolved configuration at any time
+gyrus config show
 ```
-Generates `.gyrus.yaml` in the workspace root with your desired storage profile (`localfs`, `git`, `s3`, `azure_blob`, `gcs`, or `postgres`) and security boundaries (`owner_group`).
+Generates `.gyrus.yaml` in the workspace root (or `~/.gyrus.yaml` when using `--global`) with your desired storage profile (`localfs`, `git`, `s3`, `azure_blob`, `gcs`, or `postgres`) and security boundaries (`owner_group`). Use `--force` to overwrite an existing configuration.
 
 #### Step 2b: Install Agent Plugin & Register MCP Server
 ```bash
@@ -155,16 +162,14 @@ gyrus init client --target antigravity
 ```
 Installs the Gyrus Agent Plugin package (compliant with the [Agent Plugins Standard 1.0.0](https://agent-plugins.org/)) into your project or user environment, equipping the unified Gyrus skill (`skills/gyrus/SKILL.md`), instructions (`rules/AGENTS.md`), and registering stdio MCP servers for your target AI coding assistant (`antigravity`, `claude`, `codex`, or `copilot`).
 
-> 📖 **Full Guide:** For advanced customization, multi-client options, global user-home installation (`--global`), Docker execution (`--mode docker`), and enterprise storage profiles, see the **[Gyrus Installation & Initialization Guide](.gyrus/docs/armckinney/reference/guide-005-installation-and-initialization.md)**.
+> 📖 **Full Guide:** For advanced customization, multi-client options, global user-home installation (`--global`), Docker execution (`--mode docker`), and enterprise storage profiles, see the **[Gyrus Installation & Initialization Guide](.gyrus/docs/root/reference/guide-005-installation-and-initialization.md)**.
 
 Once initialized, AI agents have immediate access to Gyrus CLI commands and OKF frontmatter schema references.
 
-By default, Gyrus resolves storage path hierarchy in the following order:
-1. `--storage-path` CLI flag
-2. `GYRUS_STORAGE_PATH` environment variable
-3. `.gyrus.yaml` / `.gyrus/config.yaml` local config file
-4. `~/.config/gyrus/config.yaml` user config file
-5. `~/.gyrus/` default application directory
+By default, Gyrus resolves configuration and storage path in the following order:
+1. **Workspace Config:** `.gyrus.yaml` located in current working directory or any parent repository directory.
+2. **Global User Config:** `~/.gyrus.yaml` in the user's home directory.
+3. **Hardcoded Defaults:** LocalFS storage driver rooted at `~/.gyrus/`.
 
 ### 3. Create your first OKF Document
 
@@ -198,12 +203,13 @@ Suggest linearized context matching an agent prompt:
 
 ## 📚 Documentation Sitemap
 
-- 🏛️ **[System Architecture](.gyrus/docs/armckinney/reference/guide-001-system-architecture.md):** Complete guide to the Gyrus Core SDK, Provider Framework, OKF directory topology, and state machines.
-- 🧪 **[Testing Strategy & QA Standards](.gyrus/docs/armckinney/reference/standards-002-testing-strategy.md):** Complete guide to test tiers, CI/CD integration, benchmark standards, environment toggles, and live cloud infrastructure testing.
-- ⚙️ **[Configuration Reference](.gyrus/docs/armckinney/reference/tech-ref-002-config-schema.md):** Comprehensive reference for all `.gyrus.yaml` options, profiles, and path precedence.
-- 🛠️ **[CLI Reference Manual](.gyrus/docs/armckinney/reference/tech-ref-001-cli-manual.md):** Detailed argument and flag reference for all 11 `gyrus` CLI subcommands and exit codes.
-- 🔌 **[MCP Server Setup Guide](.gyrus/docs/armckinney/reference/guide-004-mcp-server-setup.md):** Native and Docker containerized MCP stdio server setup for Cursor, Claude Desktop, and VS Code.
-- 🤖 **[Agent Plugins & Skills Setup Guide](.gyrus/docs/armckinney/reference/guide-003-agent-skills-setup.md):** Instructions for installing the Gyrus Agent Plugin and equipping skills for Antigravity, Copilot, Codex, and Claude.
-- 📜 **[ADR-004: Agent Plugin Packaging, Distribution & Init Revamp](.gyrus/docs/armckinney/reference/adr-004-agent-plugin-packaging-distribution-and-init-revamp.md):** Architecture Decision Record formalizing the Agent Plugins Standard 1.0.0, canonical embedded plugins, and explicit init subcommands.
-- 📑 **[Value Proposition & Strategic Positioning PRD](.gyrus/docs/armckinney/reference/prd-002-value-proposition-positioning.md):** Comprehensive market-wide strategic comparison PRD of Gyrus vs enterprise context engines, vector DBs, memory platforms, and agent skills.
-- 📋 **[Specification Implementation Roadmap](.gyrus/docs/armckinney/reference/prd-001-specification-roadmap.md):** Master roadmap across Phase 1 MVP, Phase 2 Version 1.0, and Phase 3 Future Extensions.
+- 🏛️ **[System Architecture](.gyrus/docs/root/reference/guide-001-system-architecture.md):** Complete guide to the Gyrus Core SDK, Provider Framework, OKF directory topology, and state machines.
+- 🧪 **[Testing Strategy & QA Standards](.gyrus/docs/root/reference/standards-002-testing-strategy.md):** Complete guide to test tiers, CI/CD integration, benchmark standards, environment toggles, and live cloud infrastructure testing.
+- ⚙️ **[Configuration Reference](.gyrus/docs/root/reference/tech-ref-002-config-schema.md):** Comprehensive reference for all `.gyrus.yaml` options, profiles, and path precedence.
+- 🛠️ **[CLI Reference Manual](.gyrus/docs/root/reference/tech-ref-001-cli-manual.md):** Detailed argument and flag reference for all 11 `gyrus` CLI subcommands and exit codes.
+- 🔌 **[MCP Server Setup Guide](.gyrus/docs/root/reference/guide-004-mcp-server-setup.md):** Native and Docker containerized MCP stdio server setup for Cursor, Claude Desktop, and VS Code.
+- 🤖 **[Agent Plugins & Skills Setup Guide](.gyrus/docs/root/reference/guide-003-agent-skills-setup.md):** Instructions for installing the Gyrus Agent Plugin and equipping skills for Antigravity, Copilot, Codex, and Claude.
+- 📜 **[ADR-005: Global Configuration & Precedence Hierarchy](.gyrus/docs/root/reference/adr-005-global-configuration-and-precedence-hierarchy.md):** Architecture Decision Record establishing dedicated `internal/config`, canonical nested YAML schema, and file-driven 3-tier precedence.
+- 📜 **[ADR-004: Agent Plugin Packaging, Distribution & Init Revamp](.gyrus/docs/root/reference/adr-004-agent-plugin-packaging-distribution-and-init-revamp.md):** Architecture Decision Record formalizing the Agent Plugins Standard 1.0.0, canonical embedded plugins, and explicit init subcommands.
+- 📑 **[Value Proposition & Strategic Positioning PRD](.gyrus/docs/root/reference/prd-002-value-proposition-positioning.md):** Comprehensive market-wide strategic comparison PRD of Gyrus vs enterprise context engines, vector DBs, memory platforms, and agent skills.
+- 📋 **[Specification Implementation Roadmap](.gyrus/docs/root/reference/prd-001-specification-roadmap.md):** Master roadmap across Phase 1 MVP, Phase 2 Version 1.0, and Phase 3 Future Extensions.

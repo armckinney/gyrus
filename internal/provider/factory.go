@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/armckinney/gyrus/internal/config"
 	graphpostgres "github.com/armckinney/gyrus/internal/provider/graph/postgres"
 	graphsqlite "github.com/armckinney/gyrus/internal/provider/graph/sqlite"
 	indexpostgres "github.com/armckinney/gyrus/internal/provider/index/postgres"
@@ -22,20 +23,17 @@ import (
 
 // NewDocumentStore creates the appropriate gyrus.DocumentStore implementation
 // based on configuration settings in .gyrus.yaml.
-func NewDocumentStore(cfg *localfs.Config, storageRoot string) (gyrus.DocumentStore, error) {
+func NewDocumentStore(cfg *config.Config, storageRoot string) (gyrus.DocumentStore, error) {
 	if cfg == nil {
-		cfg = &localfs.Config{}
+		cfg = &config.Config{}
 	}
 
-	prefix := cfg.StorageRoot
-	if prefix == "" {
-		prefix = cfg.Storage.Root
-	}
+	prefix := cfg.StorageRoot()
 	if prefix == "" {
 		prefix = storageRoot
 	}
 
-	switch cfg.StorageProvider {
+	switch cfg.StorageProvider() {
 	case "git":
 		if cfg.Git.RepoURL == "" {
 			return nil, fmt.Errorf("git storage provider selected but git.repo_url is empty in config file (.gyrus.yaml)")
@@ -111,18 +109,18 @@ func NewDocumentStore(cfg *localfs.Config, storageRoot string) (gyrus.DocumentSt
 		return localfs.NewStore(storageRoot)
 
 	default:
-		return nil, fmt.Errorf("unknown storage_provider: '%s' in configuration file", cfg.StorageProvider)
+		return nil, fmt.Errorf("unknown storage_provider: '%s' in configuration file", cfg.StorageProvider())
 	}
 }
 
 // NewIndexStore creates the appropriate gyrus.IndexStore implementation
-// based on index_provider in .gyrus.yaml.
-func NewIndexStore(cfg *localfs.Config, storageRoot string) (gyrus.IndexStore, error) {
+// based on index provider in .gyrus.yaml.
+func NewIndexStore(cfg *config.Config, storageRoot string) (gyrus.IndexStore, error) {
 	if cfg == nil {
-		cfg = &localfs.Config{}
+		cfg = &config.Config{}
 	}
 
-	switch cfg.IndexProvider {
+	switch cfg.IndexProvider() {
 	case "postgres":
 		if cfg.Postgres.ConnectionString == "" {
 			return nil, fmt.Errorf("postgres index provider selected but postgres.connection_string is empty")
@@ -136,13 +134,18 @@ func NewIndexStore(cfg *localfs.Config, storageRoot string) (gyrus.IndexStore, e
 }
 
 // NewGraphStore creates the appropriate gyrus.GraphStore implementation
-// based on index_provider in .gyrus.yaml.
-func NewGraphStore(cfg *localfs.Config, storageRoot string) (gyrus.GraphStore, error) {
+// based on graph or index provider in .gyrus.yaml.
+func NewGraphStore(cfg *config.Config, storageRoot string) (gyrus.GraphStore, error) {
 	if cfg == nil {
-		cfg = &localfs.Config{}
+		cfg = &config.Config{}
 	}
 
-	switch cfg.IndexProvider {
+	graphProvider := cfg.GraphProvider()
+	if graphProvider == "" {
+		graphProvider = cfg.IndexProvider()
+	}
+
+	switch graphProvider {
 	case "postgres":
 		if cfg.Postgres.ConnectionString == "" {
 			return nil, fmt.Errorf("postgres index provider selected but postgres.connection_string is empty")
@@ -164,13 +167,13 @@ func NewGraphStore(cfg *localfs.Config, storageRoot string) (gyrus.GraphStore, e
 }
 
 // NewSearchProvider creates the appropriate gyrus.SearchProvider implementation
-// based on search_provider in .gyrus.yaml.
-func NewSearchProvider(cfg *localfs.Config, storageRoot string) (gyrus.SearchProvider, error) {
+// based on search provider in .gyrus.yaml.
+func NewSearchProvider(cfg *config.Config, storageRoot string) (gyrus.SearchProvider, error) {
 	if cfg == nil {
-		cfg = &localfs.Config{}
+		cfg = &config.Config{}
 	}
 
-	switch cfg.SearchProvider {
+	switch cfg.SearchProvider() {
 	case "vector":
 		dbPath := filepath.Join(storageRoot, "index.db")
 		sqliteStore, err := indexsqlite.NewIndexer(dbPath)
@@ -216,7 +219,7 @@ func NewSearchProvider(cfg *localfs.Config, storageRoot string) (gyrus.SearchPro
 		}
 		return postgresfts.NewSearchProvider(context.Background(), cfg.Postgres.ConnectionString)
 
-	default: // "sqlite" or empty
+	default: // "sqlite", "sqlite_fts5" or empty
 		dbPath := filepath.Join(storageRoot, "index.db")
 		indexer, err := indexsqlite.NewIndexer(dbPath)
 		if err != nil {

@@ -18,9 +18,9 @@ type Server struct {
 	engine      *lifecycle.Engine
 }
 
-// NewServer initializes a new MCP stdio server targeting storageRoot.
-func NewServer(storageRoot string) (*Server, error) {
-	application, err := app.New(storageRoot)
+// NewServer initializes a new MCP stdio server.
+func NewServer() (*Server, error) {
+	application, err := app.New()
 	if err != nil {
 		return nil, fmt.Errorf("failed creating app container: %w", err)
 	}

@@ -8,27 +8,34 @@ import (
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies in-memory execution of search, suggest-context, and schema CLI subcommands.
+// [Purpose]: Verifies search, suggest-context, and schema CLI subcommands.
 // [Execution Surface]: In-Memory Cobra Command Tree (internal/cli)
-// [Assertions]: Document creation indexes content, search matches keywords, suggest linearizes context, and schema prints ADR template.
+// [Assertions]: Commands execute without errors and return results.
 // -----------------------------------------------------------------------------
 func TestCLISearchAndSuggestAndSchema(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "gyrus-cli-search-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
+	tempDir := t.TempDir()
+	t.Setenv("HOME", tempDir)
+	origWd, _ := os.Getwd()
+	defer os.Chdir(origWd)
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatalf("Failed to chdir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
 
-	storagePath := filepath.Join(tempDir, "storage")
+	wsYaml := `storage:
+  provider: localfs
+  root: .gyrus
+`
+	if err := os.WriteFile(filepath.Join(tempDir, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
+		t.Fatalf("Failed writing .gyrus.yaml: %v", err)
+	}
 
-	rootCmd, err := BuildRootCmd(storagePath)
+	rootCmd, err := BuildRootCmd()
 	if err != nil {
 		t.Fatalf("BuildRootCmd failed: %v", err)
 	}
 
 	// 1. gyrus create doc
 	rootCmd.SetArgs([]string{
-		"--storage-path", storagePath,
 		"create",
 		"--id", "adr-001-test",
 		"--title", "Search Index Test ADR",
@@ -43,7 +50,6 @@ func TestCLISearchAndSuggestAndSchema(t *testing.T) {
 
 	// 2. gyrus sync
 	rootCmd.SetArgs([]string{
-		"--storage-path", storagePath,
 		"sync",
 	})
 	if err := rootCmd.Execute(); err != nil {
@@ -52,7 +58,6 @@ func TestCLISearchAndSuggestAndSchema(t *testing.T) {
 
 	// 3. gyrus search
 	rootCmd.SetArgs([]string{
-		"--storage-path", storagePath,
 		"search",
 		"--query", "search",
 	})
@@ -62,7 +67,6 @@ func TestCLISearchAndSuggestAndSchema(t *testing.T) {
 
 	// 4. gyrus suggest-context
 	rootCmd.SetArgs([]string{
-		"--storage-path", storagePath,
 		"suggest-context",
 		"--prompt", "How to implement search?",
 	})

@@ -30,7 +30,7 @@ func RunConfigSetup(opts ConfigSetupOptions) (*ConfigSetupResult, error) {
 		opts.Profile = ProfileLocal
 	}
 	if opts.OwnerGroup == "" {
-		opts.OwnerGroup = "armckinney"
+		opts.OwnerGroup = "root"
 	}
 
 	cfgPath, err := WriteConfigFile(opts.WorkspaceDir, opts.Profile, opts.OwnerGroup)

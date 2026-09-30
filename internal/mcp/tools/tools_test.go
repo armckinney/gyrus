@@ -2,6 +2,7 @@ package tools_test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/armckinney/gyrus/internal/app"
@@ -15,11 +16,15 @@ import (
 // [Purpose]: Verifies that tools.Register registers all 11 Gyrus memory tools and each handler executes correctly.
 // [Execution Surface]: In-Memory Engine + MCP Server
 // [Assertions]: Tools register without panic, handlers return successful results, and state mutations persist.
-// -----------------------------------------------------------------------------
 func TestToolsExecution(t *testing.T) {
 	tempDir := t.TempDir()
+	origWd, _ := os.Getwd()
+	defer os.Chdir(origWd)
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatalf("Failed to chdir: %v", err)
+	}
 
-	application, err := app.New(tempDir)
+	application, err := app.New()
 	if err != nil {
 		t.Fatalf("Failed creating app container: %v", err)
 	}

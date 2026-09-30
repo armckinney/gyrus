@@ -2,7 +2,6 @@ package commands_test
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/armckinney/gyrus/internal/app"
@@ -18,14 +17,14 @@ import (
 // -----------------------------------------------------------------------------
 func TestCommandsRegistrationAndExecution(t *testing.T) {
 	tempDir := t.TempDir()
+	t.Setenv("HOME", tempDir)
 	origWd, err := os.Getwd()
 	if err == nil {
 		_ = os.Chdir(tempDir)
 		defer func() { _ = os.Chdir(origWd) }()
 	}
-	storagePath := filepath.Join(tempDir, "storage")
 
-	application, err := app.New(storagePath)
+	application, err := app.New()
 	if err != nil {
 		t.Fatalf("Failed creating app container: %v", err)
 	}
@@ -37,6 +36,9 @@ func TestCommandsRegistrationAndExecution(t *testing.T) {
 	rootCmd.SetArgs([]string{"init", "config", "--profile", "local"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("Init config command failed: %v", err)
+	}
+	if err := application.Reset(); err != nil {
+		t.Fatalf("Application reset failed: %v", err)
 	}
 
 	// 1b. gyrus init client
@@ -51,7 +53,7 @@ func TestCommandsRegistrationAndExecution(t *testing.T) {
 		t.Fatalf("Expected bare init command to fail, but succeeded")
 	}
 
-	// 2. gyrus create
+	// 2. gyrus create with explicit owner-group
 	rootCmd.SetArgs([]string{
 		"create",
 		"--id", "doc-cmd-001",
@@ -63,6 +65,19 @@ func TestCommandsRegistrationAndExecution(t *testing.T) {
 	})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("Create command failed: %v", err)
+	}
+
+	// 2b. gyrus create without owner-group (should default to root)
+	rootCmd.SetArgs([]string{
+		"create",
+		"--id", "doc-cmd-default-owner",
+		"--title", "Default Owner Architecture",
+		"--category", "architecture",
+		"--type", "adr",
+		"--content", "Testing default root owner.",
+	})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("Create command without owner-group failed: %v", err)
 	}
 
 	// 3. gyrus get

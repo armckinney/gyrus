@@ -1,6 +1,3 @@
-version: 1
-profile: local_full
-
 storage:
   provider: localfs
   root: ./.gyrus
@@ -15,3 +12,4 @@ graph:
 search:
   provider: sqlite_fts5
 
+default_owner_group: root

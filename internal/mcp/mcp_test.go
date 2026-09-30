@@ -1,6 +1,7 @@
 package mcp_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/armckinney/gyrus/internal/mcp"
@@ -14,8 +15,13 @@ import (
 // -----------------------------------------------------------------------------
 func TestMCPServerInitialization(t *testing.T) {
 	tempDir := t.TempDir()
+	origWd, _ := os.Getwd()
+	defer os.Chdir(origWd)
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatalf("Failed to chdir: %v", err)
+	}
 
-	server, err := mcp.NewServer(tempDir)
+	server, err := mcp.NewServer()
 	if err != nil {
 		t.Fatalf("Failed to initialize MCP Server: %v", err)
 	}

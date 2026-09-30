@@ -57,7 +57,7 @@ func TestCLI_SchemaValidation_ExitCode1(t *testing.T) {
 		"--title", "Bad ID Doc",
 		"--category", "architecture",
 		"--type", "adr",
-		"--owner-group", "armckinney",
+		"--owner-group", "root",
 	)
 	createCmd.Dir = tempWorkspace
 	var stdout, stderr bytes.Buffer

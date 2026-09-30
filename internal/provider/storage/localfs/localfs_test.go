@@ -92,62 +92,6 @@ func TestLocalfsStoreCRUD(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies storage path precedence resolution when explicit flag is provided.
-// [Execution Surface]: In-Memory Path Resolution (internal/provider/storage/localfs)
-// [Assertions]: Explicit CLI storage flag takes precedence.
-// -----------------------------------------------------------------------------
-func TestResolveStoragePathPrecedence(t *testing.T) {
-	// Flag precedence
-	flagPath := "/tmp/gyrus-flag-path"
-	resolved, err := localfs.ResolveStoragePath(flagPath)
-	if err != nil {
-		t.Fatalf("Unexpected error resolving flag path: %v", err)
-	}
-	if resolved != flagPath {
-		t.Errorf("Expected '%s', got '%s'", flagPath, resolved)
-	}
-}
-
-// -----------------------------------------------------------------------------
-// [Test Level]: Unit Test
-// [Purpose]: Verifies storage path resolution from .gyrus.yaml configuration files in workspace.
-// [Execution Surface]: Temporary Filesystem Directory (.gyrus.yaml)
-// [Assertions]: Path declared in storage.root within .gyrus.yaml is resolved accurately.
-// -----------------------------------------------------------------------------
-func TestDotGyrusYamlConfigResolution(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "gyrus-dot-config-*")
-	if err != nil {
-		t.Fatalf("Failed creating temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	origWd, _ := os.Getwd()
-	defer os.Chdir(origWd)
-
-	// Write .gyrus.yaml in tempDir
-	configContent := `version: 1
-storage:
-  root: ./my-docs
-`
-	if err := os.WriteFile(tempDir+"/.gyrus.yaml", []byte(configContent), 0644); err != nil {
-		t.Fatalf("Failed writing .gyrus.yaml: %v", err)
-	}
-
-	_ = os.Chdir(tempDir)
-
-	resolved, err := localfs.ResolveStoragePath("")
-	if err != nil {
-		t.Fatalf("ResolveStoragePath failed: %v", err)
-	}
-
-	expected := tempDir + "/my-docs"
-	if resolved != expected {
-		t.Errorf("Expected resolved path '%s', got '%s'", expected, resolved)
-	}
-}
-
-// -----------------------------------------------------------------------------
-// [Test Level]: Unit Test
 // [Purpose]: Verifies that LocalFS Store implements gyrus.SchemaStore for CRUD operations under .gyrus/schemas/.
 // [Execution Surface]: Real Local Filesystem
 // [Assertions]: Saves schema to .gyrus/schemas/<docType>.md, lists persisted schemas, retrieves content, and deletes schema.

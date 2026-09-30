@@ -157,14 +157,14 @@ func TestWriteConfigFileProfiles(t *testing.T) {
 		profile setup.Profile
 		keyword string
 	}{
-		{setup.ProfileLocal, "storage_provider: localfs"},
-		{setup.ProfileGit, "storage_provider: git"},
-		{setup.ProfileBlob, "storage_provider: blob"},
-		{setup.ProfileS3, "storage_provider: s3"},
-		{setup.ProfileAzure, "storage_provider: azure_blob"},
-		{setup.ProfileGCS, "storage_provider: gcs"},
-		{setup.ProfilePostgres, "storage_provider: postgres"},
-		{setup.ProfileVector, "search_provider: vector"},
+		{setup.ProfileLocal, "provider: localfs"},
+		{setup.ProfileGit, "provider: git"},
+		{setup.ProfileBlob, "provider: blob"},
+		{setup.ProfileS3, "provider: s3"},
+		{setup.ProfileAzure, "provider: azure_blob"},
+		{setup.ProfileGCS, "provider: gcs"},
+		{setup.ProfilePostgres, "provider: postgres"},
+		{setup.ProfileVector, "provider: vector"},
 	}
 
 	for _, p := range profiles {
@@ -188,6 +188,42 @@ func TestWriteConfigFileProfiles(t *testing.T) {
 				t.Errorf("Expected config to contain owner group 'my-team', got:\n%s", content)
 			}
 		})
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that WriteGlobalConfigFile writes ~/.gyrus.yaml and honors the force flag.
+// [Assertions]: Initial write succeeds, second write fails without force, second write succeeds with force.
+// -----------------------------------------------------------------------------
+func TestWriteGlobalConfigFile(t *testing.T) {
+	tempHome := t.TempDir()
+	t.Setenv("HOME", tempHome)
+
+	// 1. First write succeeds
+	path, err := setup.WriteGlobalConfigFile(setup.ProfileLocal, "global-team", false)
+	if err != nil {
+		t.Fatalf("First WriteGlobalConfigFile failed: %v", err)
+	}
+	expectedPath := filepath.Join(tempHome, ".gyrus.yaml")
+	if path != expectedPath {
+		t.Errorf("Expected path %s, got %s", expectedPath, path)
+	}
+
+	// 2. Second write without force fails
+	_, err = setup.WriteGlobalConfigFile(setup.ProfileLocal, "global-team", false)
+	if err == nil {
+		t.Fatalf("Expected error when overwriting without force, got nil")
+	}
+
+	// 3. Second write with force succeeds
+	_, err = setup.WriteGlobalConfigFile(setup.ProfilePostgres, "global-team", true)
+	if err != nil {
+		t.Fatalf("Expected force overwrite to succeed, got: %v", err)
+	}
+	data, _ := os.ReadFile(expectedPath)
+	if !strings.Contains(string(data), "provider: postgres") {
+		t.Errorf("Expected overwritten config to contain postgres, got: %s", string(data))
 	}
 }
 

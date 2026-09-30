@@ -21,10 +21,22 @@ import (
 // -----------------------------------------------------------------------------
 func TestCLISchemaSubcommands(t *testing.T) {
 	tempDir := t.TempDir()
+	t.Setenv("HOME", tempDir)
+	origWd, _ := os.Getwd()
+	defer os.Chdir(origWd)
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatalf("Failed to chdir: %v", err)
+	}
+
 	storageRoot := filepath.Join(tempDir, ".gyrus")
 	_ = os.MkdirAll(storageRoot, 0755)
 
-	application, err := app.New(storageRoot)
+	wsYaml := "storage:\n  provider: localfs\n  root: .gyrus\n"
+	if err := os.WriteFile(filepath.Join(tempDir, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
+		t.Fatalf("Failed writing .gyrus.yaml: %v", err)
+	}
+
+	application, err := app.New()
 	if err != nil {
 		t.Fatalf("app.New failed: %v", err)
 	}

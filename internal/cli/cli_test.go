@@ -43,7 +43,7 @@ func TestMapErrorToExitCode(t *testing.T) {
 // [Assertions]: BuildRootCmd succeeds and executing --help returns Exit Code 0.
 // -----------------------------------------------------------------------------
 func TestRootCommandHelp(t *testing.T) {
-	rootCmd, err := BuildRootCmd("")
+	rootCmd, err := BuildRootCmd()
 	if err != nil {
 		t.Fatalf("BuildRootCmd failed: %v", err)
 	}
