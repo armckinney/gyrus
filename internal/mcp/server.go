@@ -18,13 +18,34 @@ type Server struct {
 	engine      *lifecycle.Engine
 }
 
-// NewServer initializes a new MCP stdio server.
+// NewServer initializes a new MCP stdio server using default configuration resolution.
 func NewServer() (*Server, error) {
 	application, err := app.New()
 	if err != nil {
 		return nil, fmt.Errorf("failed creating app container: %w", err)
 	}
+	return newServerFromApp(application)
+}
 
+// NewServerWithWorkspace initializes an MCP stdio server using an explicit workspace directory.
+func NewServerWithWorkspace(workspaceDir string) (*Server, error) {
+	application, err := app.NewWithWorkspace(workspaceDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed creating app container: %w", err)
+	}
+	return newServerFromApp(application)
+}
+
+// NewServerWithConfig initializes an MCP stdio server using an explicit config file path.
+func NewServerWithConfig(configPath string) (*Server, error) {
+	application, err := app.NewWithConfig(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed creating app container: %w", err)
+	}
+	return newServerFromApp(application)
+}
+
+func newServerFromApp(application *app.App) (*Server, error) {
 	engine, err := application.Engine()
 	if err != nil {
 		return nil, fmt.Errorf("failed initializing lifecycle engine: %w", err)

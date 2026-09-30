@@ -75,7 +75,7 @@ func RunClientSetup(opts ClientSetupOptions) (*ClientSetupResult, error) {
 		return nil, err
 	}
 	if opts.Mode == "" {
-		opts.Mode = MCPModeContainer
+		opts.Mode = MCPModeLocal
 	}
 	if opts.BinaryCmd == "" {
 		opts.BinaryCmd = "gyrus"
@@ -124,6 +124,71 @@ func RunClientSetup(opts ClientSetupOptions) (*ClientSetupResult, error) {
 		return nil, fmt.Errorf("failed registering MCP server: %w", err)
 	}
 	result.InstalledMCP = mcpFiles
+
+	return result, nil
+}
+
+// ClientUninstallOptions defines options for uninstalling Agent Plugins and unregistering MCP (gyrus client uninstall).
+type ClientUninstallOptions struct {
+	WorkspaceDir string
+	Target       ClientTarget // antigravity, claude, codex, copilot
+	Global       bool
+	PluginDir    string
+}
+
+// ClientUninstallResult contains execution details from client plugin & MCP uninstallation.
+type ClientUninstallResult struct {
+	Target          ClientTarget
+	PluginDir       string
+	PluginRemoved   bool
+	UnregisteredMCP []string
+}
+
+// RunClientUninstall removes the Gyrus Agent Plugin and unregisters MCP servers for an explicit client target.
+func RunClientUninstall(opts ClientUninstallOptions) (*ClientUninstallResult, error) {
+	if opts.WorkspaceDir == "" {
+		opts.WorkspaceDir = "."
+	}
+	target, err := ValidateClientTarget(string(opts.Target))
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ClientUninstallResult{
+		Target: target,
+	}
+
+	// 1. Remove Agent Plugin for targets that discover plugins (antigravity, copilot, codex)
+	if target != ClientTargetClaude {
+		pluginDir := opts.PluginDir
+		if pluginDir == "" {
+			if opts.Global {
+				userHome, _ := os.UserHomeDir()
+				if target == ClientTargetAntigravity {
+					pluginDir = filepath.Join(userHome, ".gemini", "config", "plugins", "gyrus")
+				} else {
+					pluginDir = filepath.Join(userHome, ".agents", "plugins", "gyrus")
+				}
+			} else {
+				pluginDir = filepath.Join(opts.WorkspaceDir, ".agents", "plugins", "gyrus")
+			}
+		}
+		result.PluginDir = pluginDir
+
+		if fi, err := os.Stat(pluginDir); err == nil && fi.IsDir() {
+			if err := os.RemoveAll(pluginDir); err != nil {
+				return nil, fmt.Errorf("failed removing Agent Plugin at %s: %w", pluginDir, err)
+			}
+			result.PluginRemoved = true
+		}
+	}
+
+	// 2. Unregister MCP server configurations
+	unregistered, err := UnregisterMCPServer(opts.WorkspaceDir, MCPTarget(target), opts.Global)
+	if err != nil {
+		return nil, fmt.Errorf("failed unregistering MCP server: %w", err)
+	}
+	result.UnregisteredMCP = unregistered
 
 	return result, nil
 }

@@ -330,3 +330,64 @@ func TestSetupIdempotencyAndPreservation(t *testing.T) {
 		t.Errorf("Expected config to preserve 'core-eng', got:\n%s", string(data))
 	}
 }
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that RunClientUninstall removes the plugin directory and MCP configuration.
+// [Assertions]: Plugin directory is deleted and gyrus is removed from mcp.json.
+// -----------------------------------------------------------------------------
+func TestRunClientUninstall(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// 1. Install first
+	_, err := setup.RunClientSetup(setup.ClientSetupOptions{
+		WorkspaceDir: tempDir,
+		Target:       setup.ClientTargetAntigravity,
+		Mode:         setup.MCPModeLocal,
+		BinaryCmd:    "gyrus",
+	})
+	if err != nil {
+		t.Fatalf("Install failed: %v", err)
+	}
+
+	pluginDir := filepath.Join(tempDir, ".agents", "plugins", "gyrus")
+	if _, err := os.Stat(pluginDir); os.IsNotExist(err) {
+		t.Fatalf("Expected plugin dir to exist before uninstall")
+	}
+
+	mcpPath := filepath.Join(tempDir, ".antigravity", "mcp.json")
+	if _, err := os.Stat(mcpPath); os.IsNotExist(err) {
+		t.Fatalf("Expected MCP config to exist before uninstall")
+	}
+
+	// 2. Uninstall
+	unres, err := setup.RunClientUninstall(setup.ClientUninstallOptions{
+		WorkspaceDir: tempDir,
+		Target:       setup.ClientTargetAntigravity,
+	})
+	if err != nil {
+		t.Fatalf("Uninstall failed: %v", err)
+	}
+	if !unres.PluginRemoved {
+		t.Errorf("Expected PluginRemoved to be true")
+	}
+
+	// Verify plugin dir is gone
+	if _, err := os.Stat(pluginDir); !os.IsNotExist(err) {
+		t.Errorf("Expected plugin dir %s to be deleted", pluginDir)
+	}
+
+	// Verify MCP config has gyrus removed
+	mcpData, err := os.ReadFile(mcpPath)
+	if err != nil {
+		t.Fatalf("Failed reading mcp.json after uninstall: %v", err)
+	}
+	var mcpRoot map[string]interface{}
+	if err := json.Unmarshal(mcpData, &mcpRoot); err != nil {
+		t.Fatalf("Failed parsing mcp.json: %v", err)
+	}
+	servers, _ := mcpRoot["mcpServers"].(map[string]interface{})
+	if _, exists := servers["gyrus"]; exists {
+		t.Errorf("Expected 'gyrus' to be removed from mcpServers")
+	}
+}

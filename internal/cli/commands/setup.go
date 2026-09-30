@@ -168,6 +168,14 @@ func NewInitClientCmd(application *app.App) *cobra.Command {
 				agyRegistered = registerWithAntigravity(res.PluginDir)
 			}
 
+			// Automatic initial sync to hydrate the SQLite index
+			syncedDocs := 0
+			if engine, err := application.Engine(); err == nil {
+				if report, err := engine.Sync(context.Background()); err == nil {
+					syncedDocs = report.IndexedFiles + report.UnchangedFiles
+				}
+			}
+
 			if !GlobalJSONOutput {
 				fmt.Printf("🚀 Equipped Gyrus for client '%s'!\n", clientTarget)
 				if res.PluginDir != "" {
@@ -184,6 +192,9 @@ func NewInitClientCmd(application *app.App) *cobra.Command {
 				for _, f := range res.InstalledMCP {
 					fmt.Printf("      • %s\n", f)
 				}
+				if syncedDocs > 0 {
+					fmt.Printf("   - Index Status:  %d documents ready\n", syncedDocs)
+				}
 			} else {
 				fmt.Printf("{\"status\":\"equipped\",\"target\":\"%s\",\"mode\":\"%s\",\"plugin_dir\":\"%s\",\"plugin_files_count\":%d,\"mcp_files_count\":%d,\"agy_registered\":%t}\n",
 					clientTarget, resolvedMode, res.PluginDir, len(res.PluginFiles), len(res.InstalledMCP), agyRegistered)
@@ -193,7 +204,7 @@ func NewInitClientCmd(application *app.App) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&target, "target", "t", "", "Target agent tool (required): antigravity, claude, codex, copilot")
-	cmd.Flags().StringVarP(&mode, "mode", "m", "container", "MCP execution mode: container (containerized stdio via Docker), local (local binary)")
+	cmd.Flags().StringVarP(&mode, "mode", "m", "local", "MCP execution mode: local (local binary), container (containerized stdio via Docker)")
 	cmd.Flags().StringVar(&image, "mcp-container-image", "ghcr.io/armckinney/gyrus:latest", "Container image for containerized stdio MCP execution")
 	cmd.Flags().BoolVarP(&global, "global", "g", false, "Register MCP servers and plugin globally in user home directory (~)")
 	cmd.Flags().StringVar(&pluginDir, "plugin-dir", "", "Custom destination directory for Agent Plugin bundle")
@@ -203,7 +214,11 @@ func NewInitClientCmd(application *app.App) *cobra.Command {
 
 // NewMCPCmd constructs the 'mcp' parent Cobra command and its subcommands.
 func NewMCPCmd(application *app.App) *cobra.Command {
-	var mcpTarget string
+	var (
+		mcpTarget string
+		workspace string
+		cfgPath   string
+	)
 
 	mcpCmd := &cobra.Command{
 		Use:   "mcp",
@@ -214,13 +229,26 @@ func NewMCPCmd(application *app.App) *cobra.Command {
 		Use:   "serve",
 		Short: "Start embedded Gyrus MCP stdio server",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			srv, err := mcp.NewServer()
+			var (
+				srv *mcp.Server
+				err error
+			)
+			if cfgPath != "" {
+				srv, err = mcp.NewServerWithConfig(cfgPath)
+			} else if workspace != "" {
+				srv, err = mcp.NewServerWithWorkspace(workspace)
+			} else {
+				srv, err = mcp.NewServer()
+			}
 			if err != nil {
 				return fmt.Errorf("failed to start MCP server: %w", err)
 			}
 			return srv.ServeStdio(context.Background())
 		},
 	}
+
+	mcpServeCmd.Flags().StringVarP(&workspace, "workspace", "w", "", "Workspace root directory for context resolution")
+	mcpServeCmd.Flags().StringVarP(&cfgPath, "config", "c", "", "Explicit path to .gyrus.yaml configuration file")
 
 	mcpSetupCmd := &cobra.Command{
 		Use:   "setup",

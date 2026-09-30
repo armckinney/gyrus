@@ -5,6 +5,9 @@
 	],
 	"service": "devcontainer",
 	"workspaceFolder": "/workspaces/gyrus",
+	"containerEnv": {
+		"GYRUS_WORKSPACE": "/workspaces/gyrus"
+	},
 	"features": {
 		"https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-vscode-customizations.tgz": {},
     	"https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-docker-in-docker.tgz": {},

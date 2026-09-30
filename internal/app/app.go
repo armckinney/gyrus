@@ -28,6 +28,30 @@ func New() (*App, error) {
 	}, nil
 }
 
+// NewWithWorkspace initializes an App container resolving configuration from an explicit workspace directory.
+func NewWithWorkspace(workspaceDir string) (*App, error) {
+	resolved, err := config.LoadWithWorkspace(workspaceDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load configuration for workspace '%s': %w", workspaceDir, err)
+	}
+
+	return &App{
+		resolved: resolved,
+	}, nil
+}
+
+// NewWithConfig initializes an App container resolving configuration from an explicit config file.
+func NewWithConfig(configPath string) (*App, error) {
+	resolved, err := config.LoadWithConfig(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load configuration from '%s': %w", configPath, err)
+	}
+
+	return &App{
+		resolved: resolved,
+	}, nil
+}
+
 // Reset reloads configuration and resets cached engine.
 func (a *App) Reset() error {
 	a.engineMu.Lock()

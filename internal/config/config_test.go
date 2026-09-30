@@ -289,3 +289,89 @@ func TestRelativePathResolution(t *testing.T) {
 		t.Errorf("Expected storage root '%s', got '%s'", expectedRoot, rc.StorageRoot)
 	}
 }
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that GYRUS_WORKSPACE environment variable overrides working directory.
+// [Assertions]: Load() resolves .gyrus.yaml from GYRUS_WORKSPACE directory.
+// -----------------------------------------------------------------------------
+func TestLoad_EnvGyrusWorkspace(t *testing.T) {
+	tempWork := t.TempDir()
+	wsYaml := `storage:
+  provider: localfs
+  root: .gyrus
+default_owner_group: env-ws-group
+`
+	if err := os.WriteFile(filepath.Join(tempWork, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
+		t.Fatalf("Failed writing config: %v", err)
+	}
+
+	t.Setenv("GYRUS_WORKSPACE", tempWork)
+
+	rc, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load with GYRUS_WORKSPACE failed: %v", err)
+	}
+	if rc.Source != config.SourceWorkspace {
+		t.Errorf("Expected source '%s', got '%s'", config.SourceWorkspace, rc.Source)
+	}
+	if rc.Config.OwnerGroup() != "env-ws-group" {
+		t.Errorf("Expected owner group 'env-ws-group', got '%s'", rc.Config.OwnerGroup())
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that GYRUS_CONFIG environment variable points directly to config file.
+// [Assertions]: Load() resolves directly from GYRUS_CONFIG path.
+// -----------------------------------------------------------------------------
+func TestLoad_EnvGyrusConfig(t *testing.T) {
+	tempWork := t.TempDir()
+	cfgPath := filepath.Join(tempWork, "custom-config.yaml")
+	cfgYaml := `storage:
+  provider: localfs
+  root: ./my-storage
+default_owner_group: custom-cfg-group
+`
+	if err := os.WriteFile(cfgPath, []byte(cfgYaml), 0644); err != nil {
+		t.Fatalf("Failed writing custom config: %v", err)
+	}
+
+	t.Setenv("GYRUS_CONFIG", cfgPath)
+
+	rc, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load with GYRUS_CONFIG failed: %v", err)
+	}
+	if rc.Source != config.SourceWorkspace {
+		t.Errorf("Expected source '%s', got '%s'", config.SourceWorkspace, rc.Source)
+	}
+	if rc.Config.OwnerGroup() != "custom-cfg-group" {
+		t.Errorf("Expected owner group 'custom-cfg-group', got '%s'", rc.Config.OwnerGroup())
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that LoadWithWorkspace explicitly resolves the specified workspace.
+// [Assertions]: LoadWithWorkspace loads .gyrus.yaml from target directory.
+// -----------------------------------------------------------------------------
+func TestLoadWithWorkspace(t *testing.T) {
+	tempWork := t.TempDir()
+	wsYaml := `storage:
+  provider: localfs
+  root: .gyrus
+default_owner_group: explicit-ws
+`
+	if err := os.WriteFile(filepath.Join(tempWork, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
+		t.Fatalf("Failed writing config: %v", err)
+	}
+
+	rc, err := config.LoadWithWorkspace(tempWork)
+	if err != nil {
+		t.Fatalf("LoadWithWorkspace failed: %v", err)
+	}
+	if rc.Config.OwnerGroup() != "explicit-ws" {
+		t.Errorf("Expected owner group 'explicit-ws', got '%s'", rc.Config.OwnerGroup())
+	}
+}

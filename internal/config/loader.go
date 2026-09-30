@@ -10,19 +10,107 @@ import (
 )
 
 // Load resolves the full Gyrus configuration using the precedence chain:
-//  1. Workspace config (.gyrus.yaml) — searched from current working directory upward
-//  2. Global config (~/.gyrus.yaml)
-//  3. Hardcoded defaults
+//  0. Explicit config file via GYRUS_CONFIG env var
+//  1. Explicit workspace directory via GYRUS_WORKSPACE env var
+//  2. Workspace config (.gyrus.yaml) — searched from current working directory upward
+//  3. DevContainer auto-detection (/workspaces/*) if working directory is outside workspace
+//  4. Global config (~/.gyrus.yaml)
+//  5. Hardcoded defaults
 //
 // Full override semantics: if a workspace config file exists, the global
 // config is ignored entirely.
 func Load() (*ResolvedConfig, error) {
+	// 0. Check GYRUS_CONFIG
+	if envCfg := os.Getenv("GYRUS_CONFIG"); envCfg != "" {
+		if res, err := LoadWithConfig(envCfg); err == nil && res != nil {
+			return res, nil
+		}
+	}
+
+	// 1. Check GYRUS_WORKSPACE
+	if envWs := os.Getenv("GYRUS_WORKSPACE"); envWs != "" {
+		home, _ := os.UserHomeDir()
+		if res, err := LoadFrom(envWs, home); err == nil && res.Source == SourceWorkspace {
+			return res, nil
+		}
+	}
+
+	// 2. Search upward from working directory
 	pwd, err := os.Getwd()
 	if err != nil {
 		pwd = "."
 	}
 	home, _ := os.UserHomeDir()
-	return LoadFrom(pwd, home)
+	res, err := LoadFrom(pwd, home)
+	if err != nil {
+		return nil, err
+	}
+	if res.Source == SourceWorkspace {
+		return res, nil
+	}
+
+	// 3. DevContainer auto-detection fallback if running inside container
+	if isContainerEnvironment() {
+		if ws := findDevcontainerWorkspace(); ws != "" {
+			if devRes, err := LoadFrom(ws, home); err == nil && devRes.Source == SourceWorkspace {
+				return devRes, nil
+			}
+		}
+	}
+
+	return res, nil
+}
+
+// LoadWithWorkspace loads configuration with an explicit workspace directory.
+func LoadWithWorkspace(workspaceDir string) (*ResolvedConfig, error) {
+	home, _ := os.UserHomeDir()
+	return LoadFrom(workspaceDir, home)
+}
+
+// LoadWithConfig loads configuration from an explicit config file path.
+func LoadWithConfig(configPath string) (*ResolvedConfig, error) {
+	cfg, path, err := loadConfigFile(configPath)
+	if err != nil {
+		return nil, err
+	}
+	if cfg == nil {
+		return nil, fmt.Errorf("configuration file '%s' could not be loaded", configPath)
+	}
+	if err := validate(cfg, path); err != nil {
+		return nil, err
+	}
+	return &ResolvedConfig{
+		Config:      cfg,
+		Source:      SourceWorkspace,
+		SourcePath:  path,
+		StorageRoot: resolveStorageRoot(cfg, filepath.Dir(path)),
+	}, nil
+}
+
+func isContainerEnvironment() bool {
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		return true
+	}
+	if os.Getenv("REMOTE_CONTAINERS") == "true" || os.Getenv("CODESPACES") == "true" {
+		return true
+	}
+	return false
+}
+
+func findDevcontainerWorkspace() string {
+	entries, err := os.ReadDir("/workspaces")
+	if err != nil {
+		return ""
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			candidate := filepath.Join("/workspaces", e.Name())
+			if _, err := os.Stat(filepath.Join(candidate, GlobalConfigFileName)); err == nil {
+				return candidate
+			}
+		}
+	}
+	return ""
 }
 
 // LoadFrom resolves configuration relative to explicit working and home directories.
