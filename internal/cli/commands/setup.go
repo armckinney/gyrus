@@ -291,30 +291,3 @@ func NewMCPCmd(application *app.App) *cobra.Command {
 
 	return mcpCmd
 }
-
-// registerWithAntigravity attempts to register the plugin using the agy CLI if present on the machine.
-func registerWithAntigravity(pluginDir string) bool {
-	agyPath := "agy"
-	if _, err := exec.LookPath("agy"); err != nil {
-		userHome, _ := os.UserHomeDir()
-		candidates := []string{
-			filepath.Join(userHome, ".gemini", "bin", "agy"),
-			"/usr/local/bin/agy",
-			"/root/.gemini/bin/agy",
-		}
-		found := false
-		for _, c := range candidates {
-			if _, err := os.Stat(c); err == nil {
-				agyPath = c
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-
-	cmd := exec.Command(agyPath, "plugin", "install", pluginDir)
-	return cmd.Run() == nil
-}

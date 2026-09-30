@@ -24,8 +24,10 @@ func TestMultiAgentCopilotAndClaudeIntegration(t *testing.T) {
 		filePath string
 	}{
 		{setup.ClientTargetCopilot, "VSCode/Copilot", filepath.Join(tempWorkspace, ".vscode", "mcp.json")},
-		{setup.ClientTargetClaude, "Claude", filepath.Join(tempWorkspace, ".claude", "mcp.json")},
-		{setup.ClientTargetCodex, "Codex", filepath.Join(tempWorkspace, ".codex", "mcp.json")},
+		{setup.ClientTargetClaude, "Claude-WorkspaceRoot", filepath.Join(tempWorkspace, ".mcp.json")},
+		{setup.ClientTargetClaude, "Claude-LegacyWorkspace", filepath.Join(tempWorkspace, ".claude", "mcp.json")},
+		{setup.ClientTargetCodex, "Codex-MCP", filepath.Join(tempWorkspace, ".codex", "mcp.json")},
+		{setup.ClientTargetCodex, "Codex-Config", filepath.Join(tempWorkspace, ".codex", "config.json")},
 	}
 
 	for _, tc := range targets {

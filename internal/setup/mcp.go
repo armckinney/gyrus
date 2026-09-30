@@ -105,24 +105,61 @@ func getTargetConfigPaths(workspaceDir string, target MCPTarget, isGlobal bool) 
 		}
 
 		if isGlobal {
-			return []string{desktopPath, filepath.Join(userHome, ".claude", "mcp.json")}
+			return []string{
+				filepath.Join(userHome, ".claude.json"),
+				desktopPath,
+				filepath.Join(userHome, ".claude", "mcp.json"),
+			}
 		}
 		return []string{
+			filepath.Join(baseDir, ".mcp.json"),
 			filepath.Join(baseDir, ".claude", "mcp.json"),
 			desktopPath,
 		}
 
 	case MCPTargetAntigravity:
+		if isGlobal {
+			return []string{
+				filepath.Join(userHome, ".gemini", "config", "mcp_config.json"),
+				filepath.Join(userHome, ".antigravity", "mcp.json"),
+			}
+		}
 		return []string{
 			filepath.Join(baseDir, ".antigravity", "mcp.json"),
 		}
 
 	case MCPTargetCodex:
+		if isGlobal {
+			return []string{
+				filepath.Join(userHome, ".codex", "config.json"),
+				filepath.Join(userHome, ".codex", "mcp.json"),
+			}
+		}
 		return []string{
 			filepath.Join(baseDir, ".codex", "mcp.json"),
+			filepath.Join(baseDir, ".codex", "config.json"),
 		}
 
 	case MCPTargetCopilot:
+		if isGlobal {
+			var settingsPath string
+			switch runtime.GOOS {
+			case "darwin":
+				settingsPath = filepath.Join(userHome, "Library", "Application Support", "Code", "User", "settings.json")
+			case "windows":
+				appData := os.Getenv("APPDATA")
+				if appData == "" {
+					appData = filepath.Join(userHome, "AppData", "Roaming")
+				}
+				settingsPath = filepath.Join(appData, "Code", "User", "settings.json")
+			default: // linux
+				settingsPath = filepath.Join(userHome, ".config", "Code", "User", "settings.json")
+			}
+			return []string{
+				settingsPath,
+				filepath.Join(userHome, ".vscode", "mcp.json"),
+			}
+		}
 		return []string{
 			filepath.Join(baseDir, ".vscode", "mcp.json"),
 		}
@@ -165,7 +202,7 @@ func injectMCPServerJSON(filePath string, command string, args []string) error {
 	root["mcpServers"] = mcpServers
 
 	// For VS Code / Copilot Chat, also ensure the "servers" block with "type": "stdio" is present
-	if filepath.Base(filepath.Dir(filePath)) == ".vscode" {
+	if filepath.Base(filepath.Dir(filePath)) == ".vscode" || filepath.Base(filePath) == "settings.json" {
 		var servers map[string]interface{}
 		if raw, ok := root["servers"].(map[string]interface{}); ok {
 			servers = raw

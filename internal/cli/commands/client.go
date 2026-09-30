@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/armckinney/gyrus/internal/app"
 	"github.com/armckinney/gyrus/internal/setup"
@@ -75,6 +76,11 @@ func NewClientInstallCmd(application *app.App) *cobra.Command {
 				agyRegistered = registerWithAntigravity(res.PluginDir)
 			}
 
+			claudeRegistered := false
+			if clientTarget == setup.ClientTargetClaude {
+				claudeRegistered = registerWithClaude(binaryCmd)
+			}
+
 			// Automatic initial sync to hydrate the SQLite index
 			syncedDocs := 0
 			if engine, err := application.Engine(); err == nil {
@@ -91,6 +97,9 @@ func NewClientInstallCmd(application *app.App) *cobra.Command {
 				if agyRegistered {
 					fmt.Printf("   - Antigravity:   Registered in plugin registry (agy plugin list)\n")
 				}
+				if claudeRegistered {
+					fmt.Printf("   - Claude Code:   Registered via claude CLI (claude mcp list)\n")
+				}
 				modeDesc := "Mode: local (native binary)"
 				if global {
 					modeDesc += ", Global: ~"
@@ -103,8 +112,8 @@ func NewClientInstallCmd(application *app.App) *cobra.Command {
 					fmt.Printf("   - Index Status:  %d documents ready\n", syncedDocs)
 				}
 			} else {
-				fmt.Printf("{\"status\":\"installed\",\"target\":\"%s\",\"mode\":\"local\",\"plugin_dir\":\"%s\",\"plugin_files_count\":%d,\"mcp_files_count\":%d,\"agy_registered\":%t,\"synced_docs\":%d}\n",
-					clientTarget, res.PluginDir, len(res.PluginFiles), len(res.InstalledMCP), agyRegistered, syncedDocs)
+				fmt.Printf("{\"status\":\"installed\",\"target\":\"%s\",\"mode\":\"local\",\"plugin_dir\":\"%s\",\"plugin_files_count\":%d,\"mcp_files_count\":%d,\"agy_registered\":%t,\"claude_registered\":%t,\"synced_docs\":%d}\n",
+					clientTarget, res.PluginDir, len(res.PluginFiles), len(res.InstalledMCP), agyRegistered, claudeRegistered, syncedDocs)
 			}
 			return nil
 		},
@@ -158,6 +167,13 @@ func NewClientUninstallCmd(application *app.App) *cobra.Command {
 				agyDeregistered = deregisterWithAntigravity()
 			}
 
+			claudeDeregistered := false
+			if clientTarget == setup.ClientTargetClaude {
+				claudeDeregistered = deregisterWithClaude()
+			}
+
+			killedProcesses := terminateMCPServers()
+
 			if !GlobalJSONOutput {
 				fmt.Printf("🗑️  Uninstalled Gyrus from client '%s'!\n", clientTarget)
 				if res.PluginDir != "" {
@@ -168,15 +184,21 @@ func NewClientUninstallCmd(application *app.App) *cobra.Command {
 					}
 				}
 				if agyDeregistered {
-					fmt.Printf("   - Antigravity:   Deregistered from plugin registry (agy plugin uninstall gyrus)\n")
+					fmt.Printf("   - Antigravity:   Deregistered from plugin registry & MCP cleaned\n")
+				}
+				if claudeDeregistered {
+					fmt.Printf("   - Claude Code:   Deregistered from claude CLI (claude mcp remove gyrus)\n")
 				}
 				fmt.Printf("   - MCP Servers:   Cleaned for target '%s' (%d config files updated)\n", clientTarget, len(res.UnregisteredMCP))
 				for _, f := range res.UnregisteredMCP {
 					fmt.Printf("      • %s\n", f)
 				}
+				if killedProcesses > 0 {
+					fmt.Printf("   - Processes:     Terminated %d active 'gyrus mcp serve' process(es)\n", killedProcesses)
+				}
 			} else {
-				fmt.Printf("{\"status\":\"uninstalled\",\"target\":\"%s\",\"plugin_dir\":\"%s\",\"plugin_removed\":%t,\"mcp_files_count\":%d,\"agy_deregistered\":%t}\n",
-					clientTarget, res.PluginDir, res.PluginRemoved, len(res.UnregisteredMCP), agyDeregistered)
+				fmt.Printf("{\"status\":\"uninstalled\",\"target\":\"%s\",\"plugin_dir\":\"%s\",\"plugin_removed\":%t,\"mcp_files_count\":%d,\"agy_deregistered\":%t,\"claude_deregistered\":%t,\"killed_processes\":%d}\n",
+					clientTarget, res.PluginDir, res.PluginRemoved, len(res.UnregisteredMCP), agyDeregistered, claudeDeregistered, killedProcesses)
 			}
 			return nil
 		},
@@ -189,29 +211,122 @@ func NewClientUninstallCmd(application *app.App) *cobra.Command {
 	return cmd
 }
 
-// deregisterWithAntigravity attempts to deregister the plugin using the agy CLI if present.
-func deregisterWithAntigravity() bool {
-	agyPath := "agy"
-	if _, err := exec.LookPath("agy"); err != nil {
-		userHome, _ := os.UserHomeDir()
-		candidates := []string{
-			filepath.Join(userHome, ".gemini", "bin", "agy"),
-			"/usr/local/bin/agy",
-			"/root/.gemini/bin/agy",
-		}
-		found := false
-		for _, c := range candidates {
-			if _, err := os.Stat(c); err == nil {
-				agyPath = c
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
+// findAgyPath searches PATH and standard installation paths for the agy CLI.
+func findAgyPath() (string, bool) {
+	if p, err := exec.LookPath("agy"); err == nil {
+		return p, true
+	}
+	userHome, _ := os.UserHomeDir()
+	candidates := []string{
+		filepath.Join(userHome, ".local", "bin", "agy"),
+		filepath.Join(userHome, ".gemini", "bin", "agy"),
+		"/usr/local/bin/agy",
+		"/root/.local/bin/agy",
+		"/root/.gemini/bin/agy",
+	}
+	for _, c := range candidates {
+		if _, err := os.Stat(c); err == nil {
+			return c, true
 		}
 	}
+	return "", false
+}
 
-	cmd := exec.Command(agyPath, "plugin", "uninstall", "gyrus")
+// registerWithAntigravity attempts to register the plugin using the agy CLI if present.
+func registerWithAntigravity(pluginDir string) bool {
+	agyPath, ok := findAgyPath()
+	if !ok {
+		return false
+	}
+	cmd := exec.Command(agyPath, "plugin", "install", pluginDir)
 	return cmd.Run() == nil
+}
+
+// deregisterWithAntigravity attempts to deregister the plugin and clean MCP servers using the agy CLI.
+func deregisterWithAntigravity() bool {
+	agyPath, ok := findAgyPath()
+	if !ok {
+		return false
+	}
+
+	// 1. Uninstall plugin
+	pluginCmd := exec.Command(agyPath, "plugin", "uninstall", "gyrus")
+	pluginSuccess := pluginCmd.Run() == nil
+
+	// 2. Remove any direct MCP servers (gyrus, gyrus_gyrus)
+	_ = exec.Command(agyPath, "mcp", "remove", "gyrus").Run()
+	_ = exec.Command(agyPath, "mcp", "remove", "gyrus_gyrus").Run()
+
+	return pluginSuccess
+}
+
+// findClaudePath searches PATH and standard installation paths for the claude CLI.
+func findClaudePath() (string, bool) {
+	if p, err := exec.LookPath("claude"); err == nil {
+		return p, true
+	}
+	userHome, _ := os.UserHomeDir()
+	candidates := []string{
+		filepath.Join(userHome, ".local", "bin", "claude"),
+		"/usr/local/bin/claude",
+		filepath.Join(userHome, ".npm-global", "bin", "claude"),
+	}
+	for _, c := range candidates {
+		if _, err := os.Stat(c); err == nil {
+			return c, true
+		}
+	}
+	return "", false
+}
+
+// registerWithClaude registers gyrus as an MCP server with the claude CLI if installed.
+func registerWithClaude(binaryCmd string) bool {
+	claudePath, ok := findClaudePath()
+	if !ok {
+		return false
+	}
+	cmd := exec.Command(claudePath, "mcp", "add", "gyrus", "--", binaryCmd, "mcp", "serve")
+	return cmd.Run() == nil
+}
+
+// deregisterWithClaude removes the gyrus MCP server from the claude CLI if installed.
+func deregisterWithClaude() bool {
+	claudePath, ok := findClaudePath()
+	if !ok {
+		return false
+	}
+	cmd := exec.Command(claudePath, "mcp", "remove", "gyrus")
+	return cmd.Run() == nil
+}
+
+// terminateMCPServers finds and terminates active 'gyrus mcp serve' background processes.
+func terminateMCPServers() int {
+	currentPID := os.Getpid()
+	killedCount := 0
+
+	pgrepPath, err := exec.LookPath("pgrep")
+	if err != nil {
+		return 0
+	}
+
+	out, err := exec.Command(pgrepPath, "-f", "gyrus mcp serve").Output()
+	if err != nil {
+		return 0
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var pid int
+		if _, err := fmt.Sscanf(line, "%d", &pid); err == nil && pid != currentPID && pid > 1 {
+			if proc, err := os.FindProcess(pid); err == nil {
+				_ = proc.Signal(os.Interrupt)
+				killedCount++
+			}
+		}
+	}
+	return killedCount
 }
