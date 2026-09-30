@@ -9,6 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func TestMain(m *testing.M) {
+	os.Unsetenv("GYRUS_WORKSPACE")
+	os.Unsetenv("GYRUS_CONFIG")
+	os.Exit(m.Run())
+}
+
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
 // [Purpose]: Verifies that commands.Register successfully attaches all subcommands to root and executes them in-memory.

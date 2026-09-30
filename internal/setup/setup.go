@@ -1,9 +1,11 @@
 package setup
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // ConfigSetupOptions defines options for workspace configuration setup (gyrus init config).
@@ -190,7 +192,57 @@ func RunClientUninstall(opts ClientUninstallOptions) (*ClientUninstallResult, er
 	}
 	result.UnregisteredMCP = unregistered
 
+	// 3. For Antigravity, perform permission grants and runtime data cleanup
+	if target == ClientTargetAntigravity {
+		CleanupAntigravityData()
+	}
+
 	return result, nil
+}
+
+// CleanupAntigravityData cleans obsolete permission grants in ~/.gemini/config/config.json
+// and removes runtime caches in ~/.gemini/antigravity/plugin_data/gyrus.
+func CleanupAntigravityData() {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+
+	// 1. Remove obsolete permission grants from ~/.gemini/config/config.json
+	cfgPath := filepath.Join(userHome, ".gemini", "config", "config.json")
+	if data, err := os.ReadFile(cfgPath); err == nil {
+		var cfg map[string]interface{}
+		if err := json.Unmarshal(data, &cfg); err == nil {
+			modified := false
+			if uSettings, ok := cfg["userSettings"].(map[string]interface{}); ok {
+				if grants, ok := uSettings["globalPermissionGrants"].(map[string]interface{}); ok {
+					if allow, ok := grants["allow"].([]interface{}); ok {
+						var filtered []interface{}
+						for _, item := range allow {
+							s, ok := item.(string)
+							if ok && (strings.HasPrefix(s, "mcp(gyrus") || strings.HasPrefix(s, "mcp(gyrus_gyrus")) {
+								modified = true
+								continue
+							}
+							filtered = append(filtered, item)
+						}
+						if modified {
+							grants["allow"] = filtered
+						}
+					}
+				}
+			}
+			if modified {
+				if out, err := json.MarshalIndent(cfg, "", "  "); err == nil {
+					_ = os.WriteFile(cfgPath, out, 0644)
+				}
+			}
+		}
+	}
+
+	// 2. Remove orphaned runtime data in ~/.gemini/antigravity/plugin_data/gyrus
+	pluginDataDir := filepath.Join(userHome, ".gemini", "antigravity", "plugin_data", "gyrus")
+	_ = os.RemoveAll(pluginDataDir)
 }
 
 // SetupOptions defines legacy options for workspace initialization (deprecated in Phase 2.6).

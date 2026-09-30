@@ -2,12 +2,19 @@ package cli
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/armckinney/gyrus/internal/domain/lifecycle"
 	"github.com/armckinney/gyrus/internal/domain/okf"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
+
+func TestMain(m *testing.M) {
+	os.Unsetenv("GYRUS_WORKSPACE")
+	os.Unsetenv("GYRUS_CONFIG")
+	os.Exit(m.Run())
+}
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test

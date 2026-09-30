@@ -10,6 +10,12 @@ import (
 	"github.com/armckinney/gyrus/internal/setup"
 )
 
+func TestMain(m *testing.M) {
+	os.Unsetenv("GYRUS_WORKSPACE")
+	os.Unsetenv("GYRUS_CONFIG")
+	os.Exit(m.Run())
+}
+
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
 // [Purpose]: Verifies that RunConfigSetup creates .gyrus.yaml with designated profile and owner group.
@@ -389,5 +395,129 @@ func TestRunClientUninstall(t *testing.T) {
 	servers, _ := mcpRoot["mcpServers"].(map[string]interface{})
 	if _, exists := servers["gyrus"]; exists {
 		t.Errorf("Expected 'gyrus' to be removed from mcpServers")
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that RunClientSetup and RunClientUninstall work for global and non-Antigravity targets.
+// [Assertions]: MCP configurations are written and subsequently cleaned up.
+// -----------------------------------------------------------------------------
+func TestRunClientSetupGlobalTargets(t *testing.T) {
+	targets := []setup.ClientTarget{
+		setup.ClientTargetClaude,
+		setup.ClientTargetCodex,
+		setup.ClientTargetCopilot,
+		setup.ClientTargetAntigravity,
+	}
+
+	for _, target := range targets {
+		t.Run(string(target), func(t *testing.T) {
+			tempHome := t.TempDir()
+			t.Setenv("HOME", tempHome)
+
+			// 1. Install global
+			res, err := setup.RunClientSetup(setup.ClientSetupOptions{
+				WorkspaceDir: tempHome,
+				Target:       target,
+				Mode:         setup.MCPModeLocal,
+				Global:       true,
+				BinaryCmd:    "gyrus",
+			})
+			if err != nil {
+				t.Fatalf("RunClientSetup global failed for %s: %v", target, err)
+			}
+			if len(res.InstalledMCP) == 0 {
+				t.Fatalf("Expected at least 1 MCP config file registered for %s", target)
+			}
+
+			// Verify each registered config file has gyrus registered
+			for _, cfgFile := range res.InstalledMCP {
+				data, err := os.ReadFile(cfgFile)
+				if err != nil {
+					t.Fatalf("Failed reading config file %s: %v", cfgFile, err)
+				}
+				if !strings.Contains(string(data), "gyrus") {
+					t.Errorf("Expected config %s to contain 'gyrus', got: %s", cfgFile, string(data))
+				}
+			}
+
+			// 2. Uninstall global
+			unres, err := setup.RunClientUninstall(setup.ClientUninstallOptions{
+				WorkspaceDir: tempHome,
+				Target:       target,
+				Global:       true,
+			})
+			if err != nil {
+				t.Fatalf("RunClientUninstall global failed for %s: %v", target, err)
+			}
+			if len(unres.UnregisteredMCP) == 0 {
+				t.Errorf("Expected at least 1 unregistered MCP file for %s", target)
+			}
+		})
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that CleanupAntigravityData prunes mcp(gyrus*) permissions and removes plugin data.
+// [Assertions]: Permission grants are removed from config.json and plugin_data directory is deleted.
+// -----------------------------------------------------------------------------
+func TestCleanupAntigravityData(t *testing.T) {
+	tempHome := t.TempDir()
+	t.Setenv("HOME", tempHome)
+
+	// Create fake ~/.gemini/config/config.json
+	cfgDir := filepath.Join(tempHome, ".gemini", "config")
+	if err := os.MkdirAll(cfgDir, 0755); err != nil {
+		t.Fatalf("Failed creating config dir: %v", err)
+	}
+
+	initialJSON := `{
+  "userSettings": {
+    "globalPermissionGrants": {
+      "allow": [
+        "terminal(git *)",
+        "mcp(gyrus:*)",
+        "mcp(gyrus_gyrus:*)",
+        "fetch(*)"
+      ]
+    }
+  }
+}`
+	cfgPath := filepath.Join(cfgDir, "config.json")
+	if err := os.WriteFile(cfgPath, []byte(initialJSON), 0644); err != nil {
+		t.Fatalf("Failed writing initial config.json: %v", err)
+	}
+
+	// Create fake ~/.gemini/antigravity/plugin_data/gyrus
+	pluginDataDir := filepath.Join(tempHome, ".gemini", "antigravity", "plugin_data", "gyrus")
+	if err := os.MkdirAll(pluginDataDir, 0755); err != nil {
+		t.Fatalf("Failed creating plugin data dir: %v", err)
+	}
+	testFile := filepath.Join(pluginDataDir, "cache.db")
+	if err := os.WriteFile(testFile, []byte("cache"), 0644); err != nil {
+		t.Fatalf("Failed creating cache file: %v", err)
+	}
+
+	// Run cleanup
+	setup.CleanupAntigravityData()
+
+	// Verify plugin_data/gyrus is removed
+	if _, err := os.Stat(pluginDataDir); !os.IsNotExist(err) {
+		t.Errorf("Expected plugin data dir %s to be removed", pluginDataDir)
+	}
+
+	// Verify config.json has pruned mcp permissions while keeping other grants
+	cfgData, err := os.ReadFile(cfgPath)
+	if err != nil {
+		t.Fatalf("Failed reading config.json: %v", err)
+	}
+	content := string(cfgData)
+	if strings.Contains(content, "gyrus") {
+		t.Errorf("Expected config.json to not contain 'gyrus', got:\n%s", content)
+	}
+	if !strings.Contains(content, "terminal(git *)") || !strings.Contains(content, "fetch(*)") {
+		t.Errorf("Expected config.json to preserve non-gyrus permissions, got:\n%s", content)
 	}
 }

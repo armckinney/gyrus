@@ -27,19 +27,23 @@ func Load() (*ResolvedConfig, error) {
 		}
 	}
 
-	// 1. Check GYRUS_WORKSPACE
-	if envWs := os.Getenv("GYRUS_WORKSPACE"); envWs != "" {
-		home, _ := os.UserHomeDir()
-		if res, err := LoadFrom(envWs, home); err == nil && res.Source == SourceWorkspace {
-			return res, nil
-		}
-	}
-
-	// 2. Search upward from working directory
 	pwd, err := os.Getwd()
 	if err != nil {
 		pwd = "."
 	}
+	inTemp := isTempDirectory(pwd)
+
+	// 1. Check GYRUS_WORKSPACE (ignored if working directory is an isolated temporary directory and GYRUS_WORKSPACE points outside it)
+	if envWs := os.Getenv("GYRUS_WORKSPACE"); envWs != "" {
+		if !inTemp || isTempDirectory(envWs) {
+			home, _ := os.UserHomeDir()
+			if res, err := LoadFrom(envWs, home); err == nil && res.Source == SourceWorkspace {
+				return res, nil
+			}
+		}
+	}
+
+	// 2. Search upward from working directory
 	home, _ := os.UserHomeDir()
 	res, err := LoadFrom(pwd, home)
 	if err != nil {
@@ -49,8 +53,8 @@ func Load() (*ResolvedConfig, error) {
 		return res, nil
 	}
 
-	// 3. DevContainer auto-detection fallback if running inside container
-	if isContainerEnvironment() {
+	// 3. DevContainer auto-detection fallback if running inside container and not in a temp directory
+	if isContainerEnvironment() && !inTemp {
 		if ws := findDevcontainerWorkspace(); ws != "" {
 			if devRes, err := LoadFrom(ws, home); err == nil && devRes.Source == SourceWorkspace {
 				return devRes, nil
@@ -59,6 +63,18 @@ func Load() (*ResolvedConfig, error) {
 	}
 
 	return res, nil
+}
+
+func isTempDirectory(path string) bool {
+	tmp := os.TempDir()
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		absPath = path
+	}
+	if strings.HasPrefix(absPath, "/tmp") || strings.HasPrefix(absPath, "/private/tmp") || (tmp != "" && strings.HasPrefix(absPath, tmp)) {
+		return true
+	}
+	return false
 }
 
 // LoadWithWorkspace loads configuration with an explicit workspace directory.

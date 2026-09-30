@@ -10,6 +10,12 @@ import (
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
+func TestMain(m *testing.M) {
+	os.Unsetenv("GYRUS_WORKSPACE")
+	os.Unsetenv("GYRUS_CONFIG")
+	os.Exit(m.Run())
+}
+
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
 // [Purpose]: Verifies that App service container instantiates dependencies and provides access to Engine.
