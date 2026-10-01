@@ -8,27 +8,34 @@ import (
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies in-memory execution of link, sync, and validate CLI subcommands.
+// [Purpose]: Verifies maintenance CLI commands: link, sync, and validate.
 // [Execution Surface]: In-Memory Cobra Command Tree (internal/cli)
-// [Assertions]: Links two documents, executes workspace sync, and validates OKF Markdown file schema.
+// [Assertions]: Commands execute without errors and mutate memory/storage.
 // -----------------------------------------------------------------------------
 func TestCLILinkAndSyncAndValidate(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "gyrus-cli-maint-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
+	tempDir := t.TempDir()
+	t.Setenv("HOME", tempDir)
+	origWd, _ := os.Getwd()
+	defer os.Chdir(origWd)
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatalf("Failed to chdir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
 
-	storagePath := filepath.Join(tempDir, "storage")
+	wsYaml := `storage:
+  provider: localfs
+  root: .gyrus
+`
+	if err := os.WriteFile(filepath.Join(tempDir, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
+		t.Fatalf("Failed writing .gyrus.yaml: %v", err)
+	}
 
-	rootCmd, err := BuildRootCmd(storagePath)
+	rootCmd, err := BuildRootCmd()
 	if err != nil {
 		t.Fatalf("BuildRootCmd failed: %v", err)
 	}
 
 	// 1. gyrus create 2 docs
 	rootCmd.SetArgs([]string{
-		"--storage-path", storagePath,
 		"create",
 		"--id", "doc-1",
 		"--title", "Doc One",
@@ -42,7 +49,6 @@ func TestCLILinkAndSyncAndValidate(t *testing.T) {
 	}
 
 	rootCmd.SetArgs([]string{
-		"--storage-path", storagePath,
 		"create",
 		"--id", "doc-2",
 		"--title", "Doc Two",
@@ -57,7 +63,6 @@ func TestCLILinkAndSyncAndValidate(t *testing.T) {
 
 	// 2. gyrus link
 	rootCmd.SetArgs([]string{
-		"--storage-path", storagePath,
 		"link",
 		"doc-1", "doc-2",
 		"--rel-type", "depends_on",
@@ -68,7 +73,6 @@ func TestCLILinkAndSyncAndValidate(t *testing.T) {
 
 	// 3. gyrus sync
 	rootCmd.SetArgs([]string{
-		"--storage-path", storagePath,
 		"sync",
 	})
 	if err := rootCmd.Execute(); err != nil {
@@ -76,7 +80,7 @@ func TestCLILinkAndSyncAndValidate(t *testing.T) {
 	}
 
 	// 4. gyrus validate file
-	docFile := filepath.Join(storagePath, "docs", "team", "reference", "doc-1.md")
+	docFile := filepath.Join(tempDir, ".gyrus", "docs", "team", "reference", "doc-1.md")
 	rootCmd.SetArgs([]string{
 		"validate",
 		docFile,

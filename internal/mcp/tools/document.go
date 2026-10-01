@@ -20,7 +20,7 @@ func (h *Handler) registerDocumentTools(s *server.MCPServer) {
 		mcp.WithString("title", mcp.Required(), mcp.Description("Document Title")),
 		mcp.WithString("category", mcp.Required(), mcp.Description("Category (architecture|business-logic|product|operations|technical)")),
 		mcp.WithString("type", mcp.Required(), mcp.Description("Type (adr|prd|guide|specification|...)")),
-		mcp.WithString("owner_group", mcp.Required(), mcp.Description("Owner Group")),
+		mcp.WithString("owner_group", mcp.Description("Owner Group (default: root)")),
 		mcp.WithString("status", mcp.Description("Status (draft|proposed|active)")),
 		mcp.WithString("content", mcp.Description("Body content")),
 	)
@@ -60,6 +60,9 @@ func (h *Handler) HandleCreate(ctx context.Context, req mcp.CallToolRequest) (*m
 	category := getArgString(req, "category")
 	docType := getArgString(req, "type")
 	ownerGroup := getArgString(req, "owner_group")
+	if ownerGroup == "" {
+		ownerGroup = "root"
+	}
 	status := getArgString(req, "status")
 	content := getArgString(req, "content")
 

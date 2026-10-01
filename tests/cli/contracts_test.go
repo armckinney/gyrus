@@ -18,6 +18,9 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	os.Unsetenv("GYRUS_WORKSPACE")
+	os.Unsetenv("GYRUS_CONFIG")
+
 	tempDir, err := os.MkdirTemp("", "gyrus-bin-*")
 	if err != nil {
 		panic(err)
@@ -57,7 +60,7 @@ func TestCLI_SchemaValidation_ExitCode1(t *testing.T) {
 		"--title", "Bad ID Doc",
 		"--category", "architecture",
 		"--type", "adr",
-		"--owner-group", "armckinney",
+		"--owner-group", "root",
 	)
 	createCmd.Dir = tempWorkspace
 	var stdout, stderr bytes.Buffer

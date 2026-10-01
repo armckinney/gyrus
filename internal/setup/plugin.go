@@ -49,7 +49,7 @@ func InstallAgentPlugin(opts PluginInstallOptions) ([]string, error) {
 		opts.ContainerImage = "ghcr.io/armckinney/gyrus:latest"
 	}
 	if opts.Mode == "" {
-		opts.Mode = MCPModeContainer
+		opts.Mode = MCPModeLocal
 	}
 	if opts.WorkspaceDir == "" {
 		opts.WorkspaceDir = "."
@@ -112,6 +112,9 @@ func InstallAgentPlugin(opts PluginInstallOptions) ([]string, error) {
 				"type":    "stdio",
 				"command": mcpCommand,
 				"args":    mcpArgs,
+				"env": map[string]string{
+					"GYRUS_WORKSPACE": "${workspaceFolder}",
+				},
 			},
 		},
 	}
@@ -131,6 +134,9 @@ func InstallAgentPlugin(opts PluginInstallOptions) ([]string, error) {
 			"gyrus": map[string]interface{}{
 				"command": mcpCommand,
 				"args":    mcpArgs,
+				"env": map[string]string{
+					"GYRUS_WORKSPACE": "${workspaceFolder}",
+				},
 			},
 		},
 	}

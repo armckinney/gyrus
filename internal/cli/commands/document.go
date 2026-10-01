@@ -64,12 +64,22 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 				}
 			}
 
+			docOwner := ownerGroup
+			if docOwner == "" {
+				cfg := application.Config()
+				if cfg != nil && cfg.DefaultOwnerGroup != "" {
+					docOwner = cfg.DefaultOwnerGroup
+				} else {
+					docOwner = "root"
+				}
+			}
+
 			doc := gyrus.Document{
 				ID:           id,
 				Title:        title,
 				Category:     gyrus.Category(category),
 				Type:         gyrus.DocumentType(docType),
-				OwnerGroup:   ownerGroup,
+				OwnerGroup:   docOwner,
 				Version:      1,
 				Status:       docStatus,
 				Tags:         tagsList,
@@ -97,7 +107,7 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 	cmd.Flags().StringVar(&title, "title", "", "Document Title (required)")
 	cmd.Flags().StringVar(&category, "category", "", "Document Category (architecture|business-logic|product|operations|technical)")
 	cmd.Flags().StringVar(&docType, "type", "", "Document Type (adr|prd|guide|specification|...)")
-	cmd.Flags().StringVar(&ownerGroup, "owner-group", "", "Owner Group (required)")
+	cmd.Flags().StringVar(&ownerGroup, "owner-group", "", "Owner Group (defaults to configured owner or root)")
 	cmd.Flags().StringVar(&status, "status", "", "Document Status (draft|proposed|active)")
 	cmd.Flags().StringVar(&tags, "tags", "", "Comma-separated list of tags")
 	cmd.Flags().StringVar(&dependencies, "dependencies", "", "Comma-separated list of dependent document IDs")
@@ -108,7 +118,6 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 	_ = cmd.MarkFlagRequired("title")
 	_ = cmd.MarkFlagRequired("category")
 	_ = cmd.MarkFlagRequired("type")
-	_ = cmd.MarkFlagRequired("owner-group")
 
 	return cmd
 }

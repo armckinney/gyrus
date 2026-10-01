@@ -20,20 +20,28 @@ const (
 	ProfileVector   Profile = "vector"
 )
 
-// GenerateConfigYaml generates the .gyrus.yaml config file content for a given profile.
+// GenerateConfigYaml generates the .gyrus.yaml config file content for a given profile using the nested schema.
 func GenerateConfigYaml(profile Profile, ownerGroup string) string {
 	if ownerGroup == "" {
-		ownerGroup = "armckinney"
+		ownerGroup = "root"
 	}
 
 	switch profile {
 	case ProfileGit:
-		return fmt.Sprintf(`# Gyrus CLI & MCP Configuration - Git Profile
-storage_provider: git
-index_provider: sqlite
-search_provider: sqlite
+		return fmt.Sprintf(`# Gyrus Configuration - Git Profile
+storage:
+  provider: git
+  root: .gyrus
 
-storage_root: .gyrus
+index:
+  provider: sqlite
+
+graph:
+  provider: sqlite
+
+search:
+  provider: sqlite
+
 default_owner_group: %s
 
 git:
@@ -42,12 +50,20 @@ git:
 `, ownerGroup)
 
 	case ProfileS3:
-		return fmt.Sprintf(`# Gyrus CLI & MCP Configuration - AWS S3 Profile
-storage_provider: s3
-index_provider: sqlite
-search_provider: sqlite
+		return fmt.Sprintf(`# Gyrus Configuration - AWS S3 Profile
+storage:
+  provider: s3
+  root: .gyrus
 
-storage_root: .gyrus
+index:
+  provider: sqlite
+
+graph:
+  provider: sqlite
+
+search:
+  provider: sqlite
+
 default_owner_group: %s
 
 s3:
@@ -56,12 +72,20 @@ s3:
 `, ownerGroup)
 
 	case ProfileAzure:
-		return fmt.Sprintf(`# Gyrus CLI & MCP Configuration - Azure Blob Profile
-storage_provider: azure_blob
-index_provider: sqlite
-search_provider: sqlite
+		return fmt.Sprintf(`# Gyrus Configuration - Azure Blob Profile
+storage:
+  provider: azure_blob
+  root: .gyrus
 
-storage_root: .gyrus
+index:
+  provider: sqlite
+
+graph:
+  provider: sqlite
+
+search:
+  provider: sqlite
+
 default_owner_group: %s
 
 azure_blob:
@@ -70,12 +94,20 @@ azure_blob:
 `, ownerGroup)
 
 	case ProfileGCS:
-		return fmt.Sprintf(`# Gyrus CLI & MCP Configuration - Google Cloud Storage Profile
-storage_provider: gcs
-index_provider: sqlite
-search_provider: sqlite
+		return fmt.Sprintf(`# Gyrus Configuration - Google Cloud Storage Profile
+storage:
+  provider: gcs
+  root: .gyrus
 
-storage_root: .gyrus
+index:
+  provider: sqlite
+
+graph:
+  provider: sqlite
+
+search:
+  provider: sqlite
+
 default_owner_group: %s
 
 gcs:
@@ -83,12 +115,20 @@ gcs:
 `, ownerGroup)
 
 	case ProfileBlob:
-		return fmt.Sprintf(`# Gyrus CLI & MCP Configuration - Cloud Blob Profile
-storage_provider: blob
-index_provider: sqlite
-search_provider: sqlite
+		return fmt.Sprintf(`# Gyrus Configuration - Cloud Blob Profile
+storage:
+  provider: blob
+  root: .gyrus
 
-storage_root: .gyrus
+index:
+  provider: sqlite
+
+graph:
+  provider: sqlite
+
+search:
+  provider: sqlite
+
 default_owner_group: %s
 
 blob:
@@ -96,12 +136,20 @@ blob:
 `, ownerGroup)
 
 	case ProfilePostgres:
-		return fmt.Sprintf(`# Gyrus CLI & MCP Configuration - PostgreSQL Profile
-storage_provider: postgres
-index_provider: postgres
-search_provider: postgres_fts
+		return fmt.Sprintf(`# Gyrus Configuration - PostgreSQL Profile
+storage:
+  provider: postgres
+  root: .gyrus
 
-storage_root: .gyrus
+index:
+  provider: postgres
+
+graph:
+  provider: postgres
+
+search:
+  provider: postgres_fts
+
 default_owner_group: %s
 
 postgres:
@@ -109,12 +157,20 @@ postgres:
 `, ownerGroup)
 
 	case ProfileVector:
-		return fmt.Sprintf(`# Gyrus CLI & MCP Configuration - Semantic Vector Profile
-storage_provider: localfs
-index_provider: sqlite
-search_provider: vector
+		return fmt.Sprintf(`# Gyrus Configuration - Semantic Vector Profile
+storage:
+  provider: localfs
+  root: .gyrus
 
-storage_root: .gyrus
+index:
+  provider: sqlite
+
+graph:
+  provider: sqlite
+
+search:
+  provider: vector
+
 default_owner_group: %s
 
 vector:
@@ -124,12 +180,20 @@ vector:
 `, ownerGroup)
 
 	default: // ProfileLocal
-		return fmt.Sprintf(`# Gyrus CLI & MCP Configuration - LocalFS Profile
-storage_provider: localfs
-index_provider: sqlite
-search_provider: sqlite
+		return fmt.Sprintf(`# Gyrus Configuration - LocalFS Profile
+storage:
+  provider: localfs
+  root: .gyrus
 
-storage_root: .gyrus
+index:
+  provider: sqlite
+
+graph:
+  provider: sqlite
+
+search:
+  provider: sqlite
+
 default_owner_group: %s
 `, ownerGroup)
 	}
@@ -144,4 +208,20 @@ func WriteConfigFile(dir string, profile Profile, ownerGroup string) (string, er
 		return "", fmt.Errorf("failed to write .gyrus.yaml config file: %w", err)
 	}
 	return configPath, nil
+}
+
+// WriteGlobalConfigFile writes .gyrus.yaml to the user's home directory.
+// Returns an error if the file already exists and force is false.
+func WriteGlobalConfigFile(profile Profile, ownerGroup string, force bool) (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to determine home directory: %w", err)
+	}
+	configPath := filepath.Join(homeDir, ".gyrus.yaml")
+	if !force {
+		if _, err := os.Stat(configPath); err == nil {
+			return "", fmt.Errorf("global config already exists at %s. Use --force to overwrite", configPath)
+		}
+	}
+	return WriteConfigFile(homeDir, profile, ownerGroup)
 }

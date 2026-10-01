@@ -2,12 +2,19 @@ package cli
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/armckinney/gyrus/internal/domain/lifecycle"
 	"github.com/armckinney/gyrus/internal/domain/okf"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
+
+func TestMain(m *testing.M) {
+	os.Unsetenv("GYRUS_WORKSPACE")
+	os.Unsetenv("GYRUS_CONFIG")
+	os.Exit(m.Run())
+}
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
@@ -43,7 +50,7 @@ func TestMapErrorToExitCode(t *testing.T) {
 // [Assertions]: BuildRootCmd succeeds and executing --help returns Exit Code 0.
 // -----------------------------------------------------------------------------
 func TestRootCommandHelp(t *testing.T) {
-	rootCmd, err := BuildRootCmd("")
+	rootCmd, err := BuildRootCmd()
 	if err != nil {
 		t.Fatalf("BuildRootCmd failed: %v", err)
 	}

@@ -4,66 +4,88 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/armckinney/gyrus/internal/config"
 	"github.com/armckinney/gyrus/internal/domain/lifecycle"
 	"github.com/armckinney/gyrus/internal/provider"
-	"github.com/armckinney/gyrus/internal/provider/storage/localfs"
 )
 
 // App is the central dependency injection service container for Gyrus.
 type App struct {
-	storageRoot string
-	config      *localfs.Config
-	engine      *lifecycle.Engine
-	engineMu    sync.Mutex
+	resolved *config.ResolvedConfig
+	engine   *lifecycle.Engine
+	engineMu sync.Mutex
 }
 
-// New initializes a new App container for the target workspace storageRoot.
-func New(storageRoot string) (*App, error) {
-	absRoot, err := localfs.ResolveStoragePath(storageRoot)
+// New initializes a new App container resolving configuration via config.Load().
+func New() (*App, error) {
+	resolved, err := config.Load()
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve storage path: %w", err)
-	}
-
-	cfg, _, err := localfs.LoadConfig(absRoot)
-	if err != nil {
-		cfg = &localfs.Config{}
+		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	return &App{
-		storageRoot: absRoot,
-		config:      cfg,
+		resolved: resolved,
 	}, nil
 }
 
-// Reset reconfigures the App container for a new storage root path.
-func (a *App) Reset(storageRoot string) error {
+// NewWithWorkspace initializes an App container resolving configuration from an explicit workspace directory.
+func NewWithWorkspace(workspaceDir string) (*App, error) {
+	resolved, err := config.LoadWithWorkspace(workspaceDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load configuration for workspace '%s': %w", workspaceDir, err)
+	}
+
+	return &App{
+		resolved: resolved,
+	}, nil
+}
+
+// NewWithConfig initializes an App container resolving configuration from an explicit config file.
+func NewWithConfig(configPath string) (*App, error) {
+	resolved, err := config.LoadWithConfig(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load configuration from '%s': %w", configPath, err)
+	}
+
+	return &App{
+		resolved: resolved,
+	}, nil
+}
+
+// Reset reloads configuration and resets cached engine.
+func (a *App) Reset() error {
 	a.engineMu.Lock()
 	defer a.engineMu.Unlock()
 
-	absRoot, err := localfs.ResolveStoragePath(storageRoot)
+	resolved, err := config.Load()
 	if err != nil {
-		return fmt.Errorf("failed to resolve storage path: %w", err)
+		return fmt.Errorf("failed to reload configuration: %w", err)
 	}
 
-	cfg, _, err := localfs.LoadConfig(absRoot)
-	if err != nil {
-		cfg = &localfs.Config{}
-	}
-
-	a.storageRoot = absRoot
-	a.config = cfg
+	a.resolved = resolved
 	a.engine = nil
 	return nil
 }
 
-// StorageRoot returns the workspace storage root directory path.
+// StorageRoot returns the resolved storage root directory path.
 func (a *App) StorageRoot() string {
-	return a.storageRoot
+	if a.resolved == nil {
+		return ""
+	}
+	return a.resolved.StorageRoot
 }
 
-// Config returns the workspace configuration settings.
-func (a *App) Config() *localfs.Config {
-	return a.config
+// Config returns the resolved workspace or global configuration settings.
+func (a *App) Config() *config.Config {
+	if a.resolved == nil {
+		return nil
+	}
+	return a.resolved.Config
+}
+
+// ResolvedConfig returns the complete ResolvedConfig metadata container.
+func (a *App) ResolvedConfig() *config.ResolvedConfig {
+	return a.resolved
 }
 
 // Engine constructs and returns the cached lifecycle.Engine domain service.
@@ -75,26 +97,26 @@ func (a *App) Engine() (*lifecycle.Engine, error) {
 		return a.engine, nil
 	}
 
-	store, err := provider.NewDocumentStore(a.config, a.storageRoot)
+	store, err := provider.NewDocumentStore(a.resolved.Config, a.resolved.StorageRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed initializing storage provider: %w", err)
 	}
 
-	search, err := provider.NewSearchProvider(a.config, a.storageRoot)
+	search, err := provider.NewSearchProvider(a.resolved.Config, a.resolved.StorageRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed initializing search provider: %w", err)
 	}
 
-	indexer, err := provider.NewIndexStore(a.config, a.storageRoot)
+	indexer, err := provider.NewIndexStore(a.resolved.Config, a.resolved.StorageRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed initializing index provider: %w", err)
 	}
 
-	graph, err := provider.NewGraphStore(a.config, a.storageRoot)
+	graph, err := provider.NewGraphStore(a.resolved.Config, a.resolved.StorageRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed initializing graph provider: %w", err)
 	}
 
-	a.engine = lifecycle.NewEngine(store, search, indexer, graph, a.storageRoot)
+	a.engine = lifecycle.NewEngine(store, search, indexer, graph, a.resolved.StorageRoot)
 	return a.engine, nil
 }

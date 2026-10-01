@@ -1,16 +1,24 @@
 # Gyrus Storage & Search Provider Configuration Guide
 
-Gyrus supports pluggable storage and indexing providers configured via `.gyrus.yaml` in the workspace root.
+Gyrus supports pluggable storage and indexing providers configured via `.gyrus.yaml` in the workspace root or `~/.gyrus.yaml` in the user's home directory.
 
 ## ⚙️ Configuration File (`.gyrus.yaml`)
 
 ```yaml
-storage_provider: localfs  # Options: localfs, git, blob
-index_provider: sqlite      # Options: sqlite, postgres
-search_provider: sqlite     # Options: sqlite, postgres_fts, vector
+storage:
+  provider: localfs  # Options: localfs, git, blob, s3, azure_blob, gcs, postgres
+  root: .gyrus
 
-storage_root: .gyrus
-default_owner_group: armckinney
+index:
+  provider: sqlite   # Options: sqlite, postgres
+
+graph:
+  provider: sqlite   # Options: sqlite, postgres
+
+search:
+  provider: sqlite   # Options: sqlite, sqlite_fts5, postgres_fts, vector
+
+default_owner_group: root
 ```
 
 ---
@@ -25,7 +33,9 @@ Stores OKF Markdown documents directly in the repository filesystem (`.gyrus/doc
 ### 2. Git Remote Driver (`git`)
 Direct remote Git repository persistence via `go-git`.
 ```yaml
-storage_provider: git
+storage:
+  provider: git
+  root: .gyrus
 git:
   repo_url: https://github.com/my-org/my-docs.git
   branch: main
@@ -36,7 +46,9 @@ Cloud-native object storage for Azure Blob Storage, AWS S3, Google Cloud Storage
 
 #### Azure Blob Storage (`azure_blob` / `azure`):
 ```yaml
-storage_provider: azure_blob
+storage:
+  provider: azure_blob
+  root: .gyrus
 azure_blob:
   storage_account: "myaccountname"
   container_name: "my-gyrus-container"
@@ -44,7 +56,9 @@ azure_blob:
 
 #### AWS S3 Storage (`s3` / `aws_s3`):
 ```yaml
-storage_provider: s3
+storage:
+  provider: s3
+  root: .gyrus
 s3:
   bucket_name: "my-gyrus-bucket"
   region: "us-east-1"
@@ -52,7 +66,9 @@ s3:
 
 #### Google Cloud Storage (`gcs` / `gcp`):
 ```yaml
-storage_provider: gcs
+storage:
+  provider: gcs
+  root: .gyrus
 gcs:
   bucket_name: "my-gyrus-gcs-bucket"
 ```
@@ -67,8 +83,15 @@ gcs:
 ### 4. PostgreSQL Enterprise Driver (`postgres`)
 Centralized database backend for multi-tenant enterprise deployments.
 ```yaml
-storage_provider: postgres
-index_provider: postgres
+storage:
+  provider: postgres
+  root: .gyrus
+index:
+  provider: postgres
+graph:
+  provider: postgres
+search:
+  provider: postgres_fts
 postgres:
   connection_string: postgres://user:password@localhost:5432/gyrus?sslmode=disable
 ```
@@ -79,7 +102,8 @@ postgres:
 
 ### Vector & Hybrid Search (`vector`)
 ```yaml
-search_provider: vector
+search:
+  provider: vector
 vector:
   embedding_provider: ollama  # Options: ollama, openai
   model: nomic-embed-text

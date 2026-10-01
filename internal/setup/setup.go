@@ -1,9 +1,11 @@
 package setup
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // ConfigSetupOptions defines options for workspace configuration setup (gyrus init config).
@@ -30,7 +32,7 @@ func RunConfigSetup(opts ConfigSetupOptions) (*ConfigSetupResult, error) {
 		opts.Profile = ProfileLocal
 	}
 	if opts.OwnerGroup == "" {
-		opts.OwnerGroup = "armckinney"
+		opts.OwnerGroup = "root"
 	}
 
 	cfgPath, err := WriteConfigFile(opts.WorkspaceDir, opts.Profile, opts.OwnerGroup)
@@ -75,7 +77,7 @@ func RunClientSetup(opts ClientSetupOptions) (*ClientSetupResult, error) {
 		return nil, err
 	}
 	if opts.Mode == "" {
-		opts.Mode = MCPModeContainer
+		opts.Mode = MCPModeLocal
 	}
 	if opts.BinaryCmd == "" {
 		opts.BinaryCmd = "gyrus"
@@ -126,6 +128,121 @@ func RunClientSetup(opts ClientSetupOptions) (*ClientSetupResult, error) {
 	result.InstalledMCP = mcpFiles
 
 	return result, nil
+}
+
+// ClientUninstallOptions defines options for uninstalling Agent Plugins and unregistering MCP (gyrus client uninstall).
+type ClientUninstallOptions struct {
+	WorkspaceDir string
+	Target       ClientTarget // antigravity, claude, codex, copilot
+	Global       bool
+	PluginDir    string
+}
+
+// ClientUninstallResult contains execution details from client plugin & MCP uninstallation.
+type ClientUninstallResult struct {
+	Target          ClientTarget
+	PluginDir       string
+	PluginRemoved   bool
+	UnregisteredMCP []string
+}
+
+// RunClientUninstall removes the Gyrus Agent Plugin and unregisters MCP servers for an explicit client target.
+func RunClientUninstall(opts ClientUninstallOptions) (*ClientUninstallResult, error) {
+	if opts.WorkspaceDir == "" {
+		opts.WorkspaceDir = "."
+	}
+	target, err := ValidateClientTarget(string(opts.Target))
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ClientUninstallResult{
+		Target: target,
+	}
+
+	// 1. Remove Agent Plugin for targets that discover plugins (antigravity, copilot, codex)
+	if target != ClientTargetClaude {
+		pluginDir := opts.PluginDir
+		if pluginDir == "" {
+			if opts.Global {
+				userHome, _ := os.UserHomeDir()
+				if target == ClientTargetAntigravity {
+					pluginDir = filepath.Join(userHome, ".gemini", "config", "plugins", "gyrus")
+				} else {
+					pluginDir = filepath.Join(userHome, ".agents", "plugins", "gyrus")
+				}
+			} else {
+				pluginDir = filepath.Join(opts.WorkspaceDir, ".agents", "plugins", "gyrus")
+			}
+		}
+		result.PluginDir = pluginDir
+
+		if fi, err := os.Stat(pluginDir); err == nil && fi.IsDir() {
+			if err := os.RemoveAll(pluginDir); err != nil {
+				return nil, fmt.Errorf("failed removing Agent Plugin at %s: %w", pluginDir, err)
+			}
+			result.PluginRemoved = true
+		}
+	}
+
+	// 2. Unregister MCP server configurations
+	unregistered, err := UnregisterMCPServer(opts.WorkspaceDir, MCPTarget(target), opts.Global)
+	if err != nil {
+		return nil, fmt.Errorf("failed unregistering MCP server: %w", err)
+	}
+	result.UnregisteredMCP = unregistered
+
+	// 3. For Antigravity, perform permission grants and runtime data cleanup
+	if target == ClientTargetAntigravity {
+		CleanupAntigravityData()
+	}
+
+	return result, nil
+}
+
+// CleanupAntigravityData cleans obsolete permission grants in ~/.gemini/config/config.json
+// and removes runtime caches in ~/.gemini/antigravity/plugin_data/gyrus.
+func CleanupAntigravityData() {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+
+	// 1. Remove obsolete permission grants from ~/.gemini/config/config.json
+	cfgPath := filepath.Join(userHome, ".gemini", "config", "config.json")
+	if data, err := os.ReadFile(cfgPath); err == nil {
+		var cfg map[string]interface{}
+		if err := json.Unmarshal(data, &cfg); err == nil {
+			modified := false
+			if uSettings, ok := cfg["userSettings"].(map[string]interface{}); ok {
+				if grants, ok := uSettings["globalPermissionGrants"].(map[string]interface{}); ok {
+					if allow, ok := grants["allow"].([]interface{}); ok {
+						var filtered []interface{}
+						for _, item := range allow {
+							s, ok := item.(string)
+							if ok && (strings.HasPrefix(s, "mcp(gyrus") || strings.HasPrefix(s, "mcp(gyrus_gyrus")) {
+								modified = true
+								continue
+							}
+							filtered = append(filtered, item)
+						}
+						if modified {
+							grants["allow"] = filtered
+						}
+					}
+				}
+			}
+			if modified {
+				if out, err := json.MarshalIndent(cfg, "", "  "); err == nil {
+					_ = os.WriteFile(cfgPath, out, 0644)
+				}
+			}
+		}
+	}
+
+	// 2. Remove orphaned runtime data in ~/.gemini/antigravity/plugin_data/gyrus
+	pluginDataDir := filepath.Join(userHome, ".gemini", "antigravity", "plugin_data", "gyrus")
+	_ = os.RemoveAll(pluginDataDir)
 }
 
 // SetupOptions defines legacy options for workspace initialization (deprecated in Phase 2.6).

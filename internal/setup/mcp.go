@@ -105,24 +105,61 @@ func getTargetConfigPaths(workspaceDir string, target MCPTarget, isGlobal bool) 
 		}
 
 		if isGlobal {
-			return []string{desktopPath, filepath.Join(userHome, ".claude", "mcp.json")}
+			return []string{
+				filepath.Join(userHome, ".claude.json"),
+				desktopPath,
+				filepath.Join(userHome, ".claude", "mcp.json"),
+			}
 		}
 		return []string{
+			filepath.Join(baseDir, ".mcp.json"),
 			filepath.Join(baseDir, ".claude", "mcp.json"),
 			desktopPath,
 		}
 
 	case MCPTargetAntigravity:
+		if isGlobal {
+			return []string{
+				filepath.Join(userHome, ".gemini", "config", "mcp_config.json"),
+				filepath.Join(userHome, ".antigravity", "mcp.json"),
+			}
+		}
 		return []string{
 			filepath.Join(baseDir, ".antigravity", "mcp.json"),
 		}
 
 	case MCPTargetCodex:
+		if isGlobal {
+			return []string{
+				filepath.Join(userHome, ".codex", "config.json"),
+				filepath.Join(userHome, ".codex", "mcp.json"),
+			}
+		}
 		return []string{
 			filepath.Join(baseDir, ".codex", "mcp.json"),
+			filepath.Join(baseDir, ".codex", "config.json"),
 		}
 
 	case MCPTargetCopilot:
+		if isGlobal {
+			var settingsPath string
+			switch runtime.GOOS {
+			case "darwin":
+				settingsPath = filepath.Join(userHome, "Library", "Application Support", "Code", "User", "settings.json")
+			case "windows":
+				appData := os.Getenv("APPDATA")
+				if appData == "" {
+					appData = filepath.Join(userHome, "AppData", "Roaming")
+				}
+				settingsPath = filepath.Join(appData, "Code", "User", "settings.json")
+			default: // linux
+				settingsPath = filepath.Join(userHome, ".config", "Code", "User", "settings.json")
+			}
+			return []string{
+				settingsPath,
+				filepath.Join(userHome, ".vscode", "mcp.json"),
+			}
+		}
 		return []string{
 			filepath.Join(baseDir, ".vscode", "mcp.json"),
 		}
@@ -158,11 +195,14 @@ func injectMCPServerJSON(filePath string, command string, args []string) error {
 	mcpServers["gyrus"] = map[string]interface{}{
 		"command": command,
 		"args":    args,
+		"env": map[string]string{
+			"GYRUS_WORKSPACE": "${workspaceFolder}",
+		},
 	}
 	root["mcpServers"] = mcpServers
 
 	// For VS Code / Copilot Chat, also ensure the "servers" block with "type": "stdio" is present
-	if filepath.Base(filepath.Dir(filePath)) == ".vscode" {
+	if filepath.Base(filepath.Dir(filePath)) == ".vscode" || filepath.Base(filePath) == "settings.json" {
 		var servers map[string]interface{}
 		if raw, ok := root["servers"].(map[string]interface{}); ok {
 			servers = raw
@@ -173,6 +213,9 @@ func injectMCPServerJSON(filePath string, command string, args []string) error {
 			"type":    "stdio",
 			"command": command,
 			"args":    args,
+			"env": map[string]string{
+				"GYRUS_WORKSPACE": "${workspaceFolder}",
+			},
 		}
 		root["servers"] = servers
 	}
@@ -183,4 +226,68 @@ func injectMCPServerJSON(filePath string, command string, args []string) error {
 	}
 
 	return os.WriteFile(filePath, out, 0644)
+}
+
+// UnregisterMCPServer removes the Gyrus stdio MCP server from target config JSON files.
+func UnregisterMCPServer(workspaceDir string, target MCPTarget, isGlobal bool) ([]string, error) {
+	paths := getTargetConfigPaths(workspaceDir, target, isGlobal)
+	var modifiedFiles []string
+	for _, p := range paths {
+		mod, err := removeMCPServerJSON(p)
+		if err != nil {
+			return modifiedFiles, fmt.Errorf("failed removing MCP server from %s: %w", p, err)
+		}
+		if mod {
+			modifiedFiles = append(modifiedFiles, p)
+		}
+	}
+	return modifiedFiles, nil
+}
+
+// removeMCPServerJSON safely removes the gyrus server entry from an MCP configuration JSON file.
+// Returns true if modified, false if gyrus was not present.
+func removeMCPServerJSON(filePath string) (bool, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	var root map[string]interface{}
+	if err := json.Unmarshal(data, &root); err != nil {
+		return false, nil
+	}
+
+	modified := false
+
+	if rawServers, ok := root["mcpServers"].(map[string]interface{}); ok {
+		if _, exists := rawServers["gyrus"]; exists {
+			delete(rawServers, "gyrus")
+			modified = true
+		}
+	}
+
+	if rawServers, ok := root["servers"].(map[string]interface{}); ok {
+		if _, exists := rawServers["gyrus"]; exists {
+			delete(rawServers, "gyrus")
+			modified = true
+		}
+	}
+
+	if !modified {
+		return false, nil
+	}
+
+	out, err := json.MarshalIndent(root, "", "  ")
+	if err != nil {
+		return false, err
+	}
+
+	if err := os.WriteFile(filePath, out, 0644); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

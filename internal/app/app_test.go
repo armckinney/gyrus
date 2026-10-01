@@ -2,11 +2,19 @@ package app_test
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/armckinney/gyrus/internal/app"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
+
+func TestMain(m *testing.M) {
+	os.Unsetenv("GYRUS_WORKSPACE")
+	os.Unsetenv("GYRUS_CONFIG")
+	os.Exit(m.Run())
+}
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
@@ -16,8 +24,20 @@ import (
 // -----------------------------------------------------------------------------
 func TestAppContainerInstantiation(t *testing.T) {
 	tempDir := t.TempDir()
+	t.Setenv("HOME", tempDir)
 
-	application, err := app.New(tempDir)
+	origWd, _ := os.Getwd()
+	defer os.Chdir(origWd)
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatalf("Failed to chdir: %v", err)
+	}
+
+	wsYaml := "storage:\n  provider: localfs\n  root: .gyrus\n"
+	if err := os.WriteFile(filepath.Join(tempDir, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
+		t.Fatalf("Failed writing .gyrus.yaml: %v", err)
+	}
+
+	application, err := app.New()
 	if err != nil {
 		t.Fatalf("Failed creating app container: %v", err)
 	}

@@ -34,12 +34,12 @@ fi
 
 # 3. Create test OKF document inside temp storage path
 echo "2. Creating test OKF document..."
-"${REPO_ROOT}/gyrus" --storage-path "${TEMP_DIR}/docs/.gyrus/docs" create \
+"${REPO_ROOT}/gyrus" create \
   --id "adr-integration-antigravity-test" \
   --title "Antigravity Integration Storage Engine ADR" \
   --category "architecture" \
   --type "adr" \
-  --owner-group "armckinney" \
+  --owner-group "root" \
   --status "proposed" \
   --content "Testing live Antigravity agent context resolution." \
   --json
@@ -55,7 +55,7 @@ if command -v agy >/dev/null 2>&1; then
   fi
 else
   echo "ℹ️ Note: agy CLI binary not detected in environment. Verifying JSON-RPC stdio transport interface..."
-  RESP=$(timeout 2s bash -c "echo '{\"jsonrpc\":\"2.0\",\"id\":100,\"method\":\"tools/list\"}' | \"${REPO_ROOT}/gyrus\" --storage-path \"${TEMP_DIR}/docs/.gyrus/docs\" mcp serve 2>/dev/null" || true)
+  RESP=$(timeout 2s bash -c "echo '{\"jsonrpc\":\"2.0\",\"id\":100,\"method\":\"tools/list\"}' | \"${REPO_ROOT}/gyrus\" mcp serve 2>/dev/null" || true)
   if echo "$RESP" | grep -q "gyrus_search"; then
     echo "✅ Gyrus stdio MCP server tools/list endpoint verified"
   else

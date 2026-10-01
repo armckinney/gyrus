@@ -2,7 +2,6 @@ package cli
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -13,28 +12,31 @@ import (
 // [Assertions]: Commands execute without errors and mutate memory/storage.
 // -----------------------------------------------------------------------------
 func TestCLIInitAndCreateAndGet(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "gyrus-cli-crud-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
+	tempDir := t.TempDir()
+	t.Setenv("HOME", tempDir)
 
-	storagePath := filepath.Join(tempDir, "storage")
-
-	rootCmd, err := BuildRootCmd(storagePath)
-	if err != nil {
-		t.Fatalf("BuildRootCmd failed: %v", err)
+	origWd, _ := os.Getwd()
+	defer os.Chdir(origWd)
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatalf("Failed to chdir: %v", err)
 	}
 
 	// 1. gyrus init config
-	rootCmd.SetArgs([]string{"--storage-path", storagePath, "init", "config"})
+	rootCmd, err := BuildRootCmd()
+	if err != nil {
+		t.Fatalf("BuildRootCmd failed: %v", err)
+	}
+	rootCmd.SetArgs([]string{"init", "config"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("gyrus init config failed: %v", err)
 	}
 
-	// 2. gyrus create
+	// 2. gyrus create (rebuild to load newly generated workspace .gyrus.yaml)
+	rootCmd, err = BuildRootCmd()
+	if err != nil {
+		t.Fatalf("BuildRootCmd failed: %v", err)
+	}
 	rootCmd.SetArgs([]string{
-		"--storage-path", storagePath,
 		"create",
 		"--id", "adr-2026-cli",
 		"--title", "CLI Command Routing Architecture",
@@ -48,8 +50,11 @@ func TestCLIInitAndCreateAndGet(t *testing.T) {
 	}
 
 	// 3. gyrus get
+	rootCmd, err = BuildRootCmd()
+	if err != nil {
+		t.Fatalf("BuildRootCmd failed: %v", err)
+	}
 	rootCmd.SetArgs([]string{
-		"--storage-path", storagePath,
 		"--json",
 		"get",
 		"adr-2026-cli",

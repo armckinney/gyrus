@@ -40,7 +40,7 @@ format: markdown
 owner_group: platform
 version: 1
 status: accepted
-last_modified_by: armckinney
+last_modified_by: root
 last_updated: 2026-07-23T20:00:00Z
 immutable: true
 tags:

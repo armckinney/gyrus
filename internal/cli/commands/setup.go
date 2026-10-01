@@ -39,26 +39,42 @@ func NewInitConfigCmd(application *app.App) *cobra.Command {
 	var (
 		profile    string
 		ownerGroup string
+		global     bool
+		force      bool
 	)
 
 	cmd := &cobra.Command{
 		Use:   "config",
-		Short: "Generate .gyrus.yaml workspace configuration",
+		Short: "Generate .gyrus.yaml configuration",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if global {
+				cfgPath, err := setup.WriteGlobalConfigFile(setup.Profile(profile), ownerGroup, force)
+				if err != nil {
+					return err
+				}
+
+				homeDir, _ := os.UserHomeDir()
+				storageDir := filepath.Join(homeDir, ".gyrus")
+
+				if !GlobalJSONOutput {
+					fmt.Printf("🚀 Initialized Gyrus global configuration successfully!\n")
+					fmt.Printf("   - Configuration: %s (Profile: %s)\n", cfgPath, profile)
+					fmt.Printf("   - Storage Root:  %s\n", storageDir)
+					fmt.Printf("   - Default Owner: %s\n", ownerGroup)
+				} else {
+					fmt.Printf("{\"status\":\"configured\",\"config_file\":\"%s\",\"profile\":\"%s\",\"storage\":\"%s\",\"owner_group\":\"%s\",\"scope\":\"global\"}\n",
+						cfgPath, profile, storageDir, ownerGroup)
+				}
+				return nil
+			}
+
 			cwd, err := os.Getwd()
 			if err != nil {
 				return err
 			}
 
-			targetDir := cwd
-			if storageFlag, _ := cmd.Flags().GetString("storage-path"); storageFlag != "" {
-				targetDir = filepath.Dir(storageFlag)
-			} else if GlobalStoragePath != "" {
-				targetDir = filepath.Dir(GlobalStoragePath)
-			}
-
 			res, err := setup.RunConfigSetup(setup.ConfigSetupOptions{
-				WorkspaceDir: targetDir,
+				WorkspaceDir: cwd,
 				Profile:      setup.Profile(profile),
 				OwnerGroup:   ownerGroup,
 			})
@@ -72,7 +88,7 @@ func NewInitConfigCmd(application *app.App) *cobra.Command {
 				fmt.Printf("   - Storage Root:  %s\n", res.StorageDir)
 				fmt.Printf("   - Default Owner: %s\n", res.OwnerGroup)
 			} else {
-				fmt.Printf("{\"status\":\"configured\",\"config_file\":\"%s\",\"profile\":\"%s\",\"storage\":\"%s\",\"owner_group\":\"%s\"}\n",
+				fmt.Printf("{\"status\":\"configured\",\"config_file\":\"%s\",\"profile\":\"%s\",\"storage\":\"%s\",\"owner_group\":\"%s\",\"scope\":\"workspace\"}\n",
 					res.ConfigFile, profile, res.StorageDir, res.OwnerGroup)
 			}
 			return nil
@@ -80,7 +96,9 @@ func NewInitConfigCmd(application *app.App) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&profile, "profile", "p", "local", "Configuration profile: local, git, blob, s3, azure, gcs, postgres, vector")
-	cmd.Flags().StringVarP(&ownerGroup, "owner-group", "o", "armckinney", "Default owner group for context documents")
+	cmd.Flags().StringVarP(&ownerGroup, "owner-group", "o", "root", "Default owner group for context documents")
+	cmd.Flags().BoolVarP(&global, "global", "g", false, "Write configuration to global ~/.gyrus.yaml instead of workspace")
+	cmd.Flags().BoolVarP(&force, "force", "f", false, "Overwrite existing configuration file without prompting")
 
 	return cmd
 }
@@ -114,11 +132,6 @@ func NewInitClientCmd(application *app.App) *cobra.Command {
 			}
 
 			targetDir := cwd
-			if storageFlag, _ := cmd.Flags().GetString("storage-path"); storageFlag != "" {
-				targetDir = filepath.Dir(storageFlag)
-			} else if GlobalStoragePath != "" {
-				targetDir = filepath.Dir(GlobalStoragePath)
-			}
 
 			// Determine execution mode fallback if docker is not installed
 			resolvedMode := mode
@@ -155,6 +168,14 @@ func NewInitClientCmd(application *app.App) *cobra.Command {
 				agyRegistered = registerWithAntigravity(res.PluginDir)
 			}
 
+			// Automatic initial sync to hydrate the SQLite index
+			syncedDocs := 0
+			if engine, err := application.Engine(); err == nil {
+				if report, err := engine.Sync(context.Background()); err == nil {
+					syncedDocs = report.IndexedFiles + report.UnchangedFiles
+				}
+			}
+
 			if !GlobalJSONOutput {
 				fmt.Printf("🚀 Equipped Gyrus for client '%s'!\n", clientTarget)
 				if res.PluginDir != "" {
@@ -171,6 +192,9 @@ func NewInitClientCmd(application *app.App) *cobra.Command {
 				for _, f := range res.InstalledMCP {
 					fmt.Printf("      • %s\n", f)
 				}
+				if syncedDocs > 0 {
+					fmt.Printf("   - Index Status:  %d documents ready\n", syncedDocs)
+				}
 			} else {
 				fmt.Printf("{\"status\":\"equipped\",\"target\":\"%s\",\"mode\":\"%s\",\"plugin_dir\":\"%s\",\"plugin_files_count\":%d,\"mcp_files_count\":%d,\"agy_registered\":%t}\n",
 					clientTarget, resolvedMode, res.PluginDir, len(res.PluginFiles), len(res.InstalledMCP), agyRegistered)
@@ -180,7 +204,7 @@ func NewInitClientCmd(application *app.App) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&target, "target", "t", "", "Target agent tool (required): antigravity, claude, codex, copilot")
-	cmd.Flags().StringVarP(&mode, "mode", "m", "container", "MCP execution mode: container (containerized stdio via Docker), local (local binary)")
+	cmd.Flags().StringVarP(&mode, "mode", "m", "local", "MCP execution mode: local (local binary), container (containerized stdio via Docker)")
 	cmd.Flags().StringVar(&image, "mcp-container-image", "ghcr.io/armckinney/gyrus:latest", "Container image for containerized stdio MCP execution")
 	cmd.Flags().BoolVarP(&global, "global", "g", false, "Register MCP servers and plugin globally in user home directory (~)")
 	cmd.Flags().StringVar(&pluginDir, "plugin-dir", "", "Custom destination directory for Agent Plugin bundle")
@@ -190,7 +214,11 @@ func NewInitClientCmd(application *app.App) *cobra.Command {
 
 // NewMCPCmd constructs the 'mcp' parent Cobra command and its subcommands.
 func NewMCPCmd(application *app.App) *cobra.Command {
-	var mcpTarget string
+	var (
+		mcpTarget string
+		workspace string
+		cfgPath   string
+	)
 
 	mcpCmd := &cobra.Command{
 		Use:   "mcp",
@@ -201,13 +229,26 @@ func NewMCPCmd(application *app.App) *cobra.Command {
 		Use:   "serve",
 		Short: "Start embedded Gyrus MCP stdio server",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			srv, err := mcp.NewServer(application.StorageRoot())
+			var (
+				srv *mcp.Server
+				err error
+			)
+			if cfgPath != "" {
+				srv, err = mcp.NewServerWithConfig(cfgPath)
+			} else if workspace != "" {
+				srv, err = mcp.NewServerWithWorkspace(workspace)
+			} else {
+				srv, err = mcp.NewServer()
+			}
 			if err != nil {
 				return fmt.Errorf("failed to start MCP server: %w", err)
 			}
 			return srv.ServeStdio(context.Background())
 		},
 	}
+
+	mcpServeCmd.Flags().StringVarP(&workspace, "workspace", "w", "", "Workspace root directory for context resolution")
+	mcpServeCmd.Flags().StringVarP(&cfgPath, "config", "c", "", "Explicit path to .gyrus.yaml configuration file")
 
 	mcpSetupCmd := &cobra.Command{
 		Use:   "setup",
@@ -249,31 +290,4 @@ func NewMCPCmd(application *app.App) *cobra.Command {
 	mcpCmd.AddCommand(mcpSetupCmd)
 
 	return mcpCmd
-}
-
-// registerWithAntigravity attempts to register the plugin using the agy CLI if present on the machine.
-func registerWithAntigravity(pluginDir string) bool {
-	agyPath := "agy"
-	if _, err := exec.LookPath("agy"); err != nil {
-		userHome, _ := os.UserHomeDir()
-		candidates := []string{
-			filepath.Join(userHome, ".gemini", "bin", "agy"),
-			"/usr/local/bin/agy",
-			"/root/.gemini/bin/agy",
-		}
-		found := false
-		for _, c := range candidates {
-			if _, err := os.Stat(c); err == nil {
-				agyPath = c
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-
-	cmd := exec.Command(agyPath, "plugin", "install", pluginDir)
-	return cmd.Run() == nil
 }

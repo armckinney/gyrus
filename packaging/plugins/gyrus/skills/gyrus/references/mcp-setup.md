@@ -4,30 +4,34 @@ Gyrus provides a Model Context Protocol (MCP) server running over `stdio` transp
 
 ## 🛠️ MCP Tool Definitions
 
-Gyrus exposes 7 native MCP tools:
+Gyrus exposes native MCP tools for complete memory and context control:
 1. `gyrus_suggest_context`: Linearizes top relevant documents within token budget (`prompt`, `max_tokens`).
 2. `gyrus_search`: FTS5 keyword search across documents (`query`, `category`, `type`, `status`).
 3. `gyrus_get`: Retrieves a document by ID (`id`).
 4. `gyrus_create`: Creates a new OKF document (`id`, `title`, `category`, `type`, `owner_group`, `content`).
 5. `gyrus_update`: Updates document metadata or content (`id`, `title`, `status`, `content`).
-6. `gyrus_link`: Creates a directional link edge (`from_id`, `to_id`, `rel_type`).
-7. `gyrus_sync`: Re-indexes filesystem documents and updates graph edges.
+6. `gyrus_archive`: Archives (deletes) a document from storage and search index.
+7. `gyrus_link`: Creates a directional link edge (`from_id`, `to_id`, `rel_type`).
+8. `gyrus_unlink`: Removes a directional link edge (`from_id`, `to_id`, `rel_type`).
+9. `gyrus_sync`: Re-indexes filesystem documents and updates graph edges.
+10. `gyrus_traverse`: Traverses knowledge graph relationships with BFS.
+11. `gyrus_neighbors`: Finds directly adjacent document nodes.
 
 ---
 
-## 🚀 Automatic MCP Registration (`gyrus init`)
+## 🚀 Client & MCP Registration (`gyrus init client`)
 
-Run `gyrus init` to non-destructively register Gyrus MCP servers across target agent tools:
+Run `gyrus init client` to register Gyrus MCP servers and equip the Agent Plugin across target agent tools:
 
 ```bash
-# Containerized Stdio (Default)
-gyrus init --mcp-mode container
+# Register MCP client for Google Antigravity (Local binary mode)
+gyrus init client --target antigravity --mode local
 
-# Local Binary Mode
-gyrus init --mcp-mode local
+# Register containerized MCP for Claude Desktop (Docker mode)
+gyrus init client --target claude --mode docker
 
-# Global Registration (~/ user home)
-gyrus init --global
+# Global user-home client registration
+gyrus init client --target copilot --global
 ```
 
 ---

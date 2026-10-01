@@ -10,8 +10,8 @@ import (
 )
 
 // BuildRootCmd constructs the root Cobra command and explicitly registers subcommands.
-func BuildRootCmd(storagePath string) (*cobra.Command, error) {
-	application, err := app.New(storagePath)
+func BuildRootCmd() (*cobra.Command, error) {
+	application, err := app.New()
 	if err != nil {
 		return nil, err
 	}
@@ -22,12 +22,6 @@ func BuildRootCmd(storagePath string) (*cobra.Command, error) {
 		Long:          "Gyrus is a high-performance local-first memory and context engine for software development teams and AI agents.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			if commands.GlobalStoragePath != "" {
-				return application.Reset(commands.GlobalStoragePath)
-			}
-			return nil
-		},
 	}
 
 	commands.Register(rootCmd, application)
@@ -36,7 +30,7 @@ func BuildRootCmd(storagePath string) (*cobra.Command, error) {
 
 // Execute runs the Cobra CLI command router and exits with the appropriate programmatic code.
 func Execute() {
-	rootCmd, err := BuildRootCmd(commands.GlobalStoragePath)
+	rootCmd, err := BuildRootCmd()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing application: %v\n", err)
 		os.Exit(1)

@@ -39,7 +39,7 @@ func TestCLI_Init_ProfileFlags(t *testing.T) {
 	}
 
 	content := string(data)
-	if !strings.Contains(content, "storage_provider: postgres") {
+	if !strings.Contains(content, "provider: postgres") {
 		t.Errorf("Expected postgres storage provider in config, got:\n%s", content)
 	}
 	if !strings.Contains(content, "default_owner_group: platform-infra") {
@@ -150,81 +150,243 @@ func TestCLI_Init_ClientMissingTarget(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Product E2E Test
-// [Purpose]: Verifies configuration path precedence: CLI Flag > Environment Variable > .gyrus.yaml.
+// [Purpose]: Verifies configuration precedence: Workspace .gyrus.yaml > Global ~/.gyrus.yaml > Defaults.
 // [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
-// [Assertions]: Custom storage_root from .gyrus.yaml is respected; explicit --storage-path flag overrides config file.
+// [Assertions]: Workspace .gyrus.yaml completely overrides global ~/.gyrus.yaml.
 // -----------------------------------------------------------------------------
 func TestCLI_ConfigPrecedence(t *testing.T) {
 	tempWorkspace := t.TempDir()
+	tempHome := t.TempDir()
 
+	globalDocsDir := filepath.Join(tempHome, "global_docs")
 	customDocsDir := filepath.Join(tempWorkspace, "custom_docs")
-	overrideDocsDir := filepath.Join(tempWorkspace, "override_docs")
 
-	// 1. Write custom .gyrus.yaml
-	configContent := `# Custom Config
-storage_provider: localfs
-index_provider: sqlite
-search_provider: sqlite
-storage_root: custom_docs
-default_owner_group: test-team
+	// 1. Write global ~/.gyrus.yaml
+	globalContent := `storage:
+  provider: localfs
+  root: global_docs
+default_owner_group: global-team
 `
-	if err := os.WriteFile(filepath.Join(tempWorkspace, ".gyrus.yaml"), []byte(configContent), 0644); err != nil {
-		t.Fatalf("Failed writing custom config: %v", err)
+	if err := os.WriteFile(filepath.Join(tempHome, ".gyrus.yaml"), []byte(globalContent), 0644); err != nil {
+		t.Fatalf("Failed writing global config: %v", err)
 	}
 
-	// 2. Create document without flag (should use custom_docs from config)
-	cmd1 := exec.Command(gyrusBinPath, "create",
-		"--id", "doc-custom-001",
-		"--title", "Custom Path Doc",
+	// 2. Write workspace .gyrus.yaml
+	wsContent := `storage:
+  provider: localfs
+  root: custom_docs
+default_owner_group: workspace-team
+`
+	if err := os.WriteFile(filepath.Join(tempWorkspace, ".gyrus.yaml"), []byte(wsContent), 0644); err != nil {
+		t.Fatalf("Failed writing workspace config: %v", err)
+	}
+
+	// 3. Create document in workspace (should use workspace custom_docs, overriding global)
+	cmd := exec.Command(gyrusBinPath, "create",
+		"--id", "doc-precedence-001",
+		"--title", "Precedence Doc",
 		"--category", "technical",
 		"--type", "specification",
-		"--owner-group", "test-team",
+		"--owner-group", "workspace-team",
 		"--status", "active",
 		"--content", "Stored in custom_docs.",
 	)
-	cmd1.Dir = tempWorkspace
-	if out, err := cmd1.CombinedOutput(); err != nil {
-		t.Fatalf("Create with custom config failed: %v\nOutput: %s", err, string(out))
+	cmd.Dir = tempWorkspace
+	cmd.Env = append(os.Environ(), "HOME="+tempHome)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("Create with precedence failed: %v\nOutput: %s", err, string(out))
 	}
 
 	foundInCustom := false
 	_ = filepath.Walk(customDocsDir, func(path string, info os.FileInfo, err error) error {
-		if err == nil && strings.Contains(path, "doc-custom-001") {
+		if err == nil && strings.Contains(path, "doc-precedence-001") {
 			foundInCustom = true
 		}
 		return nil
 	})
-
 	if !foundInCustom {
-		t.Errorf("Expected document to be stored in %s", customDocsDir)
+		t.Errorf("Expected document to be stored in workspace %s", customDocsDir)
 	}
 
-	// 3. Create document with explicit --storage-path flag (override)
-	cmd2 := exec.Command(gyrusBinPath, "create",
-		"--storage-path", overrideDocsDir,
-		"--id", "doc-override-001",
-		"--title", "Override Path Doc",
-		"--category", "technical",
-		"--type", "specification",
-		"--owner-group", "test-team",
-		"--status", "active",
-		"--content", "Stored in override_docs.",
-	)
-	cmd2.Dir = tempWorkspace
-	if out, err := cmd2.CombinedOutput(); err != nil {
-		t.Fatalf("Create with override flag failed: %v\nOutput: %s", err, string(out))
-	}
-
-	foundInOverride := false
-	_ = filepath.Walk(overrideDocsDir, func(path string, info os.FileInfo, err error) error {
-		if err == nil && strings.Contains(path, "doc-override-001") {
-			foundInOverride = true
+	foundInGlobal := false
+	_ = filepath.Walk(globalDocsDir, func(path string, info os.FileInfo, err error) error {
+		if err == nil && strings.Contains(path, "doc-precedence-001") {
+			foundInGlobal = true
 		}
 		return nil
 	})
+	if foundInGlobal {
+		t.Errorf("Document should not be stored in global directory %s", globalDocsDir)
+	}
+}
 
-	if !foundInOverride {
-		t.Errorf("Expected document to be stored in override directory %s", overrideDocsDir)
+// -----------------------------------------------------------------------------
+// [Test Level]: Product E2E Test
+// [Purpose]: Verifies that 'gyrus config show' displays resolved config and source.
+// [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
+// [Assertions]: Displays source header and resolved storage root.
+// -----------------------------------------------------------------------------
+func TestCLI_ConfigShow(t *testing.T) {
+	tempWorkspace := t.TempDir()
+
+	wsContent := `storage:
+  provider: localfs
+  root: my_workspace_docs
+default_owner_group: test-group
+`
+	if err := os.WriteFile(filepath.Join(tempWorkspace, ".gyrus.yaml"), []byte(wsContent), 0644); err != nil {
+		t.Fatalf("Failed writing workspace config: %v", err)
+	}
+
+	cmd := exec.Command(gyrusBinPath, "config", "show")
+	cmd.Dir = tempWorkspace
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("config show failed: %v\nOutput: %s", err, string(out))
+	}
+
+	outStr := string(out)
+	if !strings.Contains(outStr, "# Source: workspace") {
+		t.Errorf("Expected output to contain '# Source: workspace', got:\n%s", outStr)
+	}
+	if !strings.Contains(outStr, "# Resolved Storage Root:") {
+		t.Errorf("Expected output to contain '# Resolved Storage Root:', got:\n%s", outStr)
+	}
+	if !strings.Contains(outStr, "my_workspace_docs") {
+		t.Errorf("Expected output to contain 'my_workspace_docs', got:\n%s", outStr)
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Product E2E Test
+// [Purpose]: Verifies that 'gyrus config show --json' outputs valid JSON with source metadata.
+// [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
+// [Assertions]: Valid JSON containing source, storage_root, and config fields.
+// -----------------------------------------------------------------------------
+func TestCLI_ConfigShowJSON(t *testing.T) {
+	tempWorkspace := t.TempDir()
+
+	wsContent := `storage:
+  provider: localfs
+  root: json_docs
+default_owner_group: json-group
+`
+	if err := os.WriteFile(filepath.Join(tempWorkspace, ".gyrus.yaml"), []byte(wsContent), 0644); err != nil {
+		t.Fatalf("Failed writing workspace config: %v", err)
+	}
+
+	cmd := exec.Command(gyrusBinPath, "config", "show", "--json")
+	cmd.Dir = tempWorkspace
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("config show --json failed: %v\nOutput: %s", err, string(out))
+	}
+
+	var payload struct {
+		Source      string                 `json:"source"`
+		SourcePath  string                 `json:"source_path"`
+		StorageRoot string                 `json:"storage_root"`
+		Config      map[string]interface{} `json:"config"`
+	}
+	if err := json.Unmarshal(out, &payload); err != nil {
+		t.Fatalf("Failed unmarshaling config show JSON: %v\nOutput: %s", err, string(out))
+	}
+
+	if payload.Source != "workspace" {
+		t.Errorf("Expected source 'workspace', got '%s'", payload.Source)
+	}
+	if !strings.Contains(payload.StorageRoot, "json_docs") {
+		t.Errorf("Expected storage_root to contain 'json_docs', got '%s'", payload.StorageRoot)
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Product E2E Test
+// [Purpose]: Verifies that 'gyrus init config --global' writes ~/.gyrus.yaml in user home.
+// [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
+// [Assertions]: ~/.gyrus.yaml created with specified profile and owner group.
+// -----------------------------------------------------------------------------
+func TestCLI_InitConfigGlobal(t *testing.T) {
+	tempHome := t.TempDir()
+
+	cmd := exec.Command(gyrusBinPath, "init", "config",
+		"--global",
+		"--profile", "local",
+		"--owner-group", "global-platform",
+	)
+	cmd.Env = append(os.Environ(), "HOME="+tempHome)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("init config --global failed: %v\nOutput: %s", err, string(out))
+	}
+
+	globalPath := filepath.Join(tempHome, ".gyrus.yaml")
+	data, err := os.ReadFile(globalPath)
+	if err != nil {
+		t.Fatalf("Expected ~/.gyrus.yaml to exist: %v", err)
+	}
+
+	content := string(data)
+	if !strings.Contains(content, "default_owner_group: global-platform") {
+		t.Errorf("Expected owner group 'global-platform', got:\n%s", content)
+	}
+	if !strings.Contains(content, "provider: localfs") {
+		t.Errorf("Expected 'provider: localfs', got:\n%s", content)
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Product E2E Test
+// [Purpose]: Verifies that 'gyrus init config --global' refuses to overwrite without --force.
+// [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
+// [Assertions]: Exits with error mentioning --force when file already exists.
+// -----------------------------------------------------------------------------
+func TestCLI_InitConfigGlobalRefuse(t *testing.T) {
+	tempHome := t.TempDir()
+
+	// Pre-create ~/.gyrus.yaml
+	if err := os.WriteFile(filepath.Join(tempHome, ".gyrus.yaml"), []byte("existing"), 0644); err != nil {
+		t.Fatalf("Failed writing initial config: %v", err)
+	}
+
+	cmd := exec.Command(gyrusBinPath, "init", "config", "--global")
+	cmd.Env = append(os.Environ(), "HOME="+tempHome)
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("Expected init config --global to fail when file exists, but succeeded: %s", string(out))
+	}
+
+	outStr := string(out)
+	if !strings.Contains(outStr, "already exists") || !strings.Contains(outStr, "--force") {
+		t.Errorf("Expected refusal message mentioning --force, got:\n%s", outStr)
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Product E2E Test
+// [Purpose]: Verifies that 'gyrus init config --global --force' overwrites existing configuration.
+// [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
+// [Assertions]: Overwrites ~/.gyrus.yaml successfully.
+// -----------------------------------------------------------------------------
+func TestCLI_InitConfigGlobalForce(t *testing.T) {
+	tempHome := t.TempDir()
+
+	// Pre-create ~/.gyrus.yaml
+	if err := os.WriteFile(filepath.Join(tempHome, ".gyrus.yaml"), []byte("old_config"), 0644); err != nil {
+		t.Fatalf("Failed writing initial config: %v", err)
+	}
+
+	cmd := exec.Command(gyrusBinPath, "init", "config", "--global", "--force", "--profile", "postgres")
+	cmd.Env = append(os.Environ(), "HOME="+tempHome)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("init config --global --force failed: %v\nOutput: %s", err, string(out))
+	}
+
+	data, err := os.ReadFile(filepath.Join(tempHome, ".gyrus.yaml"))
+	if err != nil {
+		t.Fatalf("Failed reading ~/.gyrus.yaml: %v", err)
+	}
+	if !strings.Contains(string(data), "provider: postgres") {
+		t.Errorf("Expected config to contain 'provider: postgres', got:\n%s", string(data))
 	}
 }
 
@@ -264,5 +426,92 @@ func TestCLI_SetupIdempotencyAndRepair(t *testing.T) {
 	// Verify plugin file is restored
 	if _, err := os.Stat(pluginFile); os.IsNotExist(err) {
 		t.Errorf("Expected deleted plugin file to be restored after re-running init client")
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Product E2E Test
+// [Purpose]: Verifies that 'gyrus config init' generates .gyrus.yaml configuration.
+// [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
+// [Assertions]: Configuration file contains specified profile settings and owner group.
+// -----------------------------------------------------------------------------
+func TestCLI_ConfigInit(t *testing.T) {
+	tempWorkspace := t.TempDir()
+
+	cmd := exec.Command(gyrusBinPath, "config", "init",
+		"--profile", "local",
+		"--owner-group", "dev-team",
+	)
+	cmd.Dir = tempWorkspace
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("config init failed: %v", err)
+	}
+
+	cfgPath := filepath.Join(tempWorkspace, ".gyrus.yaml")
+	data, err := os.ReadFile(cfgPath)
+	if err != nil {
+		t.Fatalf("Failed reading config: %v", err)
+	}
+
+	content := string(data)
+	if !strings.Contains(content, "provider: localfs") {
+		t.Errorf("Expected localfs storage provider, got:\n%s", content)
+	}
+	if !strings.Contains(content, "default_owner_group: dev-team") {
+		t.Errorf("Expected owner group 'dev-team', got:\n%s", content)
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Product E2E Test
+// [Purpose]: Verifies that 'gyrus client install' and 'gyrus client uninstall' work symmetrically.
+// [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
+// [Assertions]: 'client install' creates plugin and mcp.json; 'client uninstall' removes them.
+// -----------------------------------------------------------------------------
+func TestCLI_ClientInstallAndUninstall(t *testing.T) {
+	tempWorkspace := t.TempDir()
+
+	// 1. gyrus client install --target antigravity
+	installCmd := exec.Command(gyrusBinPath, "client", "install", "--target", "antigravity")
+	installCmd.Dir = tempWorkspace
+	if out, err := installCmd.CombinedOutput(); err != nil {
+		t.Fatalf("client install failed: %v\nOutput: %s", err, string(out))
+	}
+
+	pluginDir := filepath.Join(tempWorkspace, ".agents", "plugins", "gyrus")
+	if _, err := os.Stat(pluginDir); os.IsNotExist(err) {
+		t.Fatalf("Expected plugin directory to exist after install")
+	}
+
+	mcpFile := filepath.Join(tempWorkspace, ".antigravity", "mcp.json")
+	mcpData, err := os.ReadFile(mcpFile)
+	if err != nil {
+		t.Fatalf("Expected .antigravity/mcp.json to exist: %v", err)
+	}
+	if !strings.Contains(string(mcpData), "GYRUS_WORKSPACE") {
+		t.Errorf("Expected GYRUS_WORKSPACE env in mcp.json, got:\n%s", string(mcpData))
+	}
+
+	// 2. gyrus client uninstall --target antigravity
+	uninstallCmd := exec.Command(gyrusBinPath, "client", "uninstall", "--target", "antigravity")
+	uninstallCmd.Dir = tempWorkspace
+	if out, err := uninstallCmd.CombinedOutput(); err != nil {
+		t.Fatalf("client uninstall failed: %v\nOutput: %s", err, string(out))
+	}
+
+	// Plugin directory should be deleted
+	if _, err := os.Stat(pluginDir); !os.IsNotExist(err) {
+		t.Errorf("Expected plugin directory %s to be deleted after uninstall", pluginDir)
+	}
+
+	// MCP config should no longer have gyrus
+	cleanedData, err := os.ReadFile(mcpFile)
+	if err != nil {
+		t.Fatalf("Expected mcp.json to still exist: %v", err)
+	}
+	if strings.Contains(string(cleanedData), `"gyrus":`) {
+		t.Errorf("Expected gyrus to be removed from mcp.json, got:\n%s", string(cleanedData))
 	}
 }

@@ -6,14 +6,12 @@ import (
 )
 
 var (
-	GlobalJSONOutput  bool
-	GlobalVerbose     bool
-	GlobalStoragePath string
+	GlobalJSONOutput bool
+	GlobalVerbose    bool
 )
 
 // Register registers all Gyrus CLI subcommands onto the root command.
 func Register(rootCmd *cobra.Command, application *app.App) {
-	rootCmd.PersistentFlags().StringVar(&GlobalStoragePath, "storage-path", "", "Path to storage root directory (overrides GYRUS_STORAGE_PATH env)")
 	rootCmd.PersistentFlags().BoolVar(&GlobalJSONOutput, "json", false, "Output results as formatted JSON")
 	rootCmd.PersistentFlags().BoolVar(&GlobalVerbose, "verbose", false, "Enable verbose debug logging")
 
@@ -35,8 +33,10 @@ func Register(rootCmd *cobra.Command, application *app.App) {
 	rootCmd.AddCommand(NewSyncCmd(application))
 	rootCmd.AddCommand(NewValidateCmd(application))
 	rootCmd.AddCommand(NewSchemaCmd(application))
+	rootCmd.AddCommand(NewConfigCmd(application))
 
 	// Setup & Server Commands
+	rootCmd.AddCommand(NewClientCmd(application))
 	rootCmd.AddCommand(NewInitCmd(application))
 	rootCmd.AddCommand(NewMCPCmd(application))
 }
