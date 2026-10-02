@@ -36,8 +36,31 @@ func TestNewRunner_Resolution(t *testing.T) {
 
 func TestAntigravityRunner_Availability(t *testing.T) {
 	runner := agent.NewAntigravityRunner(".")
+	if runner.Name() != "Antigravity" {
+		t.Errorf("expected runner name 'Antigravity', got '%s'", runner.Name())
+	}
+	if runner.ClientType() != "antigravity" {
+		t.Errorf("expected client type 'antigravity', got '%s'", runner.ClientType())
+	}
 	if !runner.IsAvailable() {
 		t.Logf("agy CLI not found in test environment (expected in minimal containers)")
+	} else {
+		if runner.BinaryPath() == "" {
+			t.Errorf("runner is marked available but BinaryPath is empty")
+		}
+	}
+}
+
+func TestClaudeRunner_Properties(t *testing.T) {
+	runner := agent.NewClaudeRunner(".")
+	if runner.Name() != "Claude Code" {
+		t.Errorf("expected runner name 'Claude Code', got '%s'", runner.Name())
+	}
+	if runner.ClientType() != "claude" {
+		t.Errorf("expected client type 'claude', got '%s'", runner.ClientType())
+	}
+	if !runner.IsAvailable() {
+		t.Logf("claude CLI not found in test environment")
 	} else {
 		if runner.BinaryPath() == "" {
 			t.Errorf("runner is marked available but BinaryPath is empty")

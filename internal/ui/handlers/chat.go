@@ -11,24 +11,32 @@ import (
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
-// ModelOption represents an available model in the chat UI.
-type ModelOption struct {
-	ID         string   `json:"id"`
-	Label      string   `json:"label"`
-	Efforts    []string `json:"efforts,omitempty"`
-	EffortList string   `json:"effort_list,omitempty"`
-}
-
 // Chat handles rendering the Agent Chat landing page view.
 func (h *Handlers) Chat(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// Get total document count and taxonomy counts for sidebar navigation
-	allResults, err := h.engine.Search(ctx, "", gyrus.SearchFilter{})
-	if err != nil {
-		allResults = nil
+	tenantFilter := strings.TrimSpace(r.URL.Query().Get("tenant"))
+	if tenantFilter == "" {
+		tenantFilter = strings.TrimSpace(r.URL.Query().Get("owner"))
 	}
-	categoryCounts, typeCounts := h.buildTaxonomyCounts(allResults)
+
+	// Get total document count and taxonomy counts for sidebar navigation
+	allSystemResults, err := h.engine.Search(ctx, "", gyrus.SearchFilter{})
+	if err != nil {
+		allSystemResults = nil
+	}
+	availableTenants := h.extractAvailableTenants(allSystemResults)
+
+	var tenantResults []gyrus.SearchResult
+	if tenantFilter != "" {
+		tenantResults, _ = h.engine.Search(ctx, "", gyrus.SearchFilter{OwnerGroup: tenantFilter})
+	} else {
+		tenantResults = allSystemResults
+	}
+
+	scopeMap := h.getDocScopeMap()
+	scopeData := h.buildScopeData(tenantResults, scopeMap)
+	categoryCounts, typeCounts := h.buildTaxonomyCounts(tenantResults)
 
 	clientName := ""
 	runnerName := ""
@@ -50,19 +58,24 @@ func (h *Handlers) Chat(w http.ResponseWriter, r *http.Request) {
 
 	models := h.getAvailableModels(clientName)
 
-	data := map[string]any{
-		"Title":           "Agent Chat",
-		"StorageBackend":  h.storageBackend(),
-		"ActiveNav":       "chat",
-		"UIClient":        clientName,
-		"RunnerName":      runnerName,
-		"RunnerAvailable": runnerAvail,
-		"RunnerBinary":    binaryPath,
-		"TotalDocs":       len(allResults),
-		"CategoryCounts":  categoryCounts,
-		"TypeCounts":      typeCounts,
-		"Sessions":        sessions,
-		"Models":          models,
+	data := ChatPageData{
+		BasePageData: BasePageData{
+			Title:            "Agent Chat",
+			StorageBackend:   h.storageBackend(),
+			ActiveNav:        "chat",
+			UIClient:         clientName,
+			SelectedTenant:   tenantFilter,
+			AvailableTenants: availableTenants,
+			TotalDocs:        len(tenantResults),
+			Scopes:           scopeData,
+			CategoryCounts:   categoryCounts,
+			TypeCounts:       typeCounts,
+		},
+		RunnerName:      runnerName,
+		RunnerAvailable: runnerAvail,
+		RunnerBinary:    binaryPath,
+		Sessions:        sessions,
+		Models:          models,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

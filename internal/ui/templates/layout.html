@@ -8,13 +8,15 @@
     <script src="/static/js/htmx.min.js"></script>
     <script src="/static/js/cytoscape.min.js"></script>
     <script src="/static/js/mermaid.min.js"></script>
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/core.js"></script>
+    <script src="/static/js/graph.js"></script>
+    <script src="/static/js/markdown.js"></script>
+    <script src="/static/js/chat.js"></script>
 </head>
 <body>
     <header class="app-header">
         <a href="{{if .UIClient}}/{{else}}/docs{{end}}" class="brand-section" hx-get="{{if .UIClient}}/{{else}}/docs{{end}}" hx-target="#main-content" hx-push-url="true">
             <img src="/static/img/logo.png" alt="Gyrus Logo" width="28" height="28" style="border-radius: 6px; object-fit: contain;">
-            <span>Gyrus</span>
             <span class="brand-badge">{{.StorageBackend}}</span>
         </a>
 
@@ -27,6 +29,7 @@
                        placeholder="Search documentation..."
                        value="{{.SearchQuery}}"
                        hx-get="/search"
+                       hx-include="#tenant-select"
                        hx-trigger="input changed delay:250ms, search"
                        hx-target="#main-content"
                        hx-push-url="true"
@@ -35,18 +38,24 @@
             </div>
         </div>
 
-
         <div class="header-actions">
-            <a href="/graph" id="header-graph-btn" class="btn btn-outline {{if eq .ActiveNav "graph"}}active{{end}}" hx-get="/graph" hx-target="#main-content" hx-push-url="true">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
-                    <circle cx="18" cy="5" r="3"></circle>
-                    <circle cx="6" cy="12" r="3"></circle>
-                    <circle cx="18" cy="19" r="3"></circle>
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                </svg>
-                Graph View
-            </a>
+            <div class="tenant-selector-wrapper">
+                <span class="tenant-icon" title="Tenant / Owner">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </span>
+                <select id="tenant-select" name="tenant" class="tenant-select" onchange="window.switchTenant(this.value)" aria-label="Tenant / Owner" title="Select Tenant / Owner">
+                    <option value="" {{if eq .SelectedTenant ""}}selected{{end}}>All Tenants</option>
+                    {{range .AvailableTenants}}
+                    <option value="{{.}}" {{if eq $.SelectedTenant .}}selected{{end}}>{{.}}</option>
+                    {{end}}
+                </select>
+            </div>
+
             <button class="btn-icon" onclick="toggleTheme()" title="Toggle Theme" aria-label="Toggle Theme">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="5"></circle>
@@ -64,64 +73,137 @@
     </header>
 
     <div class="app-container">
-        <aside class="app-sidebar">
-            <div>
+        <aside class="app-sidebar" id="app-sidebar">
+            <div class="sidebar-header-row">
+                <span class="sidebar-brand-title">Gyrus</span>
+                <button type="button" class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Collapse navigation (Ctrl+B)" aria-label="Toggle navigation">
+                    <span class="sidebar-toggle-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="11 17 6 12 11 7"></polyline>
+                            <polyline points="18 17 13 12 18 7"></polyline>
+                        </svg>
+                    </span>
+                </button>
+            </div>
+
+            <div class="sidebar-main-nav">
                 <div class="nav-group-title">Navigation</div>
                 <ul class="nav-list">
                     {{if .UIClient}}
                     <li>
-                        <a href="/" id="nav-agent-chat" class="nav-link {{if eq .ActiveNav "chat"}}active{{end}}" hx-get="/" hx-target="#main-content" hx-push-url="true">
-                            <span style="display: flex; align-items: center; gap: 7px;">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                                </svg>
-                                Agent Chat
+                        <a href="/{{if .SelectedTenant}}?tenant={{.SelectedTenant}}{{end}}" id="nav-agent-chat" class="nav-link {{if eq .ActiveNav "chat"}}active{{end}}" hx-get="/{{if .SelectedTenant}}?tenant={{.SelectedTenant}}{{end}}" hx-target="#main-content" hx-push-url="true" title="Agent Chat">
+                            <span class="nav-link-content">
+                                <span class="nav-icon">
+                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                </span>
+                                <span class="nav-text">Agent Chat</span>
                             </span>
-                            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.65rem; padding: 1px 5px; font-weight: 600;">active</span>
+                            <span class="badge nav-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.65rem; padding: 1px 5px; font-weight: 600;">active</span>
                         </a>
                     </li>
                     {{end}}
                     <li>
-                        <a href="/docs" id="nav-all-docs" class="nav-link {{if or (eq .ActiveNav "docs") (eq .ActiveNav "all")}}active{{end}}" hx-get="/docs" hx-target="#main-content" hx-push-url="true">
-                            <span>All Documents</span>
+                        <a href="/docs{{if .SelectedTenant}}?tenant={{.SelectedTenant}}{{end}}" id="nav-all-docs" class="nav-link {{if or (eq .ActiveNav "docs") (eq .ActiveNav "all")}}active{{end}}" hx-get="/docs{{if .SelectedTenant}}?tenant={{.SelectedTenant}}{{end}}" hx-target="#main-content" hx-push-url="true" title="All Documents">
+                            <span class="nav-link-content">
+                                <span class="nav-icon">
+                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                        <line x1="10" y1="9" x2="8" y2="9"></line>
+                                    </svg>
+                                </span>
+                                <span class="nav-text">All Documents</span>
+                            </span>
                             <span class="nav-count">{{.TotalDocs}}</span>
                         </a>
                     </li>
                     <li>
-                        <a href="/graph" id="nav-knowledge-graph" class="nav-link {{if eq .ActiveNav "graph"}}active{{end}}" hx-get="/graph" hx-target="#main-content" hx-push-url="true">
-                            <span>Knowledge Graph</span>
+                        <a href="/graph{{if .SelectedTenant}}?tenant={{.SelectedTenant}}{{end}}" id="nav-knowledge-graph" class="nav-link {{if eq .ActiveNav "graph"}}active{{end}}" hx-get="/graph{{if .SelectedTenant}}?tenant={{.SelectedTenant}}{{end}}" hx-target="#main-content" hx-push-url="true" title="Knowledge Graph">
+                            <span class="nav-link-content">
+                                <span class="nav-icon">
+                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="18" cy="5" r="3"></circle>
+                                        <circle cx="6" cy="12" r="3"></circle>
+                                        <circle cx="18" cy="19" r="3"></circle>
+                                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                                    </svg>
+                                </span>
+                                <span class="nav-text">Knowledge Graph</span>
+                            </span>
                         </a>
                     </li>
                 </ul>
             </div>
 
+            <div class="sidebar-extra-sections">
+                <div style="margin-bottom: 1.5rem;">
+                    <div class="nav-group-title">Scopes</div>
+                    <ul class="nav-list">
+                        <li>
+                            <a href="/docs?scope=reference{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}"
+                               id="nav-scope-reference"
+                               class="nav-link {{if eq $.ActiveScope "reference"}}active{{end}}"
+                               hx-get="/docs?scope=reference{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}"
+                               hx-target="#main-content"
+                               hx-push-url="true"
+                               title="Reference">
+                                <span class="nav-link-content">
+                                    <span class="nav-icon">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                                        </svg>
+                                    </span>
+                                    <span class="nav-text">Reference</span>
+                                </span>
+                                <span class="nav-count">{{.Scopes.ReferenceCount}}</span>
+                            </a>
+                        </li>
+                        <li class="nav-group-subheading">
+                            <span class="nav-subheading-text">Workspaces</span>
+                        </li>
+                        {{range .Scopes.Workspaces}}
+                        <li>
+                            <a href="/docs?scope=workspaces/{{.Name}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}"
+                               id="nav-scope-ws-{{.Name}}"
+                               class="nav-link nav-sub-link {{if or (eq $.ActiveScope (printf "workspaces/%s" .Name)) (eq $.ActiveScope .Name)}}active{{end}}"
+                               hx-get="/docs?scope=workspaces/{{.Name}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}"
+                               hx-target="#main-content"
+                               hx-push-url="true"
+                               title="{{.Name}}">
+                                <span class="nav-link-content">
+                                    <span class="nav-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                        </svg>
+                                    </span>
+                                    <span class="nav-text">{{.Name}}</span>
+                                </span>
+                                <span class="nav-count">{{.Count}}</span>
+                            </a>
+                        </li>
+                        {{end}}
+                    </ul>
+                </div>
 
-            <div>
-                <div class="nav-group-title">Categories</div>
-                <ul class="nav-list">
-                    {{range .CategoryCounts}}
-                    <li>
-                        <a href="/docs?category={{.Name}}" class="nav-link {{if eq $.ActiveCategory .Name}}active{{end}}" hx-get="/docs?category={{.Name}}" hx-target="#main-content" hx-push-url="true">
-                            <span>{{.Name}}</span>
-                            <span class="nav-count">{{.Count}}</span>
-                        </a>
-                    </li>
-                    {{end}}
-                </ul>
-            </div>
-
-            <div>
-                <div class="nav-group-title">Document Types</div>
-                <ul class="nav-list">
-                    {{range .TypeCounts}}
-                    <li>
-                        <a href="/docs?type={{.Name}}" class="nav-link {{if eq $.ActiveType .Name}}active{{end}}" hx-get="/docs?type={{.Name}}" hx-target="#main-content" hx-push-url="true">
-                            <span>{{.Name}}</span>
-                            <span class="nav-count">{{.Count}}</span>
-                        </a>
-                    </li>
-                    {{end}}
-                </ul>
+                <div>
+                    <div class="nav-group-title">Document Types</div>
+                    <ul class="nav-list">
+                        {{range .TypeCounts}}
+                        <li>
+                            <a href="/docs?type={{.Name}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}" class="nav-link {{if eq $.ActiveType .Name}}active{{end}}" hx-get="/docs?type={{.Name}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}" hx-target="#main-content" hx-push-url="true" title="{{.Name}}">
+                                <span class="nav-text">{{.Name}}</span>
+                                <span class="nav-count">{{.Count}}</span>
+                            </a>
+                        </li>
+                        {{end}}
+                    </ul>
+                </div>
             </div>
         </aside>
 

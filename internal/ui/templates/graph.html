@@ -11,9 +11,9 @@
             <div style="display: flex; align-items: center; gap: 0.35rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; padding: 2px 8px;">
                 <label for="graph-layout-select" class="text-xs text-muted font-bold" style="text-transform: uppercase;">Layout:</label>
                 <select id="graph-layout-select" onchange="window.switchGraphLayout(this.value)" style="background: transparent; border: none; color: var(--text-primary); font-size: 0.85rem; outline: none; cursor: pointer; padding: 2px 0;">
+                    <option value="concentric" selected>Concentric Rings</option>
                     <option value="cose">Spacious Physics (Cose)</option>
                     <option value="breadthfirst">Hierarchical Tree</option>
-                    <option value="concentric">Concentric Rings</option>
                     <option value="circle">Circular</option>
                 </select>
             </div>
@@ -60,7 +60,7 @@
         (function() {
             function load() {
                 if (window.initGraph) {
-                    window.initGraph('cy-container', '/api/graph', '{{.FocusDocID}}');
+                    window.initGraph('cy-container', '/api/graph{{if .SelectedTenant}}?tenant={{.SelectedTenant}}{{end}}', '{{.FocusDocID}}');
                 }
             }
             if (document.readyState === 'loading') {
