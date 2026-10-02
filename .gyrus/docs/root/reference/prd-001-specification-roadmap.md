@@ -72,6 +72,7 @@ Target: Expand data providers, transport interfaces, backend provider IaC, test 
 - [x] **ADR-005 Acceptance**: Formally document architectural decisions in `adr-005-global-configuration-and-precedence-hierarchy.md` superseding configuration sections of ADR-004.
   - *Target Test Requirements*: Multi-level config resolution tests verifying `Workspace .gyrus.yaml > Global ~/.gyrus.yaml > Defaults`, graceful fallback behavior when global config files are missing or malformed, and fail-fast validation for unknown provider drivers.
 
+<!-- TODO: include what defines a workspace - repo/project/etc? -->
 ### 2.8 Repository-Focused Context & Reference Scoping
 - [ ] **Workspace & Repository-Scoped Context Retrieval**: Scope context retrieval in `gyrus suggest-context` and `gyrus search` to prioritize local workspace repository context (codebase contracts, active PRDs, workspace ADRs) first before referencing broader contexts.
 - [ ] **Reference Fallback & Cross-Boundary Retrieval**: Implement hierarchical search scoring and reference resolution that isolates local workspace boundaries while cleanly linking back to global technical references, enterprise standards, and upstream governance models.

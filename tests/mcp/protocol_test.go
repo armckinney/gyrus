@@ -159,7 +159,7 @@ func TestMCP_ProtocolHandshake(t *testing.T) {
 	workspaceDir := t.TempDir()
 
 	// Init workspace
-	initCmd := exec.Command(gyrusBinPath, "init", "config", "--profile", "local")
+	initCmd := exec.Command(gyrusBinPath, "config", "init", "--profile", "local")
 	initCmd.Dir = workspaceDir
 	if out, err := initCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Init failed: %v\nOutput: %s", err, string(out))
@@ -216,7 +216,7 @@ func TestMCP_ProtocolHandshake(t *testing.T) {
 func TestMCP_CapabilitiesListing(t *testing.T) {
 	workspaceDir := t.TempDir()
 
-	initCmd := exec.Command(gyrusBinPath, "init", "config", "--profile", "local")
+	initCmd := exec.Command(gyrusBinPath, "config", "init", "--profile", "local")
 	initCmd.Dir = workspaceDir
 	if out, err := initCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Init failed: %v\nOutput: %s", err, string(out))

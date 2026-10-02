@@ -18,10 +18,10 @@ import (
 // [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
 // [Assertions]: Configuration file contains specified profile settings and owner group.
 // -----------------------------------------------------------------------------
-func TestCLI_Init_ProfileFlags(t *testing.T) {
+func TestCLI_Config_ProfileFlags(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
-	cmd := exec.Command(gyrusBinPath, "init", "config",
+	cmd := exec.Command(gyrusBinPath, "config", "init",
 		"--profile", "postgres",
 		"--owner-group", "platform-infra",
 	)
@@ -29,7 +29,7 @@ func TestCLI_Init_ProfileFlags(t *testing.T) {
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("Init config failed: %v", err)
+		t.Fatalf("Config init failed: %v", err)
 	}
 
 	cfgPath := filepath.Join(tempWorkspace, ".gyrus.yaml")
@@ -49,20 +49,20 @@ func TestCLI_Init_ProfileFlags(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Product E2E Test
-// [Purpose]: Verifies that 'gyrus init client' equips the Agent Plugin and registers MCP server configurations.
+// [Purpose]: Verifies that 'gyrus client install' equips the Agent Plugin and registers MCP server configurations.
 // [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
-// [Assertions]: Agent Plugin files are written to .agents/plugins/gyrus/ and MCP server config is written to .antigravity/mcp.json.
+// [Assertions]: Agent Plugin files are written to .agents/plugins/gyrus/ and MCP server config is verified.
 // -----------------------------------------------------------------------------
-func TestCLI_Init_MCPAndPluginEquipping(t *testing.T) {
+func TestCLI_Client_MCPAndPluginEquipping(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
-	cmd := exec.Command(gyrusBinPath, "init", "client",
+	cmd := exec.Command(gyrusBinPath, "client", "install",
 		"--target", "antigravity",
 		"--mode", "local",
 	)
 	cmd.Dir = tempWorkspace
 	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("Init client failed: %v\nOutput: %s", err, string(out))
+		t.Fatalf("Client install failed: %v\nOutput: %s", err, string(out))
 	}
 
 	// 1. Verify Plugin installation
@@ -87,9 +87,9 @@ func TestCLI_Init_MCPAndPluginEquipping(t *testing.T) {
 		t.Errorf("Expected Gyrus skill in plugin at %s", gyrusSkill)
 	}
 
-	// 2. Verify MCP registration
-	mcpJSONPath := filepath.Join(tempWorkspace, ".antigravity", "mcp.json")
-	mcpData, err := os.ReadFile(mcpJSONPath)
+	// 2. Verify MCP auto-discovery via plugin mcp_config.json
+	mcpConfigPath := filepath.Join(pluginDir, "mcp_config.json")
+	mcpData, err := os.ReadFile(mcpConfigPath)
 	if err != nil {
 		t.Fatalf("Failed reading MCP config: %v", err)
 	}
@@ -102,13 +102,19 @@ func TestCLI_Init_MCPAndPluginEquipping(t *testing.T) {
 	if _, ok := mcpCfg.MCPServers["gyrus"]; !ok {
 		t.Errorf("Expected 'gyrus' server in mcpServers")
 	}
+
+	// Verify redundant .antigravity/mcp.json not created
+	redundantMCP := filepath.Join(tempWorkspace, ".antigravity", "mcp.json")
+	if _, err := os.Stat(redundantMCP); !os.IsNotExist(err) {
+		t.Errorf("Expected redundant .antigravity/mcp.json not to be created")
+	}
 }
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Product E2E Test
-// [Purpose]: Verifies that bare 'gyrus init' without subcommands is rejected with guidance.
+// [Purpose]: Verifies that deprecated 'gyrus init' command is permanently removed.
 // [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
-// [Assertions]: Command exits with error indicating explicit subcommand is required.
+// [Assertions]: Command exits with unknown command error.
 // -----------------------------------------------------------------------------
 func TestCLI_Init_BareCommandRejection(t *testing.T) {
 	tempWorkspace := t.TempDir()
@@ -117,29 +123,29 @@ func TestCLI_Init_BareCommandRejection(t *testing.T) {
 	cmd.Dir = tempWorkspace
 	out, err := cmd.CombinedOutput()
 	if err == nil {
-		t.Fatalf("Expected bare 'gyrus init' to fail, but succeeded with output: %s", string(out))
+		t.Fatalf("Expected 'gyrus init' to fail, but succeeded with output: %s", string(out))
 	}
 
 	outStr := string(out)
-	if !strings.Contains(outStr, "initialization requires an explicit subcommand") {
-		t.Errorf("Expected guidance message in output, got:\n%s", outStr)
+	if !strings.Contains(outStr, "unknown command \"init\"") {
+		t.Errorf("Expected unknown command error in output, got:\n%s", outStr)
 	}
 }
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Product E2E Test
-// [Purpose]: Verifies that 'gyrus init client' without --target is rejected.
+// [Purpose]: Verifies that 'gyrus client install' without --target is rejected.
 // [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
 // [Assertions]: Command exits with validation error.
 // -----------------------------------------------------------------------------
 func TestCLI_Init_ClientMissingTarget(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
-	cmd := exec.Command(gyrusBinPath, "init", "client")
+	cmd := exec.Command(gyrusBinPath, "client", "install")
 	cmd.Dir = tempWorkspace
 	out, err := cmd.CombinedOutput()
 	if err == nil {
-		t.Fatalf("Expected 'gyrus init client' without target to fail, but succeeded with output: %s", string(out))
+		t.Fatalf("Expected 'gyrus client install' without target to fail, but succeeded with output: %s", string(out))
 	}
 
 	outStr := string(out)
@@ -309,14 +315,14 @@ default_owner_group: json-group
 func TestCLI_InitConfigGlobal(t *testing.T) {
 	tempHome := t.TempDir()
 
-	cmd := exec.Command(gyrusBinPath, "init", "config",
+	cmd := exec.Command(gyrusBinPath, "config", "init",
 		"--global",
 		"--profile", "local",
 		"--owner-group", "global-platform",
 	)
 	cmd.Env = append(os.Environ(), "HOME="+tempHome)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("init config --global failed: %v\nOutput: %s", err, string(out))
+		t.Fatalf("config init --global failed: %v\nOutput: %s", err, string(out))
 	}
 
 	globalPath := filepath.Join(tempHome, ".gyrus.yaml")
@@ -336,7 +342,7 @@ func TestCLI_InitConfigGlobal(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Product E2E Test
-// [Purpose]: Verifies that 'gyrus init config --global' refuses to overwrite without --force.
+// [Purpose]: Verifies that 'gyrus config init --global' refuses to overwrite without --force.
 // [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
 // [Assertions]: Exits with error mentioning --force when file already exists.
 // -----------------------------------------------------------------------------
@@ -348,11 +354,11 @@ func TestCLI_InitConfigGlobalRefuse(t *testing.T) {
 		t.Fatalf("Failed writing initial config: %v", err)
 	}
 
-	cmd := exec.Command(gyrusBinPath, "init", "config", "--global")
+	cmd := exec.Command(gyrusBinPath, "config", "init", "--global")
 	cmd.Env = append(os.Environ(), "HOME="+tempHome)
 	out, err := cmd.CombinedOutput()
 	if err == nil {
-		t.Fatalf("Expected init config --global to fail when file exists, but succeeded: %s", string(out))
+		t.Fatalf("Expected config init --global to fail when file exists, but succeeded: %s", string(out))
 	}
 
 	outStr := string(out)
@@ -363,7 +369,7 @@ func TestCLI_InitConfigGlobalRefuse(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Product E2E Test
-// [Purpose]: Verifies that 'gyrus init config --global --force' overwrites existing configuration.
+// [Purpose]: Verifies that 'gyrus config init --global --force' overwrites existing configuration.
 // [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
 // [Assertions]: Overwrites ~/.gyrus.yaml successfully.
 // -----------------------------------------------------------------------------
@@ -375,10 +381,10 @@ func TestCLI_InitConfigGlobalForce(t *testing.T) {
 		t.Fatalf("Failed writing initial config: %v", err)
 	}
 
-	cmd := exec.Command(gyrusBinPath, "init", "config", "--global", "--force", "--profile", "postgres")
+	cmd := exec.Command(gyrusBinPath, "config", "init", "--global", "--force", "--profile", "postgres")
 	cmd.Env = append(os.Environ(), "HOME="+tempHome)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("init config --global --force failed: %v\nOutput: %s", err, string(out))
+		t.Fatalf("config init --global --force failed: %v\nOutput: %s", err, string(out))
 	}
 
 	data, err := os.ReadFile(filepath.Join(tempHome, ".gyrus.yaml"))
@@ -392,18 +398,18 @@ func TestCLI_InitConfigGlobalForce(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Product E2E Test
-// [Purpose]: Verifies that re-running 'gyrus init client' repairs missing or deleted plugin files idempotently.
+// [Purpose]: Verifies that re-running 'gyrus client install' repairs missing or deleted plugin files idempotently.
 // [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
-// [Assertions]: Deleted plugin file is restored on subsequent init client invocation.
+// [Assertions]: Deleted plugin file is restored on subsequent client install invocation.
 // -----------------------------------------------------------------------------
 func TestCLI_SetupIdempotencyAndRepair(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
 	// Initial setup
-	initCmd := exec.Command(gyrusBinPath, "init", "client", "--target", "antigravity", "--mode", "local")
+	initCmd := exec.Command(gyrusBinPath, "client", "install", "--target", "antigravity", "--mode", "local")
 	initCmd.Dir = tempWorkspace
 	if out, err := initCmd.CombinedOutput(); err != nil {
-		t.Fatalf("Initial init client failed: %v\nOutput: %s", err, string(out))
+		t.Fatalf("Initial client install failed: %v\nOutput: %s", err, string(out))
 	}
 
 	pluginFile := filepath.Join(tempWorkspace, ".agents", "plugins", "gyrus", "plugin.json")
@@ -416,16 +422,16 @@ func TestCLI_SetupIdempotencyAndRepair(t *testing.T) {
 		t.Fatalf("Failed deleting plugin file: %v", err)
 	}
 
-	// Re-run init client (repair)
-	repairCmd := exec.Command(gyrusBinPath, "init", "client", "--target", "antigravity", "--mode", "local")
+	// Re-run client install (repair)
+	repairCmd := exec.Command(gyrusBinPath, "client", "install", "--target", "antigravity", "--mode", "local")
 	repairCmd.Dir = tempWorkspace
 	if out, err := repairCmd.CombinedOutput(); err != nil {
-		t.Fatalf("Repair init client failed: %v\nOutput: %s", err, string(out))
+		t.Fatalf("Repair client install failed: %v\nOutput: %s", err, string(out))
 	}
 
 	// Verify plugin file is restored
 	if _, err := os.Stat(pluginFile); os.IsNotExist(err) {
-		t.Errorf("Expected deleted plugin file to be restored after re-running init client")
+		t.Errorf("Expected deleted plugin file to be restored after re-running client install")
 	}
 }
 
@@ -468,7 +474,7 @@ func TestCLI_ConfigInit(t *testing.T) {
 // [Test Level]: Product E2E Test
 // [Purpose]: Verifies that 'gyrus client install' and 'gyrus client uninstall' work symmetrically.
 // [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
-// [Assertions]: 'client install' creates plugin and mcp.json; 'client uninstall' removes them.
+// [Assertions]: 'client install' creates plugin and mcp_config.json; 'client uninstall' removes them.
 // -----------------------------------------------------------------------------
 func TestCLI_ClientInstallAndUninstall(t *testing.T) {
 	tempWorkspace := t.TempDir()
@@ -485,13 +491,19 @@ func TestCLI_ClientInstallAndUninstall(t *testing.T) {
 		t.Fatalf("Expected plugin directory to exist after install")
 	}
 
-	mcpFile := filepath.Join(tempWorkspace, ".antigravity", "mcp.json")
+	mcpFile := filepath.Join(pluginDir, "mcp_config.json")
 	mcpData, err := os.ReadFile(mcpFile)
 	if err != nil {
-		t.Fatalf("Expected .antigravity/mcp.json to exist: %v", err)
+		t.Fatalf("Expected plugin mcp_config.json to exist: %v", err)
 	}
 	if !strings.Contains(string(mcpData), "GYRUS_WORKSPACE") {
-		t.Errorf("Expected GYRUS_WORKSPACE env in mcp.json, got:\n%s", string(mcpData))
+		t.Errorf("Expected GYRUS_WORKSPACE env in mcp_config.json, got:\n%s", string(mcpData))
+	}
+
+	// Verify redundant .antigravity/mcp.json not created
+	redundantMCP := filepath.Join(tempWorkspace, ".antigravity", "mcp.json")
+	if _, err := os.Stat(redundantMCP); !os.IsNotExist(err) {
+		t.Errorf("Expected redundant .antigravity/mcp.json not to be created")
 	}
 
 	// 2. gyrus client uninstall --target antigravity
@@ -504,14 +516,5 @@ func TestCLI_ClientInstallAndUninstall(t *testing.T) {
 	// Plugin directory should be deleted
 	if _, err := os.Stat(pluginDir); !os.IsNotExist(err) {
 		t.Errorf("Expected plugin directory %s to be deleted after uninstall", pluginDir)
-	}
-
-	// MCP config should no longer have gyrus
-	cleanedData, err := os.ReadFile(mcpFile)
-	if err != nil {
-		t.Fatalf("Expected mcp.json to still exist: %v", err)
-	}
-	if strings.Contains(string(cleanedData), `"gyrus":`) {
-		t.Errorf("Expected gyrus to be removed from mcp.json, got:\n%s", string(cleanedData))
 	}
 }

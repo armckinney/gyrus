@@ -30,6 +30,8 @@ func NewClientCmd(application *app.App) *cobra.Command {
 func NewClientInstallCmd(application *app.App) *cobra.Command {
 	var (
 		target    string
+		mode      string
+		image     string
 		global    bool
 		pluginDir string
 	)
@@ -52,6 +54,17 @@ func NewClientInstallCmd(application *app.App) *cobra.Command {
 				return err
 			}
 
+			// Determine execution mode fallback if docker is not installed
+			resolvedMode := mode
+			if !cmd.Flags().Changed("mode") {
+				if _, err := exec.LookPath("docker"); err != nil {
+					resolvedMode = string(setup.MCPModeLocal)
+				}
+			}
+			if resolvedMode == "" {
+				resolvedMode = string(setup.MCPModeLocal)
+			}
+
 			binaryCmd := "gyrus"
 			if _, err := exec.LookPath("gyrus"); err != nil {
 				if self, err := os.Executable(); err == nil && filepath.IsAbs(self) {
@@ -60,12 +73,13 @@ func NewClientInstallCmd(application *app.App) *cobra.Command {
 			}
 
 			res, err := setup.RunClientSetup(setup.ClientSetupOptions{
-				WorkspaceDir: cwd,
-				Target:       clientTarget,
-				Mode:         setup.MCPModeLocal,
-				Global:       global,
-				BinaryCmd:    binaryCmd,
-				PluginDir:    pluginDir,
+				WorkspaceDir:   cwd,
+				Target:         clientTarget,
+				Mode:           setup.MCPMode(resolvedMode),
+				Global:         global,
+				ContainerImage: image,
+				BinaryCmd:      binaryCmd,
+				PluginDir:      pluginDir,
 			})
 			if err != nil {
 				return err
@@ -120,6 +134,8 @@ func NewClientInstallCmd(application *app.App) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&target, "target", "t", "", "Target agent tool (required): antigravity, claude, codex, copilot")
+	cmd.Flags().StringVarP(&mode, "mode", "m", "local", "MCP execution mode: local (local binary), container (containerized stdio via Docker)")
+	cmd.Flags().StringVar(&image, "mcp-container-image", "ghcr.io/armckinney/gyrus:latest", "Container image for containerized stdio MCP execution")
 	cmd.Flags().BoolVarP(&global, "global", "g", false, "Register MCP servers and plugin globally in user home directory (~)")
 	cmd.Flags().StringVar(&pluginDir, "plugin-dir", "", "Custom destination directory for Agent Plugin bundle")
 
@@ -242,22 +258,16 @@ func registerWithAntigravity(pluginDir string) bool {
 	return cmd.Run() == nil
 }
 
-// deregisterWithAntigravity attempts to deregister the plugin and clean MCP servers using the agy CLI.
+// deregisterWithAntigravity attempts to deregister the plugin using the agy CLI.
 func deregisterWithAntigravity() bool {
 	agyPath, ok := findAgyPath()
 	if !ok {
 		return false
 	}
 
-	// 1. Uninstall plugin
+	// Uninstall plugin
 	pluginCmd := exec.Command(agyPath, "plugin", "uninstall", "gyrus")
-	pluginSuccess := pluginCmd.Run() == nil
-
-	// 2. Remove any direct MCP servers (gyrus, gyrus_gyrus)
-	_ = exec.Command(agyPath, "mcp", "remove", "gyrus").Run()
-	_ = exec.Command(agyPath, "mcp", "remove", "gyrus_gyrus").Run()
-
-	return pluginSuccess
+	return pluginCmd.Run() == nil
 }
 
 // findClaudePath searches PATH and standard installation paths for the claude CLI.

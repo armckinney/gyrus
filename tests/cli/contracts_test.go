@@ -48,7 +48,7 @@ func TestCLI_SchemaValidation_ExitCode1(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
 	// 1. Initialize workspace
-	initCmd := exec.Command(gyrusBinPath, "init", "config", "--profile", "local")
+	initCmd := exec.Command(gyrusBinPath, "config", "init", "--profile", "local")
 	initCmd.Dir = tempWorkspace
 	if out, err := initCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Failed to init workspace: %v\nOutput: %s", err, string(out))
@@ -94,7 +94,7 @@ func TestCLI_IllegalLifecycleTransition_ExitCode2(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
 	// 1. Initialize workspace
-	initCmd := exec.Command(gyrusBinPath, "init", "config", "--profile", "local")
+	initCmd := exec.Command(gyrusBinPath, "config", "init", "--profile", "local")
 	initCmd.Dir = tempWorkspace
 	if out, err := initCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Failed to init workspace: %v\nOutput: %s", err, string(out))
@@ -147,7 +147,7 @@ func TestCLI_ImmutabilityEnforcement_ExitCode2(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
 	// 1. Initialize workspace
-	initCmd := exec.Command(gyrusBinPath, "init", "config", "--profile", "local")
+	initCmd := exec.Command(gyrusBinPath, "config", "init", "--profile", "local")
 	initCmd.Dir = tempWorkspace
 	if out, err := initCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Failed to init workspace: %v\nOutput: %s", err, string(out))
@@ -201,7 +201,7 @@ func TestCLI_OptimisticConcurrencyConflict_ExitCode4(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
 	// 1. Initialize workspace
-	initCmd := exec.Command(gyrusBinPath, "init", "config", "--profile", "local")
+	initCmd := exec.Command(gyrusBinPath, "config", "init", "--profile", "local")
 	initCmd.Dir = tempWorkspace
 	if out, err := initCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Failed to init workspace: %v\nOutput: %s", err, string(out))
@@ -257,7 +257,7 @@ func TestCLI_DocumentNotFound_ExitCode5(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
 	// 1. Initialize workspace
-	initCmd := exec.Command(gyrusBinPath, "init", "config", "--profile", "local")
+	initCmd := exec.Command(gyrusBinPath, "config", "init", "--profile", "local")
 	initCmd.Dir = tempWorkspace
 	if out, err := initCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Failed to init workspace: %v\nOutput: %s", err, string(out))

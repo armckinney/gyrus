@@ -5,10 +5,10 @@ category: technical
 type: guide
 format: markdown
 owner_group: root
-version: 3
+version: 4
 status: active
 last_modified_by: antigravity
-last_updated: 2026-09-13T23:58:30Z
+last_updated: 2026-10-02T05:52:00Z
 tags:
   - installation
   - initialization
@@ -20,6 +20,7 @@ dependencies:
   - prd-001-specification-roadmap
   - adr-001-oop-core-refactoring-and-package-reorganization
   - adr-004-agent-plugin-packaging-distribution-and-init-revamp
+  - guide-003-agent-skills-setup
 ---
 
 # Gyrus Installation & Workspace Initialization Guide
@@ -50,32 +51,29 @@ Download the pre-compiled binary tarball for your platform directly from [Gyrus 
 
 ## 🚀 2. Two-Step Workspace Initialization
 
-Gyrus cleanly decouples workspace repository configuration from client tool distribution using two explicit subcommands:
+Gyrus cleanly decouples workspace repository configuration from client tool distribution using explicit subcommands:
 
 ```mermaid
 graph TD
-    A["gyrus init"] -->|Error: Specify subcommand| B{"Choose Workflow"}
-    B --> C["gyrus init config [--global]\n(Workspace or Global Setup)"]
-    B --> D["gyrus init client --target <target>\n(Agent Plugin & MCP Registration)"]
+    A["Workspace & Agent Setup"] --> B{"Choose Workflow"}
+    B --> C["gyrus config init [--global]\n(Workspace or Global Setup)"]
+    B --> D["gyrus client install --target <target>\n(Agent Plugin & MCP Registration)"]
     C --> E[".gyrus.yaml or ~/.gyrus.yaml"]
     D --> F[".agents/plugins/gyrus + Client MCP JSON"]
 ```
 
-> [!IMPORTANT]
-> Running bare `gyrus init` without a subcommand will exit with an error. Initialization must be performed explicitly via `gyrus init config` and/or `gyrus init client`.
-
 ---
 
-## ⚙️ 3. Initializing Workspace & Global Configuration (`gyrus init config`)
+## ⚙️ 3. Initializing Workspace & Global Configuration (`gyrus config init`)
 
 Bootstraps repository or global configuration and sets up the local or cloud persistence profile:
 
 ```bash
 # Initialize repository workspace configuration (.gyrus.yaml)
-gyrus init config
+gyrus config init
 
 # Or initialize user-wide global configuration (~/.gyrus.yaml)
-gyrus init config --global
+gyrus config init --global
 ```
 
 ### Flag Options
@@ -90,14 +88,14 @@ gyrus init config --global
 ### Storage Profile Options (`--profile`)
 
 ```bash
-gyrus init config --profile local     # LocalFS Storage + SQLite FTS5 (default)
-gyrus init config --profile git       # Remote Git Repository Persistence
-gyrus init config --profile s3        # AWS S3 Bucket Storage
-gyrus init config --profile azure     # Azure Blob Container Storage
-gyrus init config --profile gcs       # Google Cloud Storage Bucket
-gyrus init config --profile blob      # Cloud Blob Storage
-gyrus init config --profile postgres  # PostgreSQL Database Backend
-gyrus init config --profile vector    # Semantic Vector Search Profile
+gyrus config init --profile local     # LocalFS Storage + SQLite FTS5 (default)
+gyrus config init --profile git       # Remote Git Repository Persistence
+gyrus config init --profile s3        # AWS S3 Bucket Storage
+gyrus config init --profile azure     # Azure Blob Container Storage
+gyrus config init --profile gcs       # Google Cloud Storage Bucket
+gyrus config init --profile blob      # Cloud Blob Storage
+gyrus config init --profile postgres  # PostgreSQL Database Backend
+gyrus config init --profile vector    # Semantic Vector Search Profile
 ```
 
 ### Required Cloud Storage Permissions
@@ -108,12 +106,12 @@ When using cloud object storage (`remote-s3`, `remote-azure`, `remote-gcs`), ens
 
 ---
 
-## 🤖 4. Installing Agent Plugin & Registering MCP (`gyrus init client`)
+## 🤖 4. Installing Agent Plugin & Registering MCP (`gyrus client install`)
 
 Installs the packaged Gyrus Agent Plugin and registers the MCP server configuration for an explicit AI coding assistant:
 
 ```bash
-gyrus init client --target antigravity
+gyrus client install --target antigravity
 ```
 
 ### Flag Options
@@ -121,25 +119,24 @@ gyrus init client --target antigravity
 | Flag | Shorthand | Description | Default |
 | :--- | :--- | :--- | :--- |
 | `--target` | `-t` | **Required.** Client target: `antigravity`, `claude`, `codex`, or `copilot`. | None |
-| `--mode` | `-m` | Execution mode: `stdio` (local binary) or `docker` (containerized). | `stdio` |
+| `--mode` | `-m` | Execution mode: `local` (local binary) or `container` (containerized Docker). | `local` |
 | `--mcp-container-image` | | Docker container image tag for containerized mode. | `ghcr.io/armckinney/gyrus:latest` |
 | `--global` | `-g` | Install into user home runtime path rather than repository workspace. | `false` |
 | `--plugin-dir` | | Custom target directory for the extracted plugin bundle. | Derived per target |
-
-> [!NOTE]
-> The ambiguous `--target all` option has been eliminated to prevent accidental mutations across disparate agent configurations. Each target must be installed explicitly.
 
 ### Target Platform Mapping
 
 | Platform Target | Flag Example | Generated Plugin Location | Registered MCP Config File |
 | :--- | :--- | :--- | :--- |
-| **Google Antigravity** | `gyrus init client -t antigravity` | `docs/agents/plugins/gyrus/` | `.antigravity/mcp.json` |
-| **GitHub Copilot** | `gyrus init client -t copilot` | `docs/agents/plugins/gyrus/` | `.vscode/mcp.json` |
-| **OpenAI Codex** | `gyrus init client -t codex` | `docs/agents/plugins/gyrus/` | `.codex/mcp.json` |
-| **Claude Desktop / Code** | `gyrus init client -t claude` | *(MCP only)* | `.claude/mcp.json` (or `~/.config/Claude/claude_desktop_config.json` with `-g`) |
+| **Google Antigravity** | `gyrus client install -t antigravity` | `.agents/plugins/gyrus/` *(Global: `~/.gemini/config/plugins/gyrus/`)* | Discovered directly from plugin `mcp_config.json` |
+| **GitHub Copilot** | `gyrus client install -t copilot` | `.agents/plugins/gyrus/` | `.vscode/mcp.json` |
+| **OpenAI Codex** | `gyrus client install -t codex` | `.agents/plugins/gyrus/` | `.codex/mcp.json` |
+| **Claude Desktop / Code** | `gyrus client install -t claude` | *(MCP only)* | `.claude/mcp.json` (or `~/.config/Claude/claude_desktop_config.json` with `-g`) |
+
+> 📖 **Full Guide:** For detailed agent plugin architecture and manual MCP configuration snippets, see the **[Gyrus Agent Plugin & Client Setup Guide](guide-003-agent-skills-setup.md)**.
 
 ---
 
 ## 🔒 5. Safe Non-Destructive Config Merging
 
-When updating client MCP configuration files (`.antigravity/mcp.json`, `.vscode/mcp.json`, etc.), Gyrus non-destructively parses existing JSON content and adds or updates only the `"gyrus"` server entry. All other pre-existing user servers (e.g. `sqlite`, `github`, `fetch`) remain completely untouched.
+When updating client MCP configuration files (`.vscode/mcp.json`, `.codex/mcp.json`, etc.), Gyrus non-destructively parses existing JSON content and adds or updates only the `"gyrus"` server entry. All other pre-existing user servers (e.g. `sqlite`, `github`, `fetch`) remain completely untouched.

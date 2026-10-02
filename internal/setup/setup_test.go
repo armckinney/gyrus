@@ -113,10 +113,10 @@ func TestRunClientSetupAntigravity(t *testing.T) {
 		t.Errorf("Expected Gyrus skill at %s", gyrusSkill)
 	}
 
-	// 6. Verify client MCP registration
+	// 6. Verify client MCP auto-discovery via plugin (and no redundant .antigravity/mcp.json)
 	antigravityMCP := filepath.Join(tempDir, ".antigravity", "mcp.json")
-	if _, err := os.Stat(antigravityMCP); os.IsNotExist(err) {
-		t.Errorf("Expected Antigravity MCP config at %s", antigravityMCP)
+	if _, err := os.Stat(antigravityMCP); !os.IsNotExist(err) {
+		t.Errorf("Expected redundant Antigravity MCP config not to be created at %s", antigravityMCP)
 	}
 }
 
@@ -361,9 +361,9 @@ func TestRunClientUninstall(t *testing.T) {
 		t.Fatalf("Expected plugin dir to exist before uninstall")
 	}
 
-	mcpPath := filepath.Join(tempDir, ".antigravity", "mcp.json")
+	mcpPath := filepath.Join(pluginDir, "mcp_config.json")
 	if _, err := os.Stat(mcpPath); os.IsNotExist(err) {
-		t.Fatalf("Expected MCP config to exist before uninstall")
+		t.Fatalf("Expected plugin MCP config to exist before uninstall")
 	}
 
 	// 2. Uninstall
@@ -383,18 +383,10 @@ func TestRunClientUninstall(t *testing.T) {
 		t.Errorf("Expected plugin dir %s to be deleted", pluginDir)
 	}
 
-	// Verify MCP config has gyrus removed
-	mcpData, err := os.ReadFile(mcpPath)
-	if err != nil {
-		t.Fatalf("Failed reading mcp.json after uninstall: %v", err)
-	}
-	var mcpRoot map[string]interface{}
-	if err := json.Unmarshal(mcpData, &mcpRoot); err != nil {
-		t.Fatalf("Failed parsing mcp.json: %v", err)
-	}
-	servers, _ := mcpRoot["mcpServers"].(map[string]interface{})
-	if _, exists := servers["gyrus"]; exists {
-		t.Errorf("Expected 'gyrus' to be removed from mcpServers")
+	// Verify redundant .antigravity/mcp.json does not exist
+	antigravityMCP := filepath.Join(tempDir, ".antigravity", "mcp.json")
+	if _, err := os.Stat(antigravityMCP); !os.IsNotExist(err) {
+		t.Errorf("Expected .antigravity/mcp.json not to exist")
 	}
 }
 
@@ -427,18 +419,29 @@ func TestRunClientSetupGlobalTargets(t *testing.T) {
 			if err != nil {
 				t.Fatalf("RunClientSetup global failed for %s: %v", target, err)
 			}
-			if len(res.InstalledMCP) == 0 {
-				t.Fatalf("Expected at least 1 MCP config file registered for %s", target)
-			}
-
-			// Verify each registered config file has gyrus registered
-			for _, cfgFile := range res.InstalledMCP {
-				data, err := os.ReadFile(cfgFile)
+			if target == setup.ClientTargetAntigravity {
+				pluginConfig := filepath.Join(tempHome, ".gemini", "config", "plugins", "gyrus", "mcp_config.json")
+				data, err := os.ReadFile(pluginConfig)
 				if err != nil {
-					t.Fatalf("Failed reading config file %s: %v", cfgFile, err)
+					t.Fatalf("Failed reading antigravity plugin config: %v", err)
 				}
 				if !strings.Contains(string(data), "gyrus") {
-					t.Errorf("Expected config %s to contain 'gyrus', got: %s", cfgFile, string(data))
+					t.Errorf("Expected plugin config to contain 'gyrus'")
+				}
+			} else {
+				if len(res.InstalledMCP) == 0 {
+					t.Fatalf("Expected at least 1 MCP config file registered for %s", target)
+				}
+
+				// Verify each registered config file has gyrus registered
+				for _, cfgFile := range res.InstalledMCP {
+					data, err := os.ReadFile(cfgFile)
+					if err != nil {
+						t.Fatalf("Failed reading config file %s: %v", cfgFile, err)
+					}
+					if !strings.Contains(string(data), "gyrus") {
+						t.Errorf("Expected config %s to contain 'gyrus', got: %s", cfgFile, string(data))
+					}
 				}
 			}
 
@@ -451,7 +454,7 @@ func TestRunClientSetupGlobalTargets(t *testing.T) {
 			if err != nil {
 				t.Fatalf("RunClientUninstall global failed for %s: %v", target, err)
 			}
-			if len(unres.UnregisteredMCP) == 0 {
+			if target != setup.ClientTargetAntigravity && len(unres.UnregisteredMCP) == 0 {
 				t.Errorf("Expected at least 1 unregistered MCP file for %s", target)
 			}
 		})

@@ -38,19 +38,19 @@ func TestCommandsRegistrationAndExecution(t *testing.T) {
 	rootCmd := &cobra.Command{Use: "gyrus"}
 	commands.Register(rootCmd, application)
 
-	// 1. gyrus init config
-	rootCmd.SetArgs([]string{"init", "config", "--profile", "local"})
+	// 1. gyrus config init
+	rootCmd.SetArgs([]string{"config", "init", "--profile", "local"})
 	if err := rootCmd.Execute(); err != nil {
-		t.Fatalf("Init config command failed: %v", err)
+		t.Fatalf("Config init command failed: %v", err)
 	}
 	if err := application.Reset(); err != nil {
 		t.Fatalf("Application reset failed: %v", err)
 	}
 
-	// 1b. gyrus init client
-	rootCmd.SetArgs([]string{"init", "client", "--target", "antigravity", "--mode", "local"})
+	// 1b. gyrus client install
+	rootCmd.SetArgs([]string{"client", "install", "--target", "antigravity", "--mode", "local"})
 	if err := rootCmd.Execute(); err != nil {
-		t.Fatalf("Init client command failed: %v", err)
+		t.Fatalf("Client install command failed: %v", err)
 	}
 
 	// 1c. gyrus init bare (must error)
