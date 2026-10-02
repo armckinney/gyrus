@@ -9,6 +9,7 @@ require (
 	github.com/mark3labs/mcp-go v0.56.0
 	github.com/pashagolub/pgxmock/v4 v4.9.0
 	github.com/spf13/cobra v1.10.2
+	github.com/yuin/goldmark v1.8.6
 	gocloud.dev v0.46.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.54.0

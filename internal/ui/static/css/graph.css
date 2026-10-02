@@ -1,0 +1,26 @@
+/* Graph Visualizer Page & Inspector Styles */
+.graph-container-wrapper {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - var(--header-height) - 5rem);
+    min-height: 550px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--bg-card);
+}
+
+#cy-container {
+    width: 100%;
+    height: 100%;
+    min-height: 550px;
+    display: block;
+}
+
+.graph-inspector-panel {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    max-width: 320px;
+    z-index: 10;
+}

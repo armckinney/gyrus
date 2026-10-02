@@ -79,9 +79,10 @@ Target: Expand data providers, transport interfaces, backend provider IaC, test 
   - *Target Test Requirements*: Scoped search ranking tests asserting local workspace context scores higher than external references, and fallback resolution tests ensuring cross-repo links resolve cleanly.
 
 ### 2.9 Web UI & Interactive Visualization Surface
-- [ ] **Embedded Web Dashboard (`gyrus ui`)**: Embedded single-page application (SPA) for visual graph topology exploration, ADR browsing, and document editing.
-- [ ] **Interactive Dependency Graph Visualizer**: D3.js or Cytoscape.js interactive node-edge graph visualization of document links (`depends_on`, `supersedes`, `implements`).
+- [x] **Embedded Web Dashboard (`gyrus ui`)**: Embedded hypermedia application for visual graph topology exploration, ADR browsing, and document inspection.
+- [x] **Interactive Dependency Graph Visualizer**: Cytoscape.js interactive node-edge graph visualization of document links (`depends_on`, `supersedes`, `implements`).
   - *Target Test Requirements*: E2E component tests for `gyrus ui` SPA routes, REST/WebSocket API contract tests, and graph layout rendering tests for node-edge link topologies.
+
 
 ### 2.10 Terraform Infrastructure as Code (IaC) for Backend Providers
 - [ ] **Multi-Cloud Storage & Database Infrastructure Modules**: Build reusable, production-ready Terraform modules (`terraform/modules/`) conforming strictly to repository module structure guidelines (`main.tf`, `locals.tf`, `variables.tf`, `outputs.tf`, `<resource_type>.tf`, standardized naming with `module "std_names"`, and standardized resource tagging):
@@ -91,10 +92,6 @@ Target: Expand data providers, transport interfaces, backend provider IaC, test 
   - **Enterprise PostgreSQL & Vector Search (`database_postgres`)**: Provisions managed PostgreSQL instances (AWS RDS/Aurora PostgreSQL, Azure Database for PostgreSQL Flexible Server, GCP Cloud SQL PostgreSQL) configured with high availability, automated backups, connection pooling, and pre-activated `pgvector` and `pg_trgm` extensions for Gyrus index, graph, and semantic vector search.
   - **CI Validation & QA Testing Registration**: Register test module instantiations in test configuration (`tests.tf`) to enforce linting (`tflint`, `terraform validate`), security static analysis (`tfsec`/`checkov`), and validation during CI static-analysis QA checks.
   - *Target Test Requirements*: `terraform fmt -check`, `terraform validate`, and `tflint` syntax/linting assertions; `tfsec`/`checkov` security scanning; automated provisioning and destroy test harness against test environments and local cloud emulators (LocalStack, Azurite, GCP Storage Emulator) and containerized PostgreSQL.
-
-### 2.10 Repository-Focused Context & Reference Scoping
-- [ ] **Workspace & Repository-Scoped Context Retrieval**: Scope context retrieval in `gyrus suggest-context` and `gyrus search` to prioritize local workspace repository context (codebase contracts, active PRDs, workspace ADRs) first before referencing broader contexts.
-- [ ] **Reference Fallback & Cross-Boundary Retrieval**: Implement hierarchical search scoring and reference resolution that isolates local workspace boundaries while cleanly linking back to global technical references, enterprise standards, and upstream governance models.
 
 ---
 

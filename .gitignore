@@ -68,6 +68,9 @@ coverage.out
 /gyrus
 /bin/gyrus
 
+# Gyrus runtime caches
+.gyrus/cache/
+
 # Explicitly preserve codebase packages, plugin and skill paths
 !/pkg/gyrus/**
 !/packaging/plugins/**

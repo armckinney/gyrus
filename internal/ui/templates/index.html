@@ -1,0 +1,44 @@
+{{define "content"}}
+<div class="content-container">
+    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end;">
+        <div>
+            <h1 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem;">
+                {{if .FilterTitle}}{{.FilterTitle}}{{else}}All Documents{{end}}
+            </h1>
+            <p class="text-muted">
+                {{if .FilterSubtitle}}{{.FilterSubtitle}}{{else}}Explore ADRs, specifications, and governance contracts managed by Gyrus.{{end}}
+            </p>
+        </div>
+        <div class="text-sm text-muted">
+            {{if .Documents}}{{len .Documents}}{{else}}0{{end}} document{{if and .Documents (eq (len .Documents) 1)}}{{else}}s{{end}}
+        </div>
+    </div>
+
+    {{if not .Documents}}
+    <div class="card text-center" style="padding: 3rem 1rem;">
+        <h3 class="font-bold text-base mb-2">No documents found</h3>
+        <p class="text-muted text-sm">No documentation records match the selected criteria.</p>
+    </div>
+    {{else}}
+    <div class="search-results-list">
+        {{range .Documents}}
+        <a href="/docs/{{.ID}}" class="search-card" hx-get="/docs/{{.ID}}" hx-target="#main-content" hx-push-url="true">
+            <div class="search-card-header">
+                <span class="search-card-title">{{.Title}}</span>
+                <span class="badge badge-{{.Status}}">{{.Status}}</span>
+            </div>
+            <div class="flex gap-2 mb-2">
+                <span class="badge badge-id">{{.ID}}</span>
+                <span class="badge badge-category">{{.Category}}</span>
+                <span class="badge badge-type">{{.Type}}</span>
+                <span class="text-xs text-muted" style="align-self: center;">v{{.Version}}</span>
+            </div>
+            {{if .Snippet}}
+            <p class="search-card-snippet">{{.Snippet}}</p>
+            {{end}}
+        </a>
+        {{end}}
+    </div>
+    {{end}}
+</div>
+{{end}}

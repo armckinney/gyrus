@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/static/logo.png" alt="Gyrus Logo" width="150" />
+  <img src="internal/ui/static/img/logo.png" alt="Gyrus Logo" width="150" />
 </p>
 
 # Gyrus: Unified Context Control Plane & Memory Engine

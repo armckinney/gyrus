@@ -91,5 +91,28 @@ func TestCommandsRegistrationAndExecution(t *testing.T) {
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("Get command failed: %v", err)
 	}
+
+	// 4. Verify gyrus ui and gyrus ui serve registration
+	uiCmd, _, err := rootCmd.Find([]string{"ui"})
+	if err != nil || uiCmd == nil {
+		t.Fatalf("Expected 'ui' command to be registered, found error: %v", err)
+	}
+	uiServeCmd, _, err := rootCmd.Find([]string{"ui", "serve"})
+	if err != nil || uiServeCmd == nil {
+		t.Fatalf("Expected 'ui serve' subcommand to be registered, found error: %v", err)
+	}
+	if uiServeCmd.Flags().Lookup("port") == nil {
+		t.Errorf("Expected --port flag on 'ui serve'")
+	}
+	if uiServeCmd.Flags().Lookup("host") == nil {
+		t.Errorf("Expected --host flag on 'ui serve'")
+	}
+	if uiServeCmd.Flags().Lookup("workspace") == nil {
+		t.Errorf("Expected --workspace flag on 'ui serve'")
+	}
+	if uiServeCmd.Flags().Lookup("config") == nil {
+		t.Errorf("Expected --config flag on 'ui serve'")
+	}
+
 	_ = os.RemoveAll
 }

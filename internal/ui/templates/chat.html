@@ -1,0 +1,157 @@
+{{define "content"}}
+<div class="chat-page-container">
+    {{if not .RunnerAvailable}}
+    <!-- CLI Not Detected Diagnostic Card -->
+    <div class="card p-6" style="max-width: 680px; margin: 2rem auto; text-align: center;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">⚡</div>
+        <h3 class="font-bold text-lg mb-2">Agent Client Not Detected</h3>
+        <p class="text-muted text-sm mb-4">
+            Gyrus is configured to use <code>{{.UIClient}}</code> as its interactive UI agent, but the executable could not be located in your system <code>PATH</code> or standard directories.
+        </p>
+        <div style="background: var(--bg-hover); padding: 0.75rem 1rem; border-radius: 6px; font-family: monospace; font-size: 0.85rem; text-align: left; margin-bottom: 1.5rem; overflow-x: auto;">
+            # Run this in your terminal to equip your client harness:<br>
+            <strong>gyrus client install --target {{.UIClient}}</strong>
+        </div>
+        <div class="flex justify-center gap-2">
+            <a href="/docs" class="btn btn-primary" hx-get="/docs" hx-target="#main-content" hx-push-url="true">
+                Browse Documentation Instead
+            </a>
+        </div>
+    </div>
+    {{else}}
+    <!-- Chat Header Bar -->
+    <div class="chat-header-bar">
+        <div class="flex items-center gap-2">
+            <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0;">Agent Chat</h2>
+        </div>
+
+        <!-- Chat Header Controls: History Modal & New Chat -->
+        <div class="chat-header-controls flex items-center gap-2">
+            <button type="button" id="btn-manage-sessions" class="btn btn-outline btn-xs" onclick="openSessionsModal()" title="View and manage conversation history" style="padding: 4px 8px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                History
+            </button>
+
+            <button type="button" id="btn-new-chat" class="btn btn-primary btn-xs" onclick="startNewChat()" style="padding: 4px 9px; font-size: 0.78rem;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 3px;">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                New Chat
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Chat Experience Viewport -->
+    <div class="chat-viewport">
+        <!-- Messages Area -->
+        <div id="chat-messages" class="chat-messages-container">
+            <!-- Empty State -->
+            <div id="chat-empty-state" class="chat-empty-state">
+                <img src="/static/img/logo.png" alt="Gyrus Logo" width="48" height="48" style="border-radius: 10px; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">How can {{.RunnerName}} help you today?</h3>
+                <p class="text-muted text-sm" style="max-width: 520px; margin-bottom: 1.5rem;">
+                    Ask questions across your entire OKF repository. The local agent has direct access to Gyrus MCP tools, ADR decisions, PRD roadmaps, and graph lineages.
+                </p>
+
+                <!-- Starter Prompt Chips -->
+                <div class="starter-chips">
+                    <button type="button" class="chip-btn" onclick="sendStarterPrompt('Summarize the system architecture and key ADR decisions')">
+                        <span class="chip-icon">🏛️</span> Summarize system architecture & ADRs
+                    </button>
+                    <button type="button" class="chip-btn" onclick="sendStarterPrompt('What is in the current PRD roadmap (prd-001)?')">
+                        <span class="chip-icon">📋</span> PRD roadmap & phase status
+                    </button>
+                    <button type="button" class="chip-btn" onclick="sendStarterPrompt('Explain the storage provider options (localfs, sqlite, postgres)')">
+                        <span class="chip-icon">💾</span> Storage engine providers
+                    </button>
+                    <button type="button" class="chip-btn" onclick="sendStarterPrompt('Are there any superseded or deprecated architectural documents?')">
+                        <span class="chip-icon">📜</span> Superseded decision contracts
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Input Fixed Container -->
+        <div class="chat-input-bar">
+            <form id="chat-form" onsubmit="handleChatSubmit(event)" class="chat-form">
+                <textarea id="chat-input"
+                          class="chat-textarea"
+                          rows="1"
+                          placeholder="Ask {{.RunnerName}} anything about this workspace..."
+                          onkeydown="handleChatKeyDown(event)"
+                          oninput="autoResizeTextarea(this)"></textarea>
+                <div class="chat-actions">
+                    <button type="button" id="btn-chat-stop" class="btn btn-outline btn-sm" style="display: none;" onclick="stopChatStream()">
+                        <span style="display: inline-block; width: 8px; height: 8px; background: currentColor; border-radius: 1px; margin-right: 4px;"></span>
+                        Stop
+                    </button>
+                    <button type="submit" id="btn-chat-send" class="btn btn-primary btn-sm">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Controls Row Under Prompt Box: Client Badge, Model & Effort Selectors + Disclaimer -->
+            <div class="chat-prompt-footer">
+                <div class="chat-prompt-controls">
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); display: flex; align-items: center; gap: 5px; font-weight: 500; font-size: 0.75rem; padding: 2px 7px; border-radius: 6px;">
+                        <span class="status-dot online"></span>
+                        {{.RunnerName}}
+                    </span>
+
+                    <div class="control-group flex items-center gap-1">
+                        <label for="chat-model-select" class="text-xs text-muted" style="font-weight: 500;">Model:</label>
+                        <select id="chat-model-select" class="chat-select chat-select-sm" onchange="onModelChange(this.value)">
+                            {{range .Models}}
+                            <option value="{{.ID}}" data-efforts="{{.EffortList}}">{{.Label}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+
+                    <div class="control-group flex items-center gap-1">
+                        <label for="chat-effort-select" class="text-xs text-muted" style="font-weight: 500;">Effort:</label>
+                        <select id="chat-effort-select" class="chat-select chat-select-sm" onchange="onEffortChange(this.value)">
+                            <option value="default">Auto</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="xhigh">Extra High</option>
+                            <option value="max">Max</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{end}}
+
+    <!-- Modal for Managing & Deleting Conversations -->
+    <div id="chat-sessions-modal" class="chat-modal-backdrop" style="display: none;" onclick="closeSessionsModalOnBackdrop(event)">
+        <div class="chat-modal-dialog">
+            <button type="button" class="chat-modal-close-btn" onclick="closeSessionsModal()" aria-label="Close modal" title="Close">✕</button>
+            <div class="chat-modal-header">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0;">Saved Conversations</h3>
+            </div>
+            <div id="chat-modal-sessions-list" class="chat-modal-body">
+                <!-- Dynamically populated via openSessionsModal() -->
+            </div>
+            <div class="chat-modal-footer flex justify-start items-center">
+                <button type="button" class="btn btn-outline btn-xs" onclick="clearAllSessions()" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4);">
+                    Clear All History
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+

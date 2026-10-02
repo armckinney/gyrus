@@ -12,4 +12,8 @@ graph:
 search:
   provider: sqlite_fts5
 
+# todo: this should just be owner_group/tenant
 default_owner_group: root
+
+ui:
+  client: antigravity

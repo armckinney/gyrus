@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"path/filepath"
 	"sync"
 
 	"github.com/armckinney/gyrus/internal/config"
@@ -73,6 +74,24 @@ func (a *App) StorageRoot() string {
 		return ""
 	}
 	return a.resolved.StorageRoot
+}
+
+// WorkspaceDir returns the root workspace directory for the application.
+func (a *App) WorkspaceDir() string {
+	if a == nil || a.resolved == nil {
+		return "."
+	}
+	if a.resolved.SourcePath != "" && a.resolved.Source == config.SourceWorkspace {
+		return filepath.Dir(a.resolved.SourcePath)
+	}
+	if a.resolved.StorageRoot != "" {
+		clean := filepath.Clean(a.resolved.StorageRoot)
+		if filepath.Base(clean) == ".gyrus" {
+			return filepath.Dir(clean)
+		}
+		return clean
+	}
+	return "."
 }
 
 // Config returns the resolved workspace or global configuration settings.
