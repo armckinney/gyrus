@@ -1,0 +1,81 @@
+{{define "content"}}
+<div class="content-container">
+    <div class="card" style="margin-bottom: 2rem;">
+        <div class="doc-header">
+            <h1 class="doc-title">{{.Doc.Title}}</h1>
+            <div class="meta-badges">
+                <span class="badge badge-id">ID: {{.Doc.ID}}</span>
+                <span class="badge badge-category">{{.Doc.Category}}</span>
+                <span class="badge badge-type">{{.Doc.Type}}</span>
+                <span class="badge badge-{{.Doc.Status}}">{{.Doc.Status}}</span>
+                <span class="badge badge-id">v{{.Doc.Version}}</span>
+                {{if .Doc.OwnerGroup}}
+                <span class="badge badge-id">Owner: {{.Doc.OwnerGroup}}</span>
+                {{end}}
+                {{if .Doc.Immutable}}
+                <span class="badge" style="background-color: rgba(239, 68, 68, 0.15); color: var(--color-danger);">🔒 Immutable</span>
+                {{end}}
+            </div>
+            {{if .Doc.Tags}}
+            <div class="flex gap-2" style="margin-top: 0.75rem; flex-wrap: wrap;">
+                {{range .Doc.Tags}}
+                <span class="text-xs" style="background: var(--bg-sidebar); border: 1px solid var(--border-color); padding: 1px 6px; border-radius: 4px; color: var(--text-muted);">#{{.}}</span>
+                {{end}}
+            </div>
+            {{end}}
+        </div>
+
+        <div class="markdown-body">
+            {{.ContentHTML}}
+        </div>
+
+        <div class="relationships-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 600;">Document Relationships & Lineage</h3>
+                <a href="/graph?focus={{.Doc.ID}}" class="btn btn-outline btn-sm" hx-get="/graph?focus={{.Doc.ID}}" hx-target="#main-content" hx-push-url="true">
+                    Explore in Graph Visualizer →
+                </a>
+            </div>
+
+            {{if and (not .OutgoingEdges) (not .IncomingEdges)}}
+            <p class="text-muted text-sm">No linked relationships recorded for this document.</p>
+            {{else}}
+                {{if .OutgoingEdges}}
+                <div style="margin-bottom: 1rem;">
+                    <div class="text-xs font-bold text-muted" style="text-transform: uppercase; margin-bottom: 0.5rem;">Outbound References</div>
+                    <div class="edge-list">
+                        {{range .OutgoingEdges}}
+                        <div class="edge-item">
+                            <span class="badge badge-type">{{.RelationshipType}}</span>
+                            <span style="color: var(--text-muted);">→</span>
+                            <a href="/docs/{{.ToDocumentID}}" style="color: var(--color-primary); font-weight: 600; text-decoration: none;" hx-get="/docs/{{.ToDocumentID}}" hx-target="#main-content" hx-push-url="true">
+                                {{.ToDocumentID}}
+                            </a>
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+                {{end}}
+
+                {{if .IncomingEdges}}
+                <div>
+                    <div class="text-xs font-bold text-muted" style="text-transform: uppercase; margin-bottom: 0.5rem;">Inbound References</div>
+                    <div class="edge-list">
+                        {{range .IncomingEdges}}
+                        <div class="edge-item">
+                            <a href="/docs/{{.FromDocumentID}}" style="color: var(--color-primary); font-weight: 600; text-decoration: none;" hx-get="/docs/{{.FromDocumentID}}" hx-target="#main-content" hx-push-url="true">
+                                {{.FromDocumentID}}
+                            </a>
+                            <span style="color: var(--text-muted);">→</span>
+                            <span class="badge badge-type">{{.RelationshipType}}</span>
+                            <span style="color: var(--text-muted); font-size: 0.8rem;">(this document)</span>
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+                {{end}}
+            {{end}}
+        </div>
+    </div>
+</div>
+{{end}}

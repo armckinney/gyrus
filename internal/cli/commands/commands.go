@@ -38,4 +38,5 @@ func Register(rootCmd *cobra.Command, application *app.App) {
 	// Setup & Server Commands
 	rootCmd.AddCommand(NewClientCmd(application))
 	rootCmd.AddCommand(NewMCPCmd(application))
+	rootCmd.AddCommand(NewUICmd(application))
 }

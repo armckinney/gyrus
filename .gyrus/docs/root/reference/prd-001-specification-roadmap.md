@@ -79,9 +79,10 @@ Target: Expand data providers, transport interfaces, backend provider IaC, test 
   - *Target Test Requirements*: Scoped search ranking tests asserting local workspace context scores higher than external references, and fallback resolution tests ensuring cross-repo links resolve cleanly.
 
 ### 2.9 Web UI & Interactive Visualization Surface
-- [ ] **Embedded Web Dashboard (`gyrus ui`)**: Embedded single-page application (SPA) for visual graph topology exploration, ADR browsing, and document editing.
-- [ ] **Interactive Dependency Graph Visualizer**: D3.js or Cytoscape.js interactive node-edge graph visualization of document links (`depends_on`, `supersedes`, `implements`).
+- [x] **Embedded Web Dashboard (`gyrus ui`)**: Embedded hypermedia application for visual graph topology exploration, ADR browsing, and document inspection.
+- [x] **Interactive Dependency Graph Visualizer**: Cytoscape.js interactive node-edge graph visualization of document links (`depends_on`, `supersedes`, `implements`).
   - *Target Test Requirements*: E2E component tests for `gyrus ui` SPA routes, REST/WebSocket API contract tests, and graph layout rendering tests for node-edge link topologies.
+
 
 ### 2.10 Terraform Infrastructure as Code (IaC) for Backend Providers
 - [ ] **Multi-Cloud Storage & Database Infrastructure Modules**: Build reusable, production-ready Terraform modules (`terraform/modules/`) conforming strictly to repository module structure guidelines (`main.tf`, `locals.tf`, `variables.tf`, `outputs.tf`, `<resource_type>.tf`, standardized naming with `module "std_names"`, and standardized resource tagging):

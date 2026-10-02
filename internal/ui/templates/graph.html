@@ -1,0 +1,74 @@
+{{define "content"}}
+<div style="height: 100%; display: flex; flex-direction: column;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+            <h2 style="font-size: 1.4rem; font-weight: 700;">Knowledge Graph Explorer</h2>
+            <p class="text-muted text-xs">Interactive visualization of OKF document dependencies and lineages.</p>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <!-- Layout Selector -->
+            <div style="display: flex; align-items: center; gap: 0.35rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; padding: 2px 8px;">
+                <label for="graph-layout-select" class="text-xs text-muted font-bold" style="text-transform: uppercase;">Layout:</label>
+                <select id="graph-layout-select" onchange="window.switchGraphLayout(this.value)" style="background: transparent; border: none; color: var(--text-primary); font-size: 0.85rem; outline: none; cursor: pointer; padding: 2px 0;">
+                    <option value="cose">Spacious Physics (Cose)</option>
+                    <option value="breadthfirst">Hierarchical Tree</option>
+                    <option value="concentric">Concentric Rings</option>
+                    <option value="circle">Circular</option>
+                </select>
+            </div>
+
+            <!-- Node Spacing Controls -->
+            <div class="flex gap-1" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; padding: 2px;">
+                <button type="button" class="btn btn-outline" style="padding: 3px 8px; font-size: 0.75rem;" onclick="window.scaleGraph(1.3)" title="Spread nodes further apart">
+                    Spread Out +
+                </button>
+                <button type="button" class="btn btn-outline" style="padding: 3px 8px; font-size: 0.75rem;" onclick="window.scaleGraph(0.77)" title="Bring nodes closer together">
+                    Compact -
+                </button>
+            </div>
+
+            <!-- Zoom & Fit Controls -->
+            <div class="flex gap-1" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; padding: 2px;">
+                <button type="button" class="btn btn-outline" style="padding: 3px 8px; font-size: 0.85rem; font-weight: bold;" onclick="window.zoomGraph(1.25)" title="Zoom In">
+                    +
+                </button>
+                <button type="button" class="btn btn-outline" style="padding: 3px 8px; font-size: 0.85rem; font-weight: bold;" onclick="window.zoomGraph(0.8)" title="Zoom Out">
+                    -
+                </button>
+                <button type="button" class="btn btn-outline" style="padding: 3px 8px; font-size: 0.75rem;" onclick="window.fitGraph()" title="Fit entire graph">
+                    Fit ⛶
+                </button>
+            </div>
+
+            <!-- Legend Badges -->
+            <div class="flex gap-1">
+                <span class="badge" style="background-color: rgba(139, 92, 246, 0.2); color: #8b5cf6;">ADRs</span>
+                <span class="badge" style="background-color: rgba(59, 130, 246, 0.2); color: #3b82f6;">PRDs</span>
+                <span class="badge" style="background-color: rgba(6, 182, 212, 0.2); color: #06b6d4;">Specs</span>
+                <span class="badge" style="background-color: rgba(156, 163, 175, 0.2); color: #9ca3af;">Superseded</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="graph-container-wrapper" style="flex: 1; min-height: 580px;">
+        <div id="cy-container" data-focus="{{.FocusDocID}}" style="width: 100%; height: 100%; min-height: 580px;"></div>
+        <div id="node-inspector" class="graph-inspector-panel"></div>
+    </div>
+
+    <script>
+        (function() {
+            function load() {
+                if (window.initGraph) {
+                    window.initGraph('cy-container', '/api/graph', '{{.FocusDocID}}');
+                }
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', load);
+            } else {
+                load();
+            }
+        })();
+    </script>
+</div>
+{{end}}

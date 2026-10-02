@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .Title}}{{.Title}} · {{end}}Gyrus Documentation</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+    <script src="/static/js/htmx.min.js"></script>
+    <script src="/static/js/cytoscape.min.js"></script>
+    <script src="/static/js/app.js"></script>
+</head>
+<body>
+    <header class="app-header">
+        <a href="/docs" class="brand-section" hx-get="/docs" hx-target="#main-content" hx-push-url="true">
+            <img src="/static/img/logo.png" alt="Gyrus Logo" width="28" height="28" style="border-radius: 6px; object-fit: contain;">
+            <span>Gyrus</span>
+            <span class="brand-badge">{{.StorageBackend}}</span>
+        </a>
+
+        <div class="search-section">
+            <div class="search-input-wrapper">
+                <input type="text"
+                       id="search-input"
+                       name="q"
+                       class="search-input"
+                       placeholder="Search documentation..."
+                       value="{{.SearchQuery}}"
+                       hx-get="/search"
+                       hx-trigger="input changed delay:250ms, search"
+                       hx-target="#main-content"
+                       hx-push-url="true"
+                       autocomplete="off">
+                <span class="search-shortcut">/</span>
+            </div>
+        </div>
+
+
+        <div class="header-actions">
+            <a href="/graph" id="header-graph-btn" class="btn btn-outline {{if eq .ActiveNav "graph"}}active{{end}}" hx-get="/graph" hx-target="#main-content" hx-push-url="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+                Graph View
+            </a>
+            <button class="btn-icon" onclick="toggleTheme()" title="Toggle Theme" aria-label="Toggle Theme">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <aside class="app-sidebar">
+            <div>
+                <div class="nav-group-title">Navigation</div>
+                <ul class="nav-list">
+                    <li>
+                        <a href="/docs" id="nav-all-docs" class="nav-link {{if eq .ActiveNav "all"}}active{{end}}" hx-get="/docs" hx-target="#main-content" hx-push-url="true">
+                            <span>All Documents</span>
+                            <span class="nav-count">{{.TotalDocs}}</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/graph" id="nav-knowledge-graph" class="nav-link {{if eq .ActiveNav "graph"}}active{{end}}" hx-get="/graph" hx-target="#main-content" hx-push-url="true">
+                            <span>Knowledge Graph</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+
+            <div>
+                <div class="nav-group-title">Categories</div>
+                <ul class="nav-list">
+                    {{range .CategoryCounts}}
+                    <li>
+                        <a href="/docs?category={{.Name}}" class="nav-link {{if eq $.ActiveCategory .Name}}active{{end}}" hx-get="/docs?category={{.Name}}" hx-target="#main-content" hx-push-url="true">
+                            <span>{{.Name}}</span>
+                            <span class="nav-count">{{.Count}}</span>
+                        </a>
+                    </li>
+                    {{end}}
+                </ul>
+            </div>
+
+            <div>
+                <div class="nav-group-title">Document Types</div>
+                <ul class="nav-list">
+                    {{range .TypeCounts}}
+                    <li>
+                        <a href="/docs?type={{.Name}}" class="nav-link {{if eq $.ActiveType .Name}}active{{end}}" hx-get="/docs?type={{.Name}}" hx-target="#main-content" hx-push-url="true">
+                            <span>{{.Name}}</span>
+                            <span class="nav-count">{{.Count}}</span>
+                        </a>
+                    </li>
+                    {{end}}
+                </ul>
+            </div>
+        </aside>
+
+        <main id="main-content" class="app-main">
+            {{template "content" .}}
+        </main>
+    </div>
+</body>
+</html>
