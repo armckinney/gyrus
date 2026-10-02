@@ -48,6 +48,10 @@ type Config struct {
 	Postgres struct {
 		ConnectionString string `yaml:"connection_string" json:"connection_string"`
 	} `yaml:"postgres" json:"postgres"`
+	UI struct {
+		Client  string `yaml:"client" json:"client"`
+		Command string `yaml:"command" json:"command"`
+	} `yaml:"ui" json:"ui"`
 }
 
 // StorageProvider returns the configured storage provider.
@@ -96,6 +100,22 @@ func (c *Config) OwnerGroup() string {
 		return DefaultOwnerGroup
 	}
 	return c.DefaultOwnerGroup
+}
+
+// UIClient returns the configured UI client harness (e.g. "antigravity", "claude").
+func (c *Config) UIClient() string {
+	if c == nil {
+		return ""
+	}
+	return c.UI.Client
+}
+
+// UICommand returns any optional custom executable command for the UI agent.
+func (c *Config) UICommand() string {
+	if c == nil {
+		return ""
+	}
+	return c.UI.Command
 }
 
 // ConfigSource indicates which configuration tier provided the resolved config.

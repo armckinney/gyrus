@@ -93,12 +93,17 @@ func (s *Server) Handler() http.Handler {
 
 	// API endpoints
 	mux.HandleFunc("/api/graph", s.handlers.APIGraph)
+	mux.HandleFunc("/api/chat/stream", s.handlers.ChatStream)
+	mux.HandleFunc("/api/chat/sessions", s.handlers.APIChatSessions)
+	mux.HandleFunc("/api/chat/sessions/", s.handlers.APIChatSessionDetail)
+	mux.HandleFunc("/api/chat/models", s.handlers.APIChatModels)
 
 	// Web UI pages & fragments
 	mux.HandleFunc("/search", s.handlers.Search)
 	mux.HandleFunc("/graph", s.handlers.Graph)
+	mux.HandleFunc("/chat", s.handlers.Chat)
 	mux.HandleFunc("/docs/", s.handlers.Doc)
-	mux.HandleFunc("/docs", s.handlers.Home)
+	mux.HandleFunc("/docs", s.handlers.Docs)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			s.handlers.Home(w, r)

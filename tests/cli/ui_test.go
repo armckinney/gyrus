@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -181,5 +183,97 @@ func TestUI_CLI_ServeE2E(t *testing.T) {
 	}
 	if !foundEdge {
 		t.Errorf("expected prd-e2e-001 -> adr-e2e-001 edge in graph response, got %+v", graphData.Edges)
+	}
+}
+
+func TestUI_CLI_ServeChatLandingPage(t *testing.T) {
+	tempWorkspace := t.TempDir()
+
+	// Initialize config in workspace
+	initCmd := exec.Command(gyrusBinPath, "config", "init", "--profile", "local")
+	initCmd.Dir = tempWorkspace
+	if out, err := initCmd.CombinedOutput(); err != nil {
+		t.Fatalf("config init failed: %v, output: %s", err, string(out))
+	}
+
+	// Append ui.client: antigravity to .gyrus.yaml
+	cfgPath := tempWorkspace + "/.gyrus.yaml"
+	cfgContent := "\nui:\n  client: antigravity\n"
+	f, err := os.OpenFile(cfgPath, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		t.Fatalf("failed opening config file: %v", err)
+	}
+	if _, err := f.WriteString(cfgContent); err != nil {
+		f.Close()
+		t.Fatalf("failed writing ui config: %v", err)
+	}
+	f.Close()
+
+	port := 19081
+	baseURL := fmt.Sprintf("http://127.0.0.1:%d", port)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, gyrusBinPath, "ui", "serve",
+		"--port", fmt.Sprintf("%d", port),
+		"--workspace", tempWorkspace,
+	)
+	cmd.Dir = tempWorkspace
+
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("failed starting gyrus ui serve: %v", err)
+	}
+	defer func() {
+		cancel()
+		_ = cmd.Wait()
+	}()
+
+	client := &http.Client{Timeout: 2 * time.Second}
+	ready := false
+	for i := 0; i < 30; i++ {
+		time.Sleep(100 * time.Millisecond)
+		resp, err := client.Get(baseURL + "/")
+		if err == nil {
+			resp.Body.Close()
+			ready = true
+			break
+		}
+	}
+	if !ready {
+		t.Fatalf("server on %s did not become ready in time", baseURL)
+	}
+
+	// 1. Verify root / renders Agent Chat
+	respHome, err := client.Get(baseURL + "/")
+	if err != nil {
+		t.Fatalf("failed fetching /: %v", err)
+	}
+	defer respHome.Body.Close()
+	homeBytes, _ := io.ReadAll(respHome.Body)
+	if !strings.Contains(string(homeBytes), "Agent Chat") {
+		t.Errorf("expected root / to contain 'Agent Chat', got: %s", string(homeBytes))
+	}
+
+	// 2. Verify /docs renders document explorer
+	respDocs, err := client.Get(baseURL + "/docs")
+	if err != nil {
+		t.Fatalf("failed fetching /docs: %v", err)
+	}
+	defer respDocs.Body.Close()
+	docsBytes, _ := io.ReadAll(respDocs.Body)
+	if !strings.Contains(string(docsBytes), "All Documents") {
+		t.Errorf("expected /docs to contain 'All Documents', got: %s", string(docsBytes))
+	}
+
+	// 3. Verify /api/chat/stream SSE endpoint handles empty prompt
+	respStream, err := client.Post(baseURL+"/api/chat/stream", "application/x-www-form-urlencoded", strings.NewReader("message="))
+	if err != nil {
+		t.Fatalf("failed calling /api/chat/stream: %v", err)
+	}
+	defer respStream.Body.Close()
+	streamBytes, _ := io.ReadAll(respStream.Body)
+	if !strings.Contains(string(streamBytes), "cannot be empty") {
+		t.Errorf("expected stream to contain error frame, got: %s", string(streamBytes))
 	}
 }

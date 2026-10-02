@@ -18,7 +18,7 @@ type Manager struct {
 
 // NewManager parses and caches layout and view templates.
 func NewManager() (*Manager, error) {
-	views := []string{"index.html", "doc.html", "search_results.html", "graph.html"}
+	views := []string{"index.html", "doc.html", "search_results.html", "graph.html", "chat.html"}
 	full := make(map[string]*template.Template)
 	partial := make(map[string]*template.Template)
 

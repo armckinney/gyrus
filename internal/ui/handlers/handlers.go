@@ -10,6 +10,7 @@ import (
 
 	"github.com/armckinney/gyrus/internal/app"
 	"github.com/armckinney/gyrus/internal/domain/lifecycle"
+	"github.com/armckinney/gyrus/internal/ui/agent"
 	"github.com/armckinney/gyrus/internal/ui/markdown"
 	"github.com/armckinney/gyrus/internal/ui/templates"
 	"github.com/armckinney/gyrus/pkg/gyrus"
@@ -38,16 +39,60 @@ type Handlers struct {
 	engine    *lifecycle.Engine
 	templates *templates.Manager
 	renderer  *markdown.Renderer
+	runner       agent.Runner
+	sessionStore *agent.SessionStore
 }
 
 // New creates a new Handlers instance.
 func New(application *app.App, engine *lifecycle.Engine, tmpl *templates.Manager, renderer *markdown.Renderer) *Handlers {
-	return &Handlers{
-		app:       application,
-		engine:    engine,
-		templates: tmpl,
-		renderer:  renderer,
+	var runner agent.Runner
+	var sessionStore *agent.SessionStore
+
+	if application != nil {
+		if application.Config() != nil {
+			uiClient := application.Config().UIClient()
+			uiCmd := application.Config().UICommand()
+			if uiClient != "" || uiCmd != "" {
+				runner = agent.NewRunner(uiClient, uiCmd, application.WorkspaceDir())
+			}
+		}
+		persistPath := ""
+		if application.WorkspaceDir() != "" {
+			persistPath = fmt.Sprintf("%s/.gyrus/cache/ui_sessions.json", application.WorkspaceDir())
+		}
+		sessionStore = agent.NewSessionStore(persistPath)
+	} else {
+		sessionStore = agent.NewSessionStore("")
 	}
+
+	return &Handlers{
+		app:          application,
+		engine:       engine,
+		templates:    tmpl,
+		renderer:     renderer,
+		runner:       runner,
+		sessionStore: sessionStore,
+	}
+}
+
+// SessionStore returns the active agent session store.
+func (h *Handlers) SessionStore() *agent.SessionStore {
+	return h.sessionStore
+}
+
+// SetRunner overrides the agent runner (useful for tests).
+func (h *Handlers) SetRunner(r agent.Runner) {
+	h.runner = r
+}
+
+func (h *Handlers) uiClientName() string {
+	if h.runner != nil {
+		return h.runner.ClientType()
+	}
+	if h.app != nil && h.app.Config() != nil {
+		return h.app.Config().UIClient()
+	}
+	return ""
 }
 
 // isHTMX checks whether the request originates from an HTMX partial swap.
@@ -63,8 +108,18 @@ func (h *Handlers) storageBackend() string {
 	return "localfs"
 }
 
-// Home handles `/` and `/docs`, rendering the documentation list with taxonomy sidebar.
+// Home handles `/`. If an agent client is configured, it renders the chat landing page.
+// Otherwise, it delegates to Docs to display the document explorer.
 func (h *Handlers) Home(w http.ResponseWriter, r *http.Request) {
+	if h.uiClientName() != "" {
+		h.Chat(w, r)
+		return
+	}
+	h.Docs(w, r)
+}
+
+// Docs handles `/docs`, rendering the documentation list with taxonomy sidebar.
+func (h *Handlers) Docs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	categoryFilter := r.URL.Query().Get("category")
 	typeFilter := r.URL.Query().Get("type")
@@ -142,7 +197,8 @@ func (h *Handlers) Home(w http.ResponseWriter, r *http.Request) {
 	data := map[string]any{
 		"Title":          "Documents",
 		"StorageBackend": h.storageBackend(),
-		"ActiveNav":      "all",
+		"ActiveNav":      "docs",
+		"UIClient":       h.uiClientName(),
 		"ActiveCategory": categoryFilter,
 		"ActiveType":     typeFilter,
 		"TotalDocs":      len(allResults),
@@ -191,7 +247,8 @@ func (h *Handlers) Doc(w http.ResponseWriter, r *http.Request) {
 	data := map[string]any{
 		"Title":          doc.Title,
 		"StorageBackend": h.storageBackend(),
-		"ActiveNav":      "all",
+		"ActiveNav":      "docs",
+		"UIClient":       h.uiClientName(),
 		"ActiveCategory": string(doc.Category),
 		"ActiveType":     string(doc.Type),
 		"TotalDocs":      len(allResults),
@@ -250,6 +307,7 @@ func (h *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 	data := map[string]any{
 		"Title":          fmt.Sprintf("Search: %s", query),
 		"StorageBackend": h.storageBackend(),
+		"UIClient":       h.uiClientName(),
 		"SearchQuery":    query,
 		"TotalDocs":      len(allResults),
 		"CategoryCounts": categoryCounts,
@@ -275,6 +333,7 @@ func (h *Handlers) Graph(w http.ResponseWriter, r *http.Request) {
 		"Title":          "Knowledge Graph",
 		"StorageBackend": h.storageBackend(),
 		"ActiveNav":      "graph",
+		"UIClient":       h.uiClientName(),
 		"TotalDocs":      len(allResults),
 		"CategoryCounts": categoryCounts,
 		"TypeCounts":     typeCounts,

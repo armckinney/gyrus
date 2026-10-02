@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/armckinney/gyrus/internal/app"
 	"github.com/armckinney/gyrus/pkg/gyrus"
@@ -26,6 +27,10 @@ func NewSearchCmd(application *app.App) *cobra.Command {
 		Use:   "search",
 		Short: "Execute search query over OKF documents and metadata",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if queryStr == "" && len(args) > 0 {
+				queryStr = strings.Join(args, " ")
+			}
+
 			engine, err := application.Engine()
 			if err != nil {
 				return err

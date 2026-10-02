@@ -7,11 +7,12 @@
     <link rel="stylesheet" href="/static/css/app.css">
     <script src="/static/js/htmx.min.js"></script>
     <script src="/static/js/cytoscape.min.js"></script>
+    <script src="/static/js/mermaid.min.js"></script>
     <script src="/static/js/app.js"></script>
 </head>
 <body>
     <header class="app-header">
-        <a href="/docs" class="brand-section" hx-get="/docs" hx-target="#main-content" hx-push-url="true">
+        <a href="{{if .UIClient}}/{{else}}/docs{{end}}" class="brand-section" hx-get="{{if .UIClient}}/{{else}}/docs{{end}}" hx-target="#main-content" hx-push-url="true">
             <img src="/static/img/logo.png" alt="Gyrus Logo" width="28" height="28" style="border-radius: 6px; object-fit: contain;">
             <span>Gyrus</span>
             <span class="brand-badge">{{.StorageBackend}}</span>
@@ -67,8 +68,21 @@
             <div>
                 <div class="nav-group-title">Navigation</div>
                 <ul class="nav-list">
+                    {{if .UIClient}}
                     <li>
-                        <a href="/docs" id="nav-all-docs" class="nav-link {{if eq .ActiveNav "all"}}active{{end}}" hx-get="/docs" hx-target="#main-content" hx-push-url="true">
+                        <a href="/" id="nav-agent-chat" class="nav-link {{if eq .ActiveNav "chat"}}active{{end}}" hx-get="/" hx-target="#main-content" hx-push-url="true">
+                            <span style="display: flex; align-items: center; gap: 7px;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                                Agent Chat
+                            </span>
+                            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.65rem; padding: 1px 5px; font-weight: 600;">active</span>
+                        </a>
+                    </li>
+                    {{end}}
+                    <li>
+                        <a href="/docs" id="nav-all-docs" class="nav-link {{if or (eq .ActiveNav "docs") (eq .ActiveNav "all")}}active{{end}}" hx-get="/docs" hx-target="#main-content" hx-push-url="true">
                             <span>All Documents</span>
                             <span class="nav-count">{{.TotalDocs}}</span>
                         </a>
