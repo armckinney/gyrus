@@ -1,19 +1,14 @@
 {
   "features": {
-    "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-antigravity.tgz": {
+    "https://github.com/armckinney/containers/releases/download/v1.0.13/devcontainer-feature-antigravity.tgz": {
       "version": "1.5.0",
-      "resolved": "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-antigravity.tgz",
-      "integrity": "sha256:498d78ef64780ba211c91738a19c941d92f5a952093695f3c334bc129e6ee62c"
+      "resolved": "https://github.com/armckinney/containers/releases/download/v1.0.13/devcontainer-feature-antigravity.tgz",
+      "integrity": "sha256:cab1843074e4bc4ef1282486640796b8ddca0cfb4c71ff246c89936034c69c9e"
     },
-    "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-docker-in-docker.tgz": {
+    "https://github.com/armckinney/containers/releases/download/v1.0.13/devcontainer-feature-vscode-customizations.tgz": {
       "version": "1.1.0",
-      "resolved": "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-docker-in-docker.tgz",
-      "integrity": "sha256:ca8b92ab8b91ea6b63ea6bc9564d0a3564f5e120c4af4b5723e1d2fb79cee0e3"
-    },
-    "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-vscode-customizations.tgz": {
-      "version": "1.1.0",
-      "resolved": "https://github.com/armckinney/containers/releases/download/v1.0.11/devcontainer-feature-vscode-customizations.tgz",
-      "integrity": "sha256:079c640be1fa0fa5c5e2825af080d4340f267af6ab44546bd404805635c16eef"
+      "resolved": "https://github.com/armckinney/containers/releases/download/v1.0.13/devcontainer-feature-vscode-customizations.tgz",
+      "integrity": "sha256:cd7a458a63ba7dcfd1c1fd9407041822e51c8c8c50eb2ce1e2e505461eb45a0a"
     }
   }
 }
