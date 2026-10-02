@@ -80,7 +80,6 @@ func TestUI_CLI_ServeE2E(t *testing.T) {
 		t.Fatalf("link docs failed: %v, output: %s", err, string(out))
 	}
 
-
 	testPort := 39182
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

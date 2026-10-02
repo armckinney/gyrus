@@ -283,4 +283,3 @@ func (s *SessionStore) DeleteAllSessions() {
 	s.sessions = make(map[string]*ChatSession)
 	_ = s.persistLocked()
 }
-

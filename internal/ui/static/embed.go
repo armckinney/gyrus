@@ -9,7 +9,6 @@ import (
 //go:embed css/* js/* img/*
 var staticFS embed.FS
 
-
 // FS returns an http.FileSystem backed by the embedded static assets.
 func FS() http.FileSystem {
 	return http.FS(staticFS)

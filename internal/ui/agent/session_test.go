@@ -91,4 +91,3 @@ func TestSessionStore_Lifecycle(t *testing.T) {
 		t.Errorf("expected 0 sessions after DeleteAllSessions, got %d", len(reloaded.ListSessions()))
 	}
 }
-

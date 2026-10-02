@@ -116,4 +116,3 @@ func TestCommandsRegistrationAndExecution(t *testing.T) {
 
 	_ = os.RemoveAll
 }
-
