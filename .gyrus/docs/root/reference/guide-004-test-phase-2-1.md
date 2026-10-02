@@ -16,91 +16,61 @@ tags:
   - skills
 dependencies:
   - prd-001-specification-roadmap
-  - gyrus-201-git-storage-driver
-  - gyrus-202-cloud-blob-storage-driver
-  - gyrus-203-postgres-storage-index-driver
-  - gyrus-204-postgres-fts-search-driver
-  - gyrus-205-vector-hybrid-search-driver
+  - spec-201-git-storage-driver
+  - spec-202-cloud-blob-storage-driver
+  - spec-203-postgres-storage-index-driver
+  - spec-204-postgres-fts-search-driver
+  - spec-205-vector-hybrid-search-driver
 ---
 
 # Phase 2.1 Manual Validation & Integration Testing Guide
 
 This guide provides step-by-step instructions to manually test and validate workspace initialization (`../gyrus init`), both agent skills (`gyrus-cli` and `gyrus-mcp`), and each of the five storage and search provider drivers implemented in **Phase 2.1**:
 
-0. **Workspace Initialization & Agent Skill Equipping (`../gyrus init`)**
-1. **Git Remote Storage Driver (`git`)** (`GYRUS-201`)
-2. **Cloud Blob Storage Driver (`blob`)** (`GYRUS-202`)
-3. **PostgreSQL Storage & Index Driver (`postgres`)** (`GYRUS-203`)
-4. **PostgreSQL Full-Text Search Engine (`postgres_fts`)** (`GYRUS-204`)
-5. **Semantic Vector & Hybrid Search Driver (`vector`)** (`GYRUS-205`)
+0. **Workspace Configuration & Agent Plugin Setup (`gyrus config init` & `gyrus client install`)**
+1. **Git Remote Storage Driver (`git`)** (`spec-201-git-storage-driver`)
+2. **Cloud Blob Storage Driver (`blob`)** (`spec-202-cloud-blob-storage-driver`)
+3. **PostgreSQL Storage & Index Driver (`postgres`)** (`spec-203-postgres-storage-index-driver`)
+4. **PostgreSQL Full-Text Search Engine (`postgres_fts`)** (`spec-204-postgres-fts-search-driver`)
+5. **Semantic Vector & Hybrid Search Driver (`vector`)** (`spec-205-vector-hybrid-search-driver`)
 
 ---
 
-## 🧪 0. Validating Workspace Initialization & Skill Equipping (`../gyrus init`)
+## 🧪 0. Validating Workspace Configuration & Agent Setup (`gyrus config init` & `gyrus client install`)
 
-Tests master workspace initialization, containerized & local stdio MCP registration, global setup (`--global`), agent skill equipping (`gyrus-cli` and `gyrus-mcp`), and profile selection.
+> [!NOTE]
+> Workspace configuration and agent installation are decoupled into explicit subcommands: `gyrus config init` for repository configuration and `gyrus client install` for agent plugin installation.
 
-### 0.1 Full Workspace Initialization Test
+### 0.1 Full Workspace Configuration Test
 ```bash
 # 1. Create a clean test directory
 mkdir -p gyrus-init-test && cd gyrus-init-test
 
-# 2. Run master workspace initialization (Containerized Stdio mode by default)
-../gyrus init
+# 2. Run workspace configuration initialization
+../gyrus config init
 
-# 3. Verify workspace root directory layout (zero docs/ folder eagerly created)
+# 3. Verify workspace root directory layout
 ls -la
 
 # 4. Verify .gyrus.yaml configuration file created
 cat .gyrus.yaml
 
-# 5. Verify agent skills equipped (.agents/skills/gyrus-cli and .agents/skills/gyrus-mcp)
-ls -la .agents/skills/gyrus-cli/SKILL.md .agents/skills/gyrus-mcp/SKILL.md
+# 5. Equip Agent Plugin for AI coding assistants
+../gyrus client install --target antigravity
+../gyrus client install --target copilot
 
-# 6. Verify stdio MCP servers registered for target platforms
-cat .antigravity/mcp.json   # Google Antigravity
-cat .claude/mcp.json        # Claude Code & Desktop
-cat .codex/mcp.json         # OpenAI Codex
-cat .vscode/mcp.json        # GitHub Copilot / VS Code (includes mcpServers & servers blocks)
+# 6. Verify agent plugin and MCP configurations created
+ls -la .agents/plugins/gyrus/plugin.json .agents/plugins/gyrus/skills/gyrus/SKILL.md
+cat .vscode/mcp.json
 ```
 
-### 0.2 Local Binary & Global Setup Modes
+### 0.2 Global Configuration Mode
 ```bash
-# Register MCP servers using local binary execution mode instead of Docker
-../gyrus init --mcp-mode local
+# Initialize global configuration in user home directory (~)
+../gyrus config init --global
 
-# Register MCP servers globally in user home (~) across all agent tools
-../gyrus init --global
-```
-
-### 0.3 Tool-Targeted MCP & Skill Initialization Test
-```bash
-# Target Google Antigravity only
-../gyrus init --mcp-target antigravity
-
-# Target Claude Desktop / Claude Code only
-../gyrus init --mcp-target claude --skill-target claude
-
-# Target GitHub Copilot / VS Code only
-../gyrus init --mcp-target copilot
-
-# Target OpenAI Codex only
-../gyrus init --mcp-target codex
-```
-
-### 0.4 Selective Component & Headless Initialization Test
-```bash
-# Skip generating .gyrus.yaml config file (only equip MCP & skills)
-../gyrus init --no-config
-
-# Skip MCP server registration for headless / server / CI environments
-../gyrus init --no-mcp
-
-# Skip agent skills
-../gyrus init --no-skill
-
-# Equip ONLY MCP servers (skip config generation and skills)
-../gyrus init --no-config --no-skill
+# Equip client plugin globally
+../gyrus client install --target antigravity --global
 ```
 
 ### 0.5 Validating `gyrus-cli` Agent Skill (Terminal Agents)

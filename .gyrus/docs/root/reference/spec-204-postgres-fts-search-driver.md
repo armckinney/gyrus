@@ -1,5 +1,5 @@
 ---
-id: gyrus-204-postgres-fts-search-driver
+id: spec-204-postgres-fts-search-driver
 title: 'GYRUS-204: PostgreSQL Full-Text Search Engine'
 category: technical
 type: specification

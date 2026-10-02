@@ -146,10 +146,10 @@ Gyrus decouples workspace repository configuration from client tool distribution
 #### Step 2a: Initialize Workspace or Global Configuration
 ```bash
 # Initialize workspace configuration (.gyrus.yaml in current repository)
-gyrus init config
+gyrus config init
 
 # Or initialize global user-wide defaults (~/.gyrus.yaml across all repositories)
-gyrus init config --global
+gyrus config init --global
 
 # Inspect the resolved configuration at any time
 gyrus config show
@@ -158,7 +158,7 @@ Generates `.gyrus.yaml` in the workspace root (or `~/.gyrus.yaml` when using `--
 
 #### Step 2b: Install Agent Plugin & Register MCP Server
 ```bash
-gyrus init client --target antigravity
+gyrus client install --target antigravity
 ```
 Installs the Gyrus Agent Plugin package (compliant with the [Agent Plugins Standard 1.0.0](https://agent-plugins.org/)) into your project or user environment, equipping the unified Gyrus skill (`skills/gyrus/SKILL.md`), instructions (`rules/AGENTS.md`), and registering stdio MCP servers for your target AI coding assistant (`antigravity`, `claude`, `codex`, or `copilot`).
 

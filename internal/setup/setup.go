@@ -120,12 +120,14 @@ func RunClientSetup(opts ClientSetupOptions) (*ClientSetupResult, error) {
 		result.PluginFiles = files
 	}
 
-	// 2. Register MCP server configurations
-	mcpFiles, err := RegisterMCPServer(opts.WorkspaceDir, MCPTarget(target), opts.Mode, opts.Global, opts.BinaryCmd, opts.ContainerImage)
-	if err != nil {
-		return nil, fmt.Errorf("failed registering MCP server: %w", err)
+	// 2. Register MCP server configurations for targets without plugin auto-MCP discovery
+	if target != ClientTargetAntigravity {
+		mcpFiles, err := RegisterMCPServer(opts.WorkspaceDir, MCPTarget(target), opts.Mode, opts.Global, opts.BinaryCmd, opts.ContainerImage)
+		if err != nil {
+			return nil, fmt.Errorf("failed registering MCP server: %w", err)
+		}
+		result.InstalledMCP = mcpFiles
 	}
-	result.InstalledMCP = mcpFiles
 
 	return result, nil
 }
@@ -185,12 +187,14 @@ func RunClientUninstall(opts ClientUninstallOptions) (*ClientUninstallResult, er
 		}
 	}
 
-	// 2. Unregister MCP server configurations
-	unregistered, err := UnregisterMCPServer(opts.WorkspaceDir, MCPTarget(target), opts.Global)
-	if err != nil {
-		return nil, fmt.Errorf("failed unregistering MCP server: %w", err)
+	// 2. Unregister MCP server configurations for targets without plugin auto-MCP discovery
+	if target != ClientTargetAntigravity {
+		unregistered, err := UnregisterMCPServer(opts.WorkspaceDir, MCPTarget(target), opts.Global)
+		if err != nil {
+			return nil, fmt.Errorf("failed unregistering MCP server: %w", err)
+		}
+		result.UnregisteredMCP = unregistered
 	}
-	result.UnregisteredMCP = unregistered
 
 	// 3. For Antigravity, perform permission grants and runtime data cleanup
 	if target == ClientTargetAntigravity {
@@ -220,7 +224,7 @@ func CleanupAntigravityData() {
 						var filtered []interface{}
 						for _, item := range allow {
 							s, ok := item.(string)
-							if ok && (strings.HasPrefix(s, "mcp(gyrus") || strings.HasPrefix(s, "mcp(gyrus_gyrus")) {
+							if ok && strings.HasPrefix(s, "mcp(gyrus") {
 								modified = true
 								continue
 							}

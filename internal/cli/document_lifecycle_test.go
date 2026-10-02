@@ -21,14 +21,14 @@ func TestCLIInitAndCreateAndGet(t *testing.T) {
 		t.Fatalf("Failed to chdir: %v", err)
 	}
 
-	// 1. gyrus init config
+	// 1. gyrus config init
 	rootCmd, err := BuildRootCmd()
 	if err != nil {
 		t.Fatalf("BuildRootCmd failed: %v", err)
 	}
-	rootCmd.SetArgs([]string{"init", "config"})
+	rootCmd.SetArgs([]string{"config", "init"})
 	if err := rootCmd.Execute(); err != nil {
-		t.Fatalf("gyrus init config failed: %v", err)
+		t.Fatalf("gyrus config init failed: %v", err)
 	}
 
 	// 2. gyrus create (rebuild to load newly generated workspace .gyrus.yaml)

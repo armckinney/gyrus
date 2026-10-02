@@ -35,16 +35,16 @@ func TestAntigravityPluginIntegration(t *testing.T) {
 		t.Errorf("Unexpected plugin dir: %s", pluginDir)
 	}
 
-	// 1. Validate .antigravity/mcp.json
-	mcpPath := filepath.Join(tempWorkspace, ".antigravity", "mcp.json")
+	// 1. Validate plugin mcp_config.json (Antigravity discovers MCP directly from plugin bundle)
+	mcpPath := filepath.Join(pluginDir, "mcp_config.json")
 	data, err := os.ReadFile(mcpPath)
 	if err != nil {
-		t.Fatalf("Failed to read .antigravity/mcp.json: %v", err)
+		t.Fatalf("Failed to read plugin mcp_config.json: %v", err)
 	}
 
 	var mcpCfg setup.MCPConfigFile
 	if err := json.Unmarshal(data, &mcpCfg); err != nil {
-		t.Fatalf("Failed to parse .antigravity/mcp.json: %v", err)
+		t.Fatalf("Failed to parse plugin mcp_config.json: %v", err)
 	}
 
 	server, exists := mcpCfg.MCPServers["gyrus"]
@@ -53,6 +53,12 @@ func TestAntigravityPluginIntegration(t *testing.T) {
 	}
 	if server.Command != "gyrus" {
 		t.Errorf("Unexpected server command: %s", server.Command)
+	}
+
+	// Verify redundant .antigravity/mcp.json is not created
+	redundantMCP := filepath.Join(tempWorkspace, ".antigravity", "mcp.json")
+	if _, err := os.Stat(redundantMCP); !os.IsNotExist(err) {
+		t.Errorf("Expected redundant .antigravity/mcp.json not to be created")
 	}
 
 	// 2. Validate plugin.json compliance against Agent Plugins Standard 1.0.0

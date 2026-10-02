@@ -25,5 +25,8 @@ WORKDIR ${WORKSPACE}
 COPY go.mod go.sum ./
 RUN go mod download
 
+# install gyrus
+RUN make install
+
 # restore dialog for interactive use
 ENV DEBIAN_FRONTEND=dialog

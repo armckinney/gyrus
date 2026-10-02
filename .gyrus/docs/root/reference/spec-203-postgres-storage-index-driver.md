@@ -1,5 +1,5 @@
 ---
-id: gyrus-203-postgres-storage-index-driver
+id: spec-203-postgres-storage-index-driver
 title: 'GYRUS-203: PostgreSQL Enterprise Index & Storage Driver'
 category: technical
 type: specification

@@ -1,5 +1,5 @@
 ---
-id: gyrus-201-git-storage-driver
+id: spec-201-git-storage-driver
 title: 'GYRUS-201: Git Remote Storage Driver'
 category: technical
 type: specification

@@ -1,5 +1,5 @@
 ---
-id: gyrus-202-cloud-blob-storage-driver
+id: spec-202-cloud-blob-storage-driver
 title: 'GYRUS-202: Cloud Blob Storage Driver (S3, Azure, GCS)'
 category: technical
 type: specification

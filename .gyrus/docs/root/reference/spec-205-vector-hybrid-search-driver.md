@@ -1,5 +1,5 @@
 ---
-id: gyrus-205-vector-hybrid-search-driver
+id: spec-205-vector-hybrid-search-driver
 title: 'GYRUS-205: Semantic Vector Embedding & Hybrid Search Driver'
 category: technical
 type: specification
