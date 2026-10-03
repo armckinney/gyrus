@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/armckinney/gyrus/internal/app"
+	"github.com/armckinney/gyrus/pkg/gyrus"
 	"github.com/spf13/cobra"
 )
 
@@ -13,6 +14,10 @@ func NewSuggestContextCmd(application *app.App) *cobra.Command {
 	var (
 		prompt    string
 		maxTokens int
+		scope     string
+		workspace string
+		category  string
+		maxDocs   int
 	)
 
 	cmd := &cobra.Command{
@@ -24,8 +29,27 @@ func NewSuggestContextCmd(application *app.App) *cobra.Command {
 				return err
 			}
 
+			if maxDocs <= 0 {
+				maxDocs = 5
+			}
 			_ = maxTokens
-			contextLayer, err := engine.SuggestContext(context.Background(), prompt, "", 5)
+
+			effectiveScope := ""
+			if cmd.Flags().Changed("scope") {
+				effectiveScope, _ = cmd.Flags().GetString("scope")
+			}
+			effectiveWorkspace := ""
+			if cmd.Flags().Changed("workspace") {
+				effectiveWorkspace, _ = cmd.Flags().GetString("workspace")
+			}
+
+			filter := gyrus.SearchFilter{
+				Category:  gyrus.Category(category),
+				Scope:     effectiveScope,
+				Workspace: effectiveWorkspace,
+			}
+
+			contextLayer, err := engine.SuggestContextWithFilter(context.Background(), prompt, filter, maxDocs)
 			if err != nil {
 				return err
 			}
@@ -41,6 +65,10 @@ func NewSuggestContextCmd(application *app.App) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&prompt, "prompt", "", "Prompt context or task description (required)")
+	cmd.Flags().StringVar(&scope, "scope", "", "Context scope filter (workspace, reference, all)")
+	cmd.Flags().StringVar(&workspace, "workspace", "", "Explicit workspace name to scope context to")
+	cmd.Flags().StringVar(&category, "category", "", "Filter by category")
+	cmd.Flags().IntVar(&maxDocs, "max-docs", 5, "Maximum number of documents to include")
 	cmd.Flags().IntVar(&maxTokens, "max-tokens", 4000, "Maximum token context budget")
 	_ = cmd.MarkFlagRequired("prompt")
 

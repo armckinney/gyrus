@@ -141,33 +141,50 @@ func ValidateMutation(docType gyrus.DocumentType, currentStatus string, isExplic
 
 // Engine orchestrates document lifecycle, indexing, search, and knowledge graph edge operations.
 type Engine struct {
-	store       gyrus.DocumentStore
-	schemaStore gyrus.SchemaStore
-	search      gyrus.SearchProvider
-	indexer     gyrus.IndexStore
-	graph       gyrus.GraphStore
-	storageRoot string
+	store            gyrus.DocumentStore
+	schemaStore      gyrus.SchemaStore
+	search           gyrus.SearchProvider
+	indexer          gyrus.IndexStore
+	graph            gyrus.GraphStore
+	storageRoot      string
+	defaultWorkspace string
 }
 
 // NewEngine constructs a new lifecycle Engine.
 func NewEngine(store gyrus.DocumentStore, search gyrus.SearchProvider, indexer gyrus.IndexStore, graph gyrus.GraphStore, storageRoot string) *Engine {
+	return NewEngineWithWorkspace(store, search, indexer, graph, storageRoot, "")
+}
+
+// NewEngineWithWorkspace constructs a new lifecycle Engine with a default workspace name.
+func NewEngineWithWorkspace(store gyrus.DocumentStore, search gyrus.SearchProvider, indexer gyrus.IndexStore, graph gyrus.GraphStore, storageRoot string, defaultWorkspace string) *Engine {
 	var schemaStore gyrus.SchemaStore
 	if ss, ok := store.(gyrus.SchemaStore); ok {
 		schemaStore = ss
 	}
 
 	return &Engine{
-		store:       store,
-		schemaStore: schemaStore,
-		search:      search,
-		indexer:     indexer,
-		graph:       graph,
-		storageRoot: storageRoot,
+		store:            store,
+		schemaStore:      schemaStore,
+		search:           search,
+		indexer:          indexer,
+		graph:            graph,
+		storageRoot:      storageRoot,
+		defaultWorkspace: defaultWorkspace,
 	}
+}
+
+// DefaultWorkspace returns the engine's default workspace name.
+func (e *Engine) DefaultWorkspace() string {
+	return e.defaultWorkspace
 }
 
 // Create validates and persists a new OKF contract document.
 func (e *Engine) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentRef, error) {
+	if doc.Workspace == "" && doc.Scope != "reference" && e.defaultWorkspace != "" {
+		doc.Workspace = e.defaultWorkspace
+		doc.Scope = "workspace"
+	}
+
 	if err := okf.Validate(&doc); err != nil {
 		return gyrus.DocumentRef{}, fmt.Errorf("document validation failed: %w", err)
 	}
@@ -234,6 +251,10 @@ func (e *Engine) Archive(ctx context.Context, id string) error {
 
 // Search executes search over the configured search provider.
 func (e *Engine) Search(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
+	if filter.Workspace == "" && filter.Scope != "all" && filter.Scope != "reference" && e.defaultWorkspace != "" {
+		filter.Workspace = e.defaultWorkspace
+	}
+
 	if e.search != nil {
 		return e.search.Search(ctx, query, filter)
 	}
@@ -248,13 +269,22 @@ func (e *Engine) Search(ctx context.Context, query string, filter gyrus.SearchFi
 
 // SuggestContext analyzes a prompt and returns relevant context layer documents.
 func (e *Engine) SuggestContext(ctx context.Context, prompt string, category string, maxDocs int) (string, error) {
+	filter := gyrus.SearchFilter{}
+	if category != "" {
+		filter.Category = gyrus.Category(category)
+	}
+	return e.SuggestContextWithFilter(ctx, prompt, filter, maxDocs)
+}
+
+// SuggestContextWithFilter analyzes a prompt with explicit search filter constraints, prioritizes workspace documents,
+// expands linked reference dependencies, and returns a formatted context layer.
+func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, filter gyrus.SearchFilter, maxDocs int) (string, error) {
 	if maxDocs <= 0 {
 		maxDocs = 5
 	}
 
-	filter := gyrus.SearchFilter{}
-	if category != "" {
-		filter.Category = gyrus.Category(category)
+	if filter.Workspace == "" && filter.Scope != "all" && filter.Scope != "reference" && e.defaultWorkspace != "" {
+		filter.Workspace = e.defaultWorkspace
 	}
 
 	results, err := e.Search(ctx, prompt, filter)
@@ -262,16 +292,93 @@ func (e *Engine) SuggestContext(ctx context.Context, prompt string, category str
 		return "", err
 	}
 
-	if len(results) > maxDocs {
-		results = results[:maxDocs]
+	seenIDs := make(map[string]bool)
+	var wsDocs []gyrus.Document
+	var refDocs []gyrus.Document
+
+	for _, res := range results {
+		seenIDs[res.Document.ID] = true
+		if res.Document.Scope == "workspace" {
+			wsDocs = append(wsDocs, res.Document)
+		} else {
+			refDocs = append(refDocs, res.Document)
+		}
+	}
+
+	// Dependency link expansion: For workspace documents, expand linked reference dependencies
+	var linkedRefDocs []gyrus.Document
+	for _, wsDoc := range wsDocs {
+		for _, depID := range wsDoc.Dependencies {
+			if !seenIDs[depID] {
+				seenIDs[depID] = true
+				if linkedDoc, err := e.Get(ctx, depID); err == nil {
+					linkedRefDocs = append(linkedRefDocs, linkedDoc)
+				}
+			}
+		}
+	}
+
+	// Assemble combined prioritized documents up to maxDocs
+	// Priority: 1) Workspace documents, 2) Linked reference documents, 3) General reference documents
+	var finalDocs []gyrus.Document
+	for _, d := range wsDocs {
+		if len(finalDocs) < maxDocs {
+			finalDocs = append(finalDocs, d)
+		}
+	}
+	for _, d := range linkedRefDocs {
+		if len(finalDocs) < maxDocs {
+			finalDocs = append(finalDocs, d)
+		}
+	}
+	for _, d := range refDocs {
+		if len(finalDocs) < maxDocs {
+			finalDocs = append(finalDocs, d)
+		}
 	}
 
 	var sb strings.Builder
 	sb.WriteString("=== SUGGESTED CONTEXT LAYER ===\n\n")
-	for _, res := range results {
-		sb.WriteString(fmt.Sprintf("--- [%s] %s (%s/%s) ---\n", res.Document.ID, res.Document.Title, res.Document.Category, res.Document.Type))
-		sb.WriteString(res.Document.Content)
-		sb.WriteString("\n\n")
+
+	// Group output by section: Workspace context first, then Shared Reference context
+	var finalWs []gyrus.Document
+	var finalRef []gyrus.Document
+	for _, d := range finalDocs {
+		if d.Scope == "workspace" {
+			finalWs = append(finalWs, d)
+		} else {
+			finalRef = append(finalRef, d)
+		}
+	}
+
+	if len(finalWs) > 0 {
+		wsName := filter.Workspace
+		if wsName == "" && len(finalWs) > 0 && finalWs[0].Workspace != "" {
+			wsName = finalWs[0].Workspace
+		}
+		if wsName != "" {
+			sb.WriteString(fmt.Sprintf("[WORKSPACE CONTEXT: %s]\n\n", wsName))
+		} else {
+			sb.WriteString("[WORKSPACE CONTEXT]\n\n")
+		}
+		for _, doc := range finalWs {
+			sb.WriteString(fmt.Sprintf("--- [%s] %s (%s/%s) ---\n", doc.ID, doc.Title, doc.Category, doc.Type))
+			sb.WriteString(doc.Content)
+			sb.WriteString("\n\n")
+		}
+	}
+
+	if len(finalRef) > 0 {
+		owner := "root"
+		if len(finalRef) > 0 && finalRef[0].OwnerGroup != "" {
+			owner = finalRef[0].OwnerGroup
+		}
+		sb.WriteString(fmt.Sprintf("[SHARED REFERENCE LAYER: %s]\n\n", owner))
+		for _, doc := range finalRef {
+			sb.WriteString(fmt.Sprintf("--- [%s] %s (%s/%s) ---\n", doc.ID, doc.Title, doc.Category, doc.Type))
+			sb.WriteString(doc.Content)
+			sb.WriteString("\n\n")
+		}
 	}
 
 	return sb.String(), nil

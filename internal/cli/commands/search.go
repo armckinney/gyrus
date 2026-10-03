@@ -20,6 +20,8 @@ func NewSearchCmd(application *app.App) *cobra.Command {
 		status     string
 		tag        string
 		ownerGroup string
+		scope      string
+		workspace  string
 		maxResults int
 	)
 
@@ -36,12 +38,23 @@ func NewSearchCmd(application *app.App) *cobra.Command {
 				return err
 			}
 
+			effectiveScope := ""
+			if cmd.Flags().Changed("scope") {
+				effectiveScope, _ = cmd.Flags().GetString("scope")
+			}
+			effectiveWorkspace := ""
+			if cmd.Flags().Changed("workspace") {
+				effectiveWorkspace, _ = cmd.Flags().GetString("workspace")
+			}
+
 			filter := gyrus.SearchFilter{
 				Category:   gyrus.Category(category),
 				Type:       gyrus.DocumentType(docType),
 				Status:     status,
 				Tag:        tag,
 				OwnerGroup: ownerGroup,
+				Scope:      effectiveScope,
+				Workspace:  effectiveWorkspace,
 			}
 
 			results, err := engine.Search(context.Background(), queryStr, filter)
@@ -60,8 +73,12 @@ func NewSearchCmd(application *app.App) *cobra.Command {
 				fmt.Printf("Search Results (%d matches):\n", len(results))
 				for i, res := range results {
 					doc := res.Document
-					fmt.Printf("  %d. [%s] %s (%s, %s, status: %s)\n",
-						i+1, doc.ID, doc.Title, doc.Type, doc.Category, doc.Status)
+					scopeTag := doc.Scope
+					if doc.Workspace != "" {
+						scopeTag = "workspace:" + doc.Workspace
+					}
+					fmt.Printf("  %d. [%s] %s (%s, %s, status: %s, scope: %s, score: %.1f)\n",
+						i+1, doc.ID, doc.Title, doc.Type, doc.Category, doc.Status, scopeTag, res.Score)
 				}
 			}
 
@@ -75,6 +92,8 @@ func NewSearchCmd(application *app.App) *cobra.Command {
 	cmd.Flags().StringVar(&status, "status", "", "Filter by status")
 	cmd.Flags().StringVar(&tag, "tag", "", "Filter by tag")
 	cmd.Flags().StringVar(&ownerGroup, "owner-group", "", "Filter by owner group")
+	cmd.Flags().StringVar(&scope, "scope", "", "Filter by scope (workspace, reference, all)")
+	cmd.Flags().StringVar(&workspace, "workspace", "", "Filter by workspace name")
 	cmd.Flags().IntVar(&maxResults, "max-results", 10, "Maximum number of results to return")
 
 	return cmd

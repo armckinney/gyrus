@@ -375,3 +375,45 @@ default_owner_group: explicit-ws
 		t.Errorf("Expected owner group 'explicit-ws', got '%s'", rc.Config.OwnerGroup())
 	}
 }
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that explicit workspace configuration is parsed and accessible.
+// [Assertions]: Config.WorkspaceName() matches configured workspace or empty default.
+// -----------------------------------------------------------------------------
+func TestWorkspaceConfiguration(t *testing.T) {
+	tempWork := t.TempDir()
+	wsYaml := `storage:
+  provider: localfs
+  root: .gyrus
+workspace: gyrus-core
+default_owner_group: root
+`
+	if err := os.WriteFile(filepath.Join(tempWork, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
+		t.Fatalf("Failed writing config: %v", err)
+	}
+
+	rc, err := config.LoadWithWorkspace(tempWork)
+	if err != nil {
+		t.Fatalf("LoadWithWorkspace failed: %v", err)
+	}
+	if rc.Config.WorkspaceName() != "gyrus-core" {
+		t.Errorf("Expected workspace 'gyrus-core', got '%s'", rc.Config.WorkspaceName())
+	}
+
+	// Test empty workspace
+	tempWork2 := t.TempDir()
+	wsYaml2 := `storage:
+  provider: localfs
+`
+	if err := os.WriteFile(filepath.Join(tempWork2, ".gyrus.yaml"), []byte(wsYaml2), 0644); err != nil {
+		t.Fatalf("Failed writing config: %v", err)
+	}
+	rc2, err := config.LoadWithWorkspace(tempWork2)
+	if err != nil {
+		t.Fatalf("LoadWithWorkspace failed: %v", err)
+	}
+	if rc2.Config.WorkspaceName() != "" {
+		t.Errorf("Expected empty workspace, got '%s'", rc2.Config.WorkspaceName())
+	}
+}

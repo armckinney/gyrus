@@ -296,3 +296,127 @@ status: proposed
 		t.Errorf("Expected error for non-existent docType, got nil")
 	}
 }
+
+type mockStoreWithSearch struct {
+	docs map[string]gyrus.Document
+}
+
+func (m *mockStoreWithSearch) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentRef, error) {
+	m.docs[doc.ID] = doc
+	return gyrus.DocumentRef{ID: doc.ID}, nil
+}
+func (m *mockStoreWithSearch) Get(ctx context.Context, id string) (gyrus.Document, error) {
+	if doc, ok := m.docs[id]; ok {
+		return doc, nil
+	}
+	return gyrus.Document{}, fmt.Errorf("document not found: %s", id)
+}
+func (m *mockStoreWithSearch) Update(ctx context.Context, id string, patch gyrus.DocumentPatch, expectedVersion int) (gyrus.DocumentRef, error) {
+	return gyrus.DocumentRef{ID: id}, nil
+}
+func (m *mockStoreWithSearch) Delete(ctx context.Context, id string) error {
+	delete(m.docs, id)
+	return nil
+}
+func (m *mockStoreWithSearch) Archive(ctx context.Context, id string) error {
+	return nil
+}
+func (m *mockStoreWithSearch) Search(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
+	var results []gyrus.SearchResult
+	for _, doc := range m.docs {
+		if filter.Scope == "reference" && doc.Scope != "reference" {
+			continue
+		}
+		if filter.Scope != "all" && filter.Workspace != "" && doc.Scope == "workspace" && doc.Workspace != filter.Workspace {
+			continue
+		}
+		score := 20.0
+		if doc.Workspace == filter.Workspace && doc.Scope == "workspace" {
+			score = 60.0
+		}
+		results = append(results, gyrus.SearchResult{
+			Document: doc,
+			Score:    score,
+		})
+	}
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Score > results[j].Score
+	})
+	return results, nil
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that SuggestContextWithFilter prioritizes workspace documents, traverses OKF dependencies to include referenced documents, and groups output into clean banners.
+// [Assertions]: Output contains [WORKSPACE CONTEXT: gyrus] and [SHARED REFERENCE LAYER: root], with linked reference ADRs included.
+// -----------------------------------------------------------------------------
+func TestEngineSuggestContextWithWorkspaceScopingAndDependencyExpansion(t *testing.T) {
+	ctx := context.Background()
+
+	mockStore := &mockStoreWithSearch{
+		docs: make(map[string]gyrus.Document),
+	}
+
+	wsDoc := gyrus.Document{
+		ID:           "ticket-gyrus-202",
+		Title:        "Implement Workspace Scoping",
+		Category:     gyrus.CategoryProduct,
+		Type:         gyrus.TypePRD,
+		OwnerGroup:   "root",
+		Scope:        "workspace",
+		Workspace:    "gyrus",
+		Dependencies: []string{"adr-002-simplified-directory-topology"},
+		Content:      "Implementation details for scoping.",
+	}
+	refDoc := gyrus.Document{
+		ID:         "adr-002-simplified-directory-topology",
+		Title:      "Simplified Directory Topology",
+		Category:   gyrus.CategoryArchitecture,
+		Type:       gyrus.TypeADR,
+		OwnerGroup: "root",
+		Scope:      "reference",
+		Content:    "Architecture for .gyrus/docs layout.",
+	}
+	foreignWsDoc := gyrus.Document{
+		ID:         "ticket-billing-001",
+		Title:      "Billing Tasks",
+		Category:   gyrus.CategoryProduct,
+		Type:       gyrus.TypePRD,
+		OwnerGroup: "root",
+		Scope:      "workspace",
+		Workspace:  "billing",
+		Content:    "Secret billing tasks.",
+	}
+
+	mockStore.docs[wsDoc.ID] = wsDoc
+	mockStore.docs[refDoc.ID] = refDoc
+	mockStore.docs[foreignWsDoc.ID] = foreignWsDoc
+
+	engine := lifecycle.NewEngineWithWorkspace(mockStore, mockStore, nil, nil, "", "gyrus")
+
+	output, err := engine.SuggestContext(ctx, "scoping", "", 5)
+	if err != nil {
+		t.Fatalf("SuggestContext failed: %v", err)
+	}
+
+	// 1. Verify workspace banner and workspace document
+	if !strings.Contains(output, "[WORKSPACE CONTEXT: gyrus]") {
+		t.Errorf("Expected [WORKSPACE CONTEXT: gyrus] in output, got: %s", output)
+	}
+	if !strings.Contains(output, "ticket-gyrus-202") {
+		t.Errorf("Expected ticket-gyrus-202 in output, got: %s", output)
+	}
+
+	// 2. Verify shared reference banner and expanded dependency adr-002
+	if !strings.Contains(output, "[SHARED REFERENCE LAYER: root]") {
+		t.Errorf("Expected [SHARED REFERENCE LAYER: root] in output, got: %s", output)
+	}
+	if !strings.Contains(output, "adr-002-simplified-directory-topology") {
+		t.Errorf("Expected adr-002-simplified-directory-topology in output, got: %s", output)
+	}
+
+	// 3. Verify foreign workspace document is excluded
+	if strings.Contains(output, "ticket-billing-001") {
+		t.Errorf("Did not expect foreign workspace document ticket-billing-001 in output, got: %s", output)
+	}
+}

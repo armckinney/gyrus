@@ -189,21 +189,6 @@
                         </li>
                         {{end}}
                     </ul>
-                </div>
-
-                <div>
-                    <div class="nav-group-title">Document Types</div>
-                    <ul class="nav-list">
-                        {{range .TypeCounts}}
-                        <li>
-                            <a href="/docs?type={{.Name}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}" class="nav-link {{if eq $.ActiveType .Name}}active{{end}}" hx-get="/docs?type={{.Name}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}" hx-target="#main-content" hx-push-url="true" title="{{.Name}}">
-                                <span class="nav-text">{{.Name}}</span>
-                                <span class="nav-count">{{.Count}}</span>
-                            </a>
-                        </li>
-                        {{end}}
-                    </ul>
-                </div>
             </div>
         </aside>
 

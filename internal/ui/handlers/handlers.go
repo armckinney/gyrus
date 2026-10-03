@@ -159,13 +159,19 @@ func (h *Handlers) getDocScopeMap() map[string]string {
 }
 
 func (h *Handlers) determineDocScope(doc *gyrus.Document, scopeMap map[string]string) string {
+	if doc.Scope == "workspace" && doc.Workspace != "" {
+		return "workspaces/" + doc.Workspace
+	}
+	if doc.Scope == "reference" {
+		return "reference"
+	}
 	if scopeMap != nil {
 		if s, ok := scopeMap[doc.ID]; ok && s != "" {
 			return s
 		}
 	}
 	if doc.Category == gyrus.CategoryBusinessLogic || doc.Category == gyrus.CategoryProduct {
-		return "workspaces/main"
+		return "workspaces/gyrus"
 	}
 	return "reference"
 }

@@ -45,6 +45,9 @@ type Document struct {
 	LastUpdated    time.Time    `json:"last_updated" yaml:"last_updated"`
 	Tags           []string     `json:"tags,omitempty" yaml:"tags,omitempty"`
 	Dependencies   []string     `json:"dependencies,omitempty" yaml:"dependencies,omitempty"`
+	Scope          string       `json:"scope,omitempty" yaml:"-"`
+	Workspace      string       `json:"workspace,omitempty" yaml:"-"`
+	FilePath       string       `json:"filepath,omitempty" yaml:"-"`
 	Content        string       `json:"content" yaml:"-"`
 }
 
@@ -73,6 +76,8 @@ type SearchFilter struct {
 	Status     string       `json:"status,omitempty"`
 	Tag        string       `json:"tag,omitempty"`
 	OwnerGroup string       `json:"owner_group,omitempty"`
+	Scope      string       `json:"scope,omitempty"`     // "workspace", "reference", "all"
+	Workspace  string       `json:"workspace,omitempty"` // target workspace name
 }
 
 // SearchQuery represents a search request.

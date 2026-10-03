@@ -193,14 +193,18 @@ func (s *Store) docPath(doc *gyrus.Document) string {
 	if ownerGroup == "" {
 		ownerGroup = "default"
 	}
-	categorySubdir := "reference"
-	if doc.Category == gyrus.CategoryBusinessLogic || doc.Category == gyrus.CategoryProduct {
-		categorySubdir = "workspaces/main"
-	} else if string(doc.Category) != "" {
-		categorySubdir = string(doc.Category)
+	var subdir string
+	if doc.Workspace != "" {
+		subdir = filepath.Join("workspaces", doc.Workspace)
+	} else if doc.Scope == "reference" {
+		subdir = "reference"
+	} else if doc.Category == gyrus.CategoryBusinessLogic || doc.Category == gyrus.CategoryProduct {
+		subdir = "workspaces/gyrus"
+	} else {
+		subdir = "reference"
 	}
 
-	return filepath.Join(".gyrus", "docs", ownerGroup, categorySubdir, fmt.Sprintf("%s.md", doc.ID))
+	return filepath.Join(".gyrus", "docs", ownerGroup, subdir, fmt.Sprintf("%s.md", doc.ID))
 }
 
 func (s *Store) findDocPathByID(id string) (string, error) {

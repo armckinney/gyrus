@@ -17,6 +17,7 @@ type Config struct {
 	Search struct {
 		Provider string `yaml:"provider" json:"provider"`
 	} `yaml:"search" json:"search"`
+	Workspace         string `yaml:"workspace" json:"workspace"`
 	DefaultOwnerGroup string `yaml:"default_owner_group" json:"default_owner_group"`
 	SchemasPath       string `yaml:"schemas_path" json:"schemas_path"`
 	Git               struct {
@@ -94,6 +95,14 @@ func (c *Config) StorageRoot() string {
 	return c.Storage.Root
 }
 
+// WorkspaceName returns the explicitly configured workspace name, if any.
+func (c *Config) WorkspaceName() string {
+	if c == nil {
+		return ""
+	}
+	return c.Workspace
+}
+
 // OwnerGroup returns the configured default owner group, falling back to DefaultOwnerGroup.
 func (c *Config) OwnerGroup() string {
 	if c == nil || c.DefaultOwnerGroup == "" {
@@ -125,6 +134,15 @@ const (
 	SourceDefault   ConfigSource = "default"
 	SourceGlobal    ConfigSource = "global"    // ~/.gyrus.yaml
 	SourceWorkspace ConfigSource = "workspace" // .gyrus.yaml in workspace
+)
+
+// ScopeType represents the retrieval and storage context boundary.
+type ScopeType string
+
+const (
+	ScopeWorkspace ScopeType = "workspace"
+	ScopeReference ScopeType = "reference"
+	ScopeAll       ScopeType = "all"
 )
 
 // ResolvedConfig wraps the final Config with resolution metadata.

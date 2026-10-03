@@ -582,6 +582,51 @@ body.sidebar-collapsed .nav-badge {
     color: var(--text-secondary);
 }
 
+/* Type Filter Pill Bar */
+.type-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.type-filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--text-secondary);
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.type-filter-pill:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background-color: rgba(37, 99, 235, 0.06);
+}
+
+.type-filter-pill.active {
+    background-color: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+    font-weight: 600;
+}
+
+.type-filter-count {
+    font-size: 0.7rem;
+    opacity: 0.75;
+}
+
 /* Utilities */
 .text-muted { color: var(--text-muted); }
 .font-bold { font-weight: 700; }
