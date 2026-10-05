@@ -17,12 +17,18 @@ import (
 
 // Store implements gyrus.DocumentStore over the local filesystem.
 type Store struct {
-	rootDir string
-	mu      sync.RWMutex
+	rootDir          string
+	defaultWorkspace string
+	mu               sync.RWMutex
 }
 
 // NewStore initializes a new localfs DocumentStore at rootDir.
 func NewStore(rootDir string) (*Store, error) {
+	return NewStoreWithWorkspace(rootDir, "")
+}
+
+// NewStoreWithWorkspace initializes a new localfs DocumentStore at rootDir with default workspace.
+func NewStoreWithWorkspace(rootDir string, defaultWorkspace string) (*Store, error) {
 	absPath, err := filepath.Abs(rootDir)
 	if err != nil {
 		return nil, fmt.Errorf("invalid storage root path: %w", err)
@@ -30,7 +36,36 @@ func NewStore(rootDir string) (*Store, error) {
 	if err := os.MkdirAll(absPath, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create storage root directory: %w", err)
 	}
-	return &Store{rootDir: absPath}, nil
+	return &Store{
+		rootDir:          absPath,
+		defaultWorkspace: defaultWorkspace,
+	}, nil
+}
+
+func parseScopeFromPath(filePath string) (scope string, workspace string) {
+	clean := filepath.ToSlash(filePath)
+	idxDocs := strings.Index(clean, "/docs/")
+	if idxDocs != -1 {
+		sub := clean[idxDocs+len("/docs/"):] // "<owner_group>/workspaces/<name>/..." or "<owner_group>/reference/..."
+		parts := strings.Split(sub, "/")
+		if len(parts) >= 3 && parts[1] == "reference" {
+			return "reference", ""
+		}
+		if len(parts) >= 3 && parts[1] == "workspaces" && parts[2] != "" {
+			return "workspace", parts[2]
+		}
+	}
+	if strings.Contains(clean, "/reference/") {
+		return "reference", ""
+	}
+	if idx := strings.LastIndex(clean, "/workspaces/"); idx != -1 {
+		rest := clean[idx+len("/workspaces/"):]
+		parts := strings.Split(rest, "/")
+		if len(parts) >= 1 && parts[0] != "" {
+			return "workspace", parts[0]
+		}
+	}
+	return "reference", ""
 }
 
 func (s *Store) getDocPath(doc *gyrus.Document) string {
@@ -39,12 +74,20 @@ func (s *Store) getDocPath(doc *gyrus.Document) string {
 		ownerGroup = "default"
 	}
 
-	categorySubdir := "reference"
-	if doc.Category == gyrus.CategoryBusinessLogic || doc.Category == gyrus.CategoryProduct {
-		categorySubdir = "workspaces/main"
+	var subdir string
+	if doc.Workspace != "" {
+		subdir = filepath.Join("workspaces", doc.Workspace)
+	} else if doc.Scope == "reference" {
+		subdir = "reference"
+	} else if s.defaultWorkspace != "" {
+		subdir = filepath.Join("workspaces", s.defaultWorkspace)
+	} else if doc.Category == gyrus.CategoryBusinessLogic || doc.Category == gyrus.CategoryProduct {
+		subdir = "workspaces/gyrus"
+	} else {
+		subdir = "reference"
 	}
 
-	return filepath.Join(s.rootDir, "docs", ownerGroup, categorySubdir, fmt.Sprintf("%s.md", doc.ID))
+	return filepath.Join(s.rootDir, "docs", ownerGroup, subdir, fmt.Sprintf("%s.md", doc.ID))
 }
 
 func (s *Store) getDocPathByID(id string) (string, error) {
@@ -121,6 +164,11 @@ func (s *Store) Get(ctx context.Context, id string) (gyrus.Document, error) {
 	if err != nil {
 		return gyrus.Document{}, fmt.Errorf("failed to parse document file: %w", err)
 	}
+
+	scope, ws := parseScopeFromPath(docPath)
+	doc.FilePath = docPath
+	doc.Scope = scope
+	doc.Workspace = ws
 
 	return *doc, nil
 }

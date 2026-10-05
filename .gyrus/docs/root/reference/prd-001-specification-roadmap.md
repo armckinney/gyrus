@@ -5,7 +5,7 @@ category: technical
 type: prd
 format: ""
 owner_group: root
-version: 15
+version: 16
 status: active
 tags:
   - roadmap
@@ -72,11 +72,12 @@ Target: Expand data providers, transport interfaces, backend provider IaC, test 
 - [x] **ADR-005 Acceptance**: Formally document architectural decisions in `adr-005-global-configuration-and-precedence-hierarchy.md` superseding configuration sections of ADR-004.
   - *Target Test Requirements*: Multi-level config resolution tests verifying `Workspace .gyrus.yaml > Global ~/.gyrus.yaml > Defaults`, graceful fallback behavior when global config files are missing or malformed, and fail-fast validation for unknown provider drivers.
 
-<!-- TODO: include what defines a workspace - repo/project/etc? -->
 ### 2.8 Repository-Focused Context & Reference Scoping
-- [ ] **Workspace & Repository-Scoped Context Retrieval**: Scope context retrieval in `gyrus suggest-context` and `gyrus search` to prioritize local workspace repository context (codebase contracts, active PRDs, workspace ADRs) first before referencing broader contexts.
-- [ ] **Reference Fallback & Cross-Boundary Retrieval**: Implement hierarchical search scoring and reference resolution that isolates local workspace boundaries while cleanly linking back to global technical references, enterprise standards, and upstream governance models.
-  - *Target Test Requirements*: Scoped search ranking tests asserting local workspace context scores higher than external references, and fallback resolution tests ensuring cross-repo links resolve cleanly.
+- [x] **Workspace & Repository-Scoped Context Retrieval**: Scope context retrieval in `gyrus suggest-context` and `gyrus search` to prioritize local workspace repository context (codebase contracts, active PRDs, workspace ADRs) first before referencing broader contexts. Implemented via explicit `workspace: <name>` in `.gyrus.yaml`, two-tier SQLite ranking (+60 workspace, +20 reference), and `SuggestContextWithFilter` dependency graph expansion. Architecture formalized in `adr-007-repository-context-and-reference-scoping.md`.
+- [x] **Reference Fallback & Cross-Boundary Retrieval**: Implement hierarchical search scoring and reference resolution that isolates local workspace boundaries while cleanly linking back to global technical references, enterprise standards, and upstream governance models. `--scope all` retrieves across all workspaces; `--scope reference` targets shared documents only.
+  - *Target Test Requirements*: `TestCLIScopedSearchAndSuggestContext`, `TestSQLiteIndexerWorkspaceScopingAndPrioritization`, `TestLocalfsStoreWorkspaceScoping`, `TestEngineSuggestContextWithWorkspaceScopingAndDependencyExpansion` — all passing.
+- [x] **Workspace Config Field (`workspace:`)**: Added `workspace: <name>` field to `.gyrus.yaml` config schema (`internal/config/config.go`). Repository-level workspace name is set explicitly; no auto-detection from directory names.
+- [x] **`workspaces/main` → `workspaces/gyrus` Migration**: Migrated the Gyrus repository's own workspace directory from `workspaces/main` to `workspaces/gyrus` and updated `.gyrus.yaml` accordingly.
 
 ### 2.9 Web UI & Interactive Visualization Surface
 - [x] **Embedded Web Dashboard (`gyrus ui`)**: Embedded hypermedia application for visual graph topology exploration, ADR browsing, and document inspection.

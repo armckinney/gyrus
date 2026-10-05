@@ -375,3 +375,108 @@ default_owner_group: explicit-ws
 		t.Errorf("Expected owner group 'explicit-ws', got '%s'", rc.Config.OwnerGroup())
 	}
 }
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that explicit workspace configuration is parsed and accessible.
+// [Assertions]: Config.WorkspaceName() matches configured workspace or empty default.
+// -----------------------------------------------------------------------------
+func TestWorkspaceConfiguration(t *testing.T) {
+	tempWork := t.TempDir()
+	wsYaml := `storage:
+  provider: localfs
+  root: .gyrus
+workspace: gyrus-core
+default_owner_group: root
+`
+	if err := os.WriteFile(filepath.Join(tempWork, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
+		t.Fatalf("Failed writing config: %v", err)
+	}
+
+	rc, err := config.LoadWithWorkspace(tempWork)
+	if err != nil {
+		t.Fatalf("LoadWithWorkspace failed: %v", err)
+	}
+	if rc.Config.WorkspaceName() != "gyrus-core" {
+		t.Errorf("Expected workspace 'gyrus-core', got '%s'", rc.Config.WorkspaceName())
+	}
+
+	// Test empty workspace
+	tempWork2 := t.TempDir()
+	wsYaml2 := `storage:
+  provider: localfs
+`
+	if err := os.WriteFile(filepath.Join(tempWork2, ".gyrus.yaml"), []byte(wsYaml2), 0644); err != nil {
+		t.Fatalf("Failed writing config: %v", err)
+	}
+	rc2, err := config.LoadWithWorkspace(tempWork2)
+	if err != nil {
+		t.Fatalf("LoadWithWorkspace failed: %v", err)
+	}
+	if rc2.Config.WorkspaceName() != "" {
+		t.Errorf("Expected empty workspace, got '%s'", rc2.Config.WorkspaceName())
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies automation config loading, defaults, and overrides.
+// [Assertions]: Default values are true, explicit false values override defaults.
+// -----------------------------------------------------------------------------
+func TestAutomationConfiguration(t *testing.T) {
+	// 1. Defaults when automation section is omitted
+	tempWork1 := t.TempDir()
+	wsYaml1 := `storage:
+  provider: localfs
+`
+	if err := os.WriteFile(filepath.Join(tempWork1, ".gyrus.yaml"), []byte(wsYaml1), 0644); err != nil {
+		t.Fatalf("Failed writing config: %v", err)
+	}
+	rc1, err := config.LoadWithWorkspace(tempWork1)
+	if err != nil {
+		t.Fatalf("LoadWithWorkspace failed: %v", err)
+	}
+	if !rc1.Config.HooksEnabled() {
+		t.Errorf("Expected default HooksEnabled() to be true")
+	}
+	if !rc1.Config.AutoContext() {
+		t.Errorf("Expected default AutoContext() to be true")
+	}
+	if !rc1.Config.ArchitecturalCheck() {
+		t.Errorf("Expected default ArchitecturalCheck() to be true")
+	}
+	if len(rc1.Config.IgnoredPaths()) == 0 {
+		t.Errorf("Expected default IgnoredPaths() to be non-empty")
+	}
+
+	// 2. Explicit overrides
+	tempWork2 := t.TempDir()
+	wsYaml2 := `storage:
+  provider: localfs
+automation:
+  hooks_enabled: false
+  auto_context: false
+  architectural_check: false
+  ignored_paths:
+    - "custom/**"
+`
+	if err := os.WriteFile(filepath.Join(tempWork2, ".gyrus.yaml"), []byte(wsYaml2), 0644); err != nil {
+		t.Fatalf("Failed writing config: %v", err)
+	}
+	rc2, err := config.LoadWithWorkspace(tempWork2)
+	if err != nil {
+		t.Fatalf("LoadWithWorkspace failed: %v", err)
+	}
+	if rc2.Config.HooksEnabled() {
+		t.Errorf("Expected HooksEnabled() to be false when configured false")
+	}
+	if rc2.Config.AutoContext() {
+		t.Errorf("Expected AutoContext() to be false when configured false")
+	}
+	if rc2.Config.ArchitecturalCheck() {
+		t.Errorf("Expected ArchitecturalCheck() to be false when configured false")
+	}
+	if len(rc2.Config.IgnoredPaths()) != 1 || rc2.Config.IgnoredPaths()[0] != "custom/**" {
+		t.Errorf("Expected IgnoredPaths() to contain 'custom/**', got %v", rc2.Config.IgnoredPaths())
+	}
+}

@@ -1,0 +1,18 @@
+{
+  "gyrus-automation": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "gyrus hook pre-invocation",
+        "timeout": 15
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "gyrus hook stop",
+        "timeout": 15
+      }
+    ]
+  }
+}

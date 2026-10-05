@@ -173,3 +173,152 @@ func TestSQLiteIndexerSync(t *testing.T) {
 		t.Errorf("Expected search match for adr-001, got %v", results)
 	}
 }
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Provider Integration Test
+// [Purpose]: Verifies that SQLite Indexer derives scope and workspace from paths during Sync, prioritizes current workspace results, and isolates external workspaces.
+// [Assertions]: Workspace documents rank higher than reference documents, foreign workspaces are excluded by default, and Scope='all' retrieves cross-workspace.
+// -----------------------------------------------------------------------------
+func TestSQLiteIndexerWorkspaceScopingAndPrioritization(t *testing.T) {
+	tempDir := t.TempDir()
+	storageRoot := filepath.Join(tempDir, "docs", "root")
+	dbPath := filepath.Join(tempDir, "index.db")
+
+	refDir := filepath.Join(storageRoot, "reference")
+	gyrusWsDir := filepath.Join(storageRoot, "workspaces", "gyrus")
+	billingWsDir := filepath.Join(storageRoot, "workspaces", "billing")
+
+	for _, d := range []string{refDir, gyrusWsDir, billingWsDir} {
+		if err := os.MkdirAll(d, 0755); err != nil {
+			t.Fatalf("Failed creating directory %s: %v", d, err)
+		}
+	}
+
+	indexer, err := sqlite.NewIndexer(dbPath)
+	if err != nil {
+		t.Fatalf("Failed initializing indexer: %v", err)
+	}
+	defer indexer.Close()
+
+	ctx := context.Background()
+
+	// 1. Reference doc
+	refDoc := &gyrus.Document{
+		ID:         "adr-shared-db",
+		Title:      "Shared Database Strategy",
+		Category:   gyrus.CategoryArchitecture,
+		Type:       gyrus.TypeADR,
+		OwnerGroup: "root",
+		Version:    1,
+		Status:     "accepted",
+		Content:    "High level database patterns across services.",
+	}
+	refBytes, _ := okf.SerializeMarkdown(refDoc)
+	if err := os.WriteFile(filepath.Join(refDir, "adr-shared-db.md"), refBytes, 0644); err != nil {
+		t.Fatalf("Failed writing refDoc: %v", err)
+	}
+
+	// 2. Current workspace doc (gyrus)
+	wsDoc := &gyrus.Document{
+		ID:         "ticket-gyrus-db",
+		Title:      "Gyrus Database Implementation",
+		Category:   gyrus.CategoryProduct,
+		Type:       gyrus.TypePRD,
+		OwnerGroup: "root",
+		Version:    1,
+		Status:     "active",
+		Content:    "Specific database schema for gyrus.",
+	}
+	wsBytes, _ := okf.SerializeMarkdown(wsDoc)
+	if err := os.WriteFile(filepath.Join(gyrusWsDir, "ticket-gyrus-db.md"), wsBytes, 0644); err != nil {
+		t.Fatalf("Failed writing wsDoc: %v", err)
+	}
+
+	// 3. Other workspace doc (billing)
+	otherWsDoc := &gyrus.Document{
+		ID:         "ticket-billing-db",
+		Title:      "Billing Database Implementation",
+		Category:   gyrus.CategoryProduct,
+		Type:       gyrus.TypePRD,
+		OwnerGroup: "root",
+		Version:    1,
+		Status:     "active",
+		Content:    "Specific database schema for billing.",
+	}
+	otherBytes, _ := okf.SerializeMarkdown(otherWsDoc)
+	if err := os.WriteFile(filepath.Join(billingWsDir, "ticket-billing-db.md"), otherBytes, 0644); err != nil {
+		t.Fatalf("Failed writing otherWsDoc: %v", err)
+	}
+
+	// Sync
+	report, err := indexer.Sync(ctx, filepath.Join(tempDir, "docs"))
+	if err != nil {
+		t.Fatalf("Sync failed: %v", err)
+	}
+	if report.IndexedFiles != 3 {
+		t.Fatalf("Expected 3 indexed files, got %d", report.IndexedFiles)
+	}
+
+	// Test 1: Workspace search prioritizing current workspace (gyrus)
+	scopedResults, err := indexer.Search(ctx, gyrus.SearchQuery{
+		Query: "database",
+		Filter: gyrus.SearchFilter{
+			Workspace: "gyrus",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Scoped search failed: %v", err)
+	}
+
+	// Should contain ticket-gyrus-db and adr-shared-db, but NOT ticket-billing-db
+	if len(scopedResults) != 2 {
+		t.Fatalf("Expected exactly 2 results (current ws + reference), got %d", len(scopedResults))
+	}
+	if scopedResults[0].Document.ID != "ticket-gyrus-db" {
+		t.Errorf("Expected workspace doc first, got %s", scopedResults[0].Document.ID)
+	}
+	if scopedResults[1].Document.ID != "adr-shared-db" {
+		t.Errorf("Expected reference doc second, got %s", scopedResults[1].Document.ID)
+	}
+	if scopedResults[0].Score <= scopedResults[1].Score {
+		t.Errorf("Expected workspace score (%f) to be higher than reference score (%f)",
+			scopedResults[0].Score, scopedResults[1].Score)
+	}
+
+	// Check populated scope & workspace
+	if scopedResults[0].Document.Scope != "workspace" || scopedResults[0].Document.Workspace != "gyrus" {
+		t.Errorf("Expected Scope 'workspace' and Workspace 'gyrus', got %s / %s",
+			scopedResults[0].Document.Scope, scopedResults[0].Document.Workspace)
+	}
+	if scopedResults[1].Document.Scope != "reference" {
+		t.Errorf("Expected Scope 'reference', got %s", scopedResults[1].Document.Scope)
+	}
+
+	// Test 2: Reference-only search
+	refOnlyResults, err := indexer.Search(ctx, gyrus.SearchQuery{
+		Query: "database",
+		Filter: gyrus.SearchFilter{
+			Scope: "reference",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Reference search failed: %v", err)
+	}
+	if len(refOnlyResults) != 1 || refOnlyResults[0].Document.ID != "adr-shared-db" {
+		t.Errorf("Expected only adr-shared-db, got %v", refOnlyResults)
+	}
+
+	// Test 3: Scope='all' retrieves across all workspaces
+	allResults, err := indexer.Search(ctx, gyrus.SearchQuery{
+		Query: "database",
+		Filter: gyrus.SearchFilter{
+			Scope: "all",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Scope all search failed: %v", err)
+	}
+	if len(allResults) != 3 {
+		t.Errorf("Expected all 3 documents, got %d", len(allResults))
+	}
+}

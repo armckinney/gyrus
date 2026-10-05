@@ -1,6 +1,6 @@
 {{define "content"}}
 <div class="content-container">
-    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end;">
+    <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: flex-end;">
         <div>
             <h1 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem;">
                 {{if .FilterTitle}}{{.FilterTitle}}{{else}}All Documents{{end}}
@@ -13,6 +13,23 @@
             {{if .Documents}}{{len .Documents}}{{else}}0{{end}} document{{if and .Documents (eq (len .Documents) 1)}}{{else}}s{{end}}
         </div>
     </div>
+
+    {{if .TypeCounts}}
+    <div class="type-filter-bar">
+        <a href="{{if .ActiveScope}}/docs?scope={{.ActiveScope}}{{if .SelectedTenant}}&tenant={{.SelectedTenant}}{{end}}{{else}}/docs{{if .SelectedTenant}}?tenant={{.SelectedTenant}}{{end}}{{end}}"
+           class="type-filter-pill {{if eq .ActiveType ""}}active{{end}}"
+           hx-get="{{if .ActiveScope}}/docs?scope={{.ActiveScope}}{{if .SelectedTenant}}&tenant={{.SelectedTenant}}{{end}}{{else}}/docs{{if .SelectedTenant}}?tenant={{.SelectedTenant}}{{end}}{{end}}"
+           hx-target="#main-content"
+           hx-push-url="true">All Types</a>
+        {{range .TypeCounts}}
+        <a href="/docs?type={{.Name}}{{if $.ActiveScope}}&scope={{$.ActiveScope}}{{end}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}"
+           class="type-filter-pill {{if eq $.ActiveType .Name}}active{{end}}"
+           hx-get="/docs?type={{.Name}}{{if $.ActiveScope}}&scope={{$.ActiveScope}}{{end}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}"
+           hx-target="#main-content"
+           hx-push-url="true">{{.Name}} <span class="type-filter-count">{{.Count}}</span></a>
+        {{end}}
+    </div>
+    {{end}}
 
     {{if not .Documents}}
     <div class="card text-center" style="padding: 3rem 1rem;">

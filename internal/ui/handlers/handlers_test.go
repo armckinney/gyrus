@@ -25,6 +25,7 @@ func setupTestApp(t *testing.T) (*app.App, string) {
 
 	cfgContent := `
 version: 1
+workspace: gyrus
 storage:
   provider: localfs
   localfs:
@@ -139,8 +140,8 @@ func TestHandlers_ScopesAndTenants(t *testing.T) {
 	}
 
 	docWS := gyrus.Document{ID: "prd-001", Category: gyrus.CategoryProduct, Type: gyrus.TypePRD}
-	if scope := h.determineDocScope(&docWS, nil); scope != "workspaces/main" {
-		t.Errorf("expected scope 'workspaces/main', got '%s'", scope)
+	if scope := h.determineDocScope(&docWS, nil); scope != "workspaces/gyrus" {
+		t.Errorf("expected scope 'workspaces/gyrus', got '%s'", scope)
 	}
 
 	// Test buildScopeData
@@ -152,8 +153,8 @@ func TestHandlers_ScopesAndTenants(t *testing.T) {
 	if data.ReferenceCount != 1 {
 		t.Errorf("expected 1 reference document, got %d", data.ReferenceCount)
 	}
-	if len(data.Workspaces) != 1 || data.Workspaces[0].Name != "main" || data.Workspaces[0].Count != 1 {
-		t.Errorf("expected 1 workspace 'main' with count 1, got %+v", data.Workspaces)
+	if len(data.Workspaces) != 1 || data.Workspaces[0].Name != "gyrus" || data.Workspaces[0].Count != 1 {
+		t.Errorf("expected 1 workspace 'gyrus' with count 1, got %+v", data.Workspaces)
 	}
 }
 
@@ -183,6 +184,7 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 		Category:   gyrus.CategoryArchitecture,
 		Type:       gyrus.TypeSpecification,
 		OwnerGroup: "test-core",
+		Scope:      "reference",
 		Version:    1,
 		Status:     "accepted",
 		Content:    "# Storage Spec\n\nDetailed storage specification.",
@@ -231,6 +233,15 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 	if strings.Contains(body, `<div class="nav-group-title">Categories</div>`) {
 		t.Errorf("expected Categories section to be removed from sidebar")
 	}
+	if strings.Contains(body, `<div class="nav-group-title">Document Types</div>`) {
+		t.Errorf("expected Document Types section to be removed from sidebar")
+	}
+	if !strings.Contains(body, `type-filter-bar`) {
+		t.Errorf("expected type filter bar to be present in the main content area")
+	}
+	if !strings.Contains(body, `type-filter-pill`) {
+		t.Errorf("expected type filter pills to be present in the main content area")
+	}
 
 	// 2. Test GET /docs?scope=reference
 	reqRef := httptest.NewRequest(http.MethodGet, "/docs?scope=reference", nil)
@@ -251,17 +262,17 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 		t.Errorf("did not expect workspace document 'prd-101' in scope=reference filter")
 	}
 
-	// 3. Test GET /docs?scope=workspaces/main
-	reqWS := httptest.NewRequest(http.MethodGet, "/docs?scope=workspaces/main", nil)
+	// 3. Test GET /docs?scope=workspaces/gyrus
+	reqWS := httptest.NewRequest(http.MethodGet, "/docs?scope=workspaces/gyrus", nil)
 	rrWS := httptest.NewRecorder()
 	h.Docs(rrWS, reqWS)
 
 	if rrWS.Code != http.StatusOK {
-		t.Fatalf("expected 200 OK for scope=workspaces/main, got %d", rrWS.Code)
+		t.Fatalf("expected 200 OK for scope=workspaces/gyrus, got %d", rrWS.Code)
 	}
 	wsBody := rrWS.Body.String()
-	if !strings.Contains(wsBody, "Workspace: main") {
-		t.Errorf("expected page title 'Workspace: main'")
+	if !strings.Contains(wsBody, "Workspace: gyrus") {
+		t.Errorf("expected page title 'Workspace: gyrus'")
 	}
 	if !strings.Contains(wsBody, "prd-101") {
 		t.Errorf("expected workspace document 'prd-101' to be listed")
@@ -270,7 +281,26 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 		t.Errorf("did not expect reference document 'spec-101' in workspace filter")
 	}
 
-	// 4. Test GET /api/graph?tenant=test-core
+	// 4. Test GET /docs?scope=reference&type=specification (combined scope + type filter)
+	reqScopeType := httptest.NewRequest(http.MethodGet, "/docs?scope=reference&type=specification", nil)
+	rrScopeType := httptest.NewRecorder()
+	h.Docs(rrScopeType, reqScopeType)
+
+	if rrScopeType.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for scope+type filter, got %d", rrScopeType.Code)
+	}
+	scopeTypeBody := rrScopeType.Body.String()
+	if !strings.Contains(scopeTypeBody, "Scope: Reference · specification") {
+		t.Errorf("expected page title 'Scope: Reference · specification'")
+	}
+	if !strings.Contains(scopeTypeBody, "spec-101") {
+		t.Errorf("expected 'spec-101' in scope=reference&type=specification results")
+	}
+	if strings.Contains(scopeTypeBody, "prd-101") {
+		t.Errorf("did not expect 'prd-101' in scope=reference&type=specification results")
+	}
+
+	// 5. Test GET /api/graph?tenant=test-core
 	reqGraph := httptest.NewRequest(http.MethodGet, "/api/graph?tenant=test-core", nil)
 	rrGraph := httptest.NewRecorder()
 	h.APIGraph(rrGraph, reqGraph)

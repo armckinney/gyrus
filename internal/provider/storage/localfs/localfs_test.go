@@ -166,3 +166,91 @@ status: active
 		t.Fatal("Expected error getting deleted schema, got nil")
 	}
 }
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that LocalFS Store routes documents to workspaces/<ws>/ and reference/ paths and parses scope on Get.
+// [Assertions]: Workspace documents persist to workspaces/<ws>/<id>.md, reference docs to reference/<id>.md.
+// -----------------------------------------------------------------------------
+func TestLocalfsStoreWorkspaceScoping(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "gyrus-localfs-ws-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	store, err := localfs.NewStoreWithWorkspace(tempDir, "gyrus")
+	if err != nil {
+		t.Fatalf("Failed to initialize Store: %v", err)
+	}
+
+	ctx := context.Background()
+
+	// 1. Create workspace document
+	wsDoc := gyrus.Document{
+		ID:         "ticket-101",
+		Title:      "Implement Scoping",
+		Category:   gyrus.CategoryProduct,
+		Type:       gyrus.TypePRD,
+		OwnerGroup: "root",
+		Version:    1,
+		Status:     "active",
+		Content:    "# Implementation Ticket",
+	}
+
+	if _, err := store.Create(ctx, wsDoc); err != nil {
+		t.Fatalf("Failed creating wsDoc: %v", err)
+	}
+
+	// 2. Create reference document
+	refDoc := gyrus.Document{
+		ID:         "adr-007",
+		Title:      "Scoping Architecture",
+		Category:   gyrus.CategoryArchitecture,
+		Type:       gyrus.TypeADR,
+		OwnerGroup: "root",
+		Scope:      "reference",
+		Version:    1,
+		Status:     "proposed",
+		Content:    "# ADR 007",
+	}
+
+	if _, err := store.Create(ctx, refDoc); err != nil {
+		t.Fatalf("Failed creating refDoc: %v", err)
+	}
+
+	// Verify file path on disk for wsDoc
+	expectedWsPath := tempDir + "/docs/root/workspaces/gyrus/ticket-101.md"
+	if _, err := os.Stat(expectedWsPath); err != nil {
+		t.Fatalf("Expected workspace file at %s, got: %v", expectedWsPath, err)
+	}
+
+	// Verify file path on disk for refDoc
+	expectedRefPath := tempDir + "/docs/root/reference/adr-007.md"
+	if _, err := os.Stat(expectedRefPath); err != nil {
+		t.Fatalf("Expected reference file at %s, got: %v", expectedRefPath, err)
+	}
+
+	// 3. Test Get() parses scope and workspace
+	fetchedWs, err := store.Get(ctx, "ticket-101")
+	if err != nil {
+		t.Fatalf("Get wsDoc failed: %v", err)
+	}
+	if fetchedWs.Scope != "workspace" {
+		t.Errorf("Expected Scope 'workspace', got '%s'", fetchedWs.Scope)
+	}
+	if fetchedWs.Workspace != "gyrus" {
+		t.Errorf("Expected Workspace 'gyrus', got '%s'", fetchedWs.Workspace)
+	}
+
+	fetchedRef, err := store.Get(ctx, "adr-007")
+	if err != nil {
+		t.Fatalf("Get refDoc failed: %v", err)
+	}
+	if fetchedRef.Scope != "reference" {
+		t.Errorf("Expected Scope 'reference', got '%s'", fetchedRef.Scope)
+	}
+	if fetchedRef.Workspace != "" {
+		t.Errorf("Expected empty Workspace for reference doc, got '%s'", fetchedRef.Workspace)
+	}
+}

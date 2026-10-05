@@ -221,9 +221,20 @@
     };
 
     // Initialize Cytoscape Graph
+    let _lastGraphInitKey = '';
+    let _lastGraphInitTime = 0;
+
     window.initGraph = function(containerId, dataUrl, focusDocId) {
         const container = document.getElementById(containerId);
         if (!container) return;
+
+        const initKey = containerId + '|' + (dataUrl || '') + '|' + (focusDocId || '');
+        const now = Date.now();
+        if (initKey === _lastGraphInitKey && (now - _lastGraphInitTime) < 400) {
+            return;
+        }
+        _lastGraphInitKey = initKey;
+        _lastGraphInitTime = now;
 
         // Ensure container has visible dimensions
         if (container.clientHeight === 0) {
@@ -496,6 +507,14 @@
                             }
                         }
                     }, 100);
+                    setTimeout(function() {
+                        if (window._currentCy === cy) {
+                            cy.resize();
+                            if (!focusDocId) {
+                                cy.fit(null, 60);
+                            }
+                        }
+                    }, 250);
                 });
 
                 // Window resize adjustment
@@ -573,7 +592,8 @@
         const cyContainer = document.getElementById('cy-container');
         if (cyContainer) {
             const focusId = cyContainer.getAttribute('data-focus') || '';
-            window.initGraph('cy-container', '/api/graph', focusId);
+            const dataUrl = cyContainer.getAttribute('data-url') || (window.location.search ? '/api/graph' + window.location.search : '/api/graph');
+            window.initGraph('cy-container', dataUrl, focusId);
         }
     }
 

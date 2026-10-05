@@ -106,7 +106,7 @@ func NewDocumentStore(cfg *config.Config, storageRoot string) (gyrus.DocumentSto
 		return postgres.NewStore(context.Background(), cfg.Postgres.ConnectionString)
 
 	case "localfs", "":
-		return localfs.NewStore(storageRoot)
+		return localfs.NewStoreWithWorkspace(storageRoot, cfg.WorkspaceName())
 
 	default:
 		return nil, fmt.Errorf("unknown storage_provider: '%s' in configuration file", cfg.StorageProvider())

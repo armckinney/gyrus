@@ -51,20 +51,10 @@ func (h *Handlers) Docs(w http.ResponseWriter, r *http.Request) {
 
 	scopeMap := h.getDocScopeMap()
 	scopeData := h.buildScopeData(tenantResults, scopeMap)
-	categoryCounts, typeCounts := h.buildTaxonomyCounts(tenantResults)
 
-	// Filter documents according to scope, category, type, and status
-	var filteredResults []gyrus.SearchResult
+	// First pass: filter by scope only, to compute type counts within the active scope
+	var scopeFilteredResults []gyrus.SearchResult
 	for _, res := range tenantResults {
-		if categoryFilter != "" && string(res.Document.Category) != categoryFilter {
-			continue
-		}
-		if typeFilter != "" && string(res.Document.Type) != typeFilter {
-			continue
-		}
-		if statusFilter != "" && res.Document.Status != statusFilter {
-			continue
-		}
 		if scopeFilter != "" {
 			docScope := h.determineDocScope(&res.Document, scopeMap)
 			if scopeFilter == "reference" {
@@ -76,11 +66,27 @@ func (h *Handlers) Docs(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 			} else {
-				// e.g. scope=main
 				if docScope != "workspaces/"+scopeFilter && docScope != scopeFilter {
 					continue
 				}
 			}
+		}
+		scopeFilteredResults = append(scopeFilteredResults, res)
+	}
+
+	categoryCounts, typeCounts := h.buildTaxonomyCounts(scopeFilteredResults)
+
+	// Second pass: apply category, type, and status filters on top of scope-filtered results
+	var filteredResults []gyrus.SearchResult
+	for _, res := range scopeFilteredResults {
+		if categoryFilter != "" && string(res.Document.Category) != categoryFilter {
+			continue
+		}
+		if typeFilter != "" && string(res.Document.Type) != typeFilter {
+			continue
+		}
+		if statusFilter != "" && res.Document.Status != statusFilter {
+			continue
 		}
 		filteredResults = append(filteredResults, res)
 	}
@@ -101,12 +107,22 @@ func (h *Handlers) Docs(w http.ResponseWriter, r *http.Request) {
 	filterTitle := "All Documents"
 	filterSubtitle := "Explore ADRs, specifications, and governance contracts managed by Gyrus."
 	if scopeFilter == "reference" {
-		filterTitle = "Scope: Reference"
-		filterSubtitle = "Global reference documents, architecture standards, and specifications."
+		if typeFilter != "" {
+			filterTitle = fmt.Sprintf("Scope: Reference · %s", typeFilter)
+			filterSubtitle = fmt.Sprintf("Reference documents of type '%s'.", typeFilter)
+		} else {
+			filterTitle = "Scope: Reference"
+			filterSubtitle = "Global reference documents, architecture standards, and specifications."
+		}
 	} else if scopeFilter != "" {
 		wsName := strings.TrimPrefix(scopeFilter, "workspaces/")
-		filterTitle = fmt.Sprintf("Workspace: %s", wsName)
-		filterSubtitle = fmt.Sprintf("Documents and tickets scoped to workspace '%s'.", wsName)
+		if typeFilter != "" {
+			filterTitle = fmt.Sprintf("Workspace: %s · %s", wsName, typeFilter)
+			filterSubtitle = fmt.Sprintf("Documents of type '%s' scoped to workspace '%s'.", typeFilter, wsName)
+		} else {
+			filterTitle = fmt.Sprintf("Workspace: %s", wsName)
+			filterSubtitle = fmt.Sprintf("Documents and tickets scoped to workspace '%s'.", wsName)
+		}
 	} else if categoryFilter != "" {
 		filterTitle = fmt.Sprintf("Category: %s", categoryFilter)
 		filterSubtitle = fmt.Sprintf("Documents categorized under %s.", categoryFilter)

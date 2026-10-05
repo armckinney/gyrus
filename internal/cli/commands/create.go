@@ -25,6 +25,8 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 		dependencies string
 		content      string
 		contentFile  string
+		scope        string
+		workspace    string
 	)
 
 	cmd := &cobra.Command{
@@ -73,6 +75,15 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 				}
 			}
 
+			effectiveScope := ""
+			if cmd.Flags().Changed("scope") {
+				effectiveScope, _ = cmd.Flags().GetString("scope")
+			}
+			effectiveWorkspace := ""
+			if cmd.Flags().Changed("workspace") {
+				effectiveWorkspace, _ = cmd.Flags().GetString("workspace")
+			}
+
 			doc := gyrus.Document{
 				ID:           id,
 				Title:        title,
@@ -83,6 +94,8 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 				Status:       docStatus,
 				Tags:         tagsList,
 				Dependencies: depsList,
+				Scope:        effectiveScope,
+				Workspace:    effectiveWorkspace,
 				Content:      body,
 			}
 
@@ -110,6 +123,8 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 	cmd.Flags().StringVar(&status, "status", "", "Document Status (draft|proposed|active)")
 	cmd.Flags().StringVar(&tags, "tags", "", "Comma-separated list of tags")
 	cmd.Flags().StringVar(&dependencies, "dependencies", "", "Comma-separated list of dependent document IDs")
+	cmd.Flags().StringVar(&scope, "scope", "", "Target scope (workspace or reference)")
+	cmd.Flags().StringVar(&workspace, "workspace", "", "Target workspace name (defaults to configured workspace)")
 	cmd.Flags().StringVar(&content, "content", "", "Inline document body content")
 	cmd.Flags().StringVar(&contentFile, "content-file", "", "Path to file containing document body content")
 

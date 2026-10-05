@@ -136,6 +136,10 @@ func (a *App) Engine() (*lifecycle.Engine, error) {
 		return nil, fmt.Errorf("failed initializing graph provider: %w", err)
 	}
 
-	a.engine = lifecycle.NewEngine(store, search, indexer, graph, a.resolved.StorageRoot)
+	wsName := ""
+	if a.resolved != nil && a.resolved.Config != nil {
+		wsName = a.resolved.Config.WorkspaceName()
+	}
+	a.engine = lifecycle.NewEngineWithWorkspace(store, search, indexer, graph, a.resolved.StorageRoot, wsName)
 	return a.engine, nil
 }
