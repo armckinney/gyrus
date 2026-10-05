@@ -284,6 +284,42 @@
         });
     };
 
+    // Helper to split a table row into cells, handling escaped pipes
+    function splitTableRow(rowStr) {
+        let trimmed = rowStr.trim();
+        if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
+        if (trimmed.endsWith('|')) trimmed = trimmed.slice(0, -1);
+        trimmed = trimmed.replace(/\\\|/g, '__ESCAPED_PIPE__');
+        return trimmed.split('|').map(cell => {
+            return cell.replace(/__ESCAPED_PIPE__/g, '|').trim();
+        });
+    }
+
+    // Helper to parse column alignments from table delimiter row
+    function parseTableAlignments(delimiterRow) {
+        const cells = splitTableRow(delimiterRow);
+        return cells.map(cell => {
+            const c = cell.trim();
+            const left = c.startsWith(':');
+            const right = c.endsWith(':');
+            if (left && right) return 'center';
+            if (right) return 'right';
+            if (left) return 'left';
+            return '';
+        });
+    }
+
+    // Check if a line is a valid markdown table delimiter row
+    function isTableDelimiter(line) {
+        const trimmed = line.trim();
+        if (!trimmed.includes('|')) return false;
+        if (!/^[\s\|\-:]+$/.test(trimmed)) return false;
+        if ((trimmed.match(/-/g) || []).length < 2) return false;
+        const cells = splitTableRow(trimmed);
+        if (cells.length === 0) return false;
+        return cells.every(c => /^:?-+:?$/.test(c.trim()));
+    }
+
     // Client-side lightweight markdown formatter for streamed chunks
     window.renderSimpleMarkdown = function(raw) {
         if (!raw) return '';
@@ -331,6 +367,71 @@
         // Italic: *text*
         html = html.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
 
+        // 5b. Extract and format Markdown Tables
+        const tables = [];
+        const lines = html.split('\n');
+        const processedLines = [];
+        let lineIdx = 0;
+
+        while (lineIdx < lines.length) {
+            if (lineIdx + 1 < lines.length && isTableDelimiter(lines[lineIdx + 1])) {
+                const headerLine = lines[lineIdx];
+                if (headerLine.includes('|') && headerLine.trim() !== '') {
+                    const headers = splitTableRow(headerLine);
+                    const alignments = parseTableAlignments(lines[lineIdx + 1]);
+                    const rows = [];
+                    let rowIdx = lineIdx + 2;
+
+                    while (rowIdx < lines.length) {
+                        const rowLine = lines[rowIdx];
+                        if (!rowLine.trim() || !rowLine.includes('|') || isTableDelimiter(rowLine)) {
+                            break;
+                        }
+                        rows.push(splitTableRow(rowLine));
+                        rowIdx++;
+                    }
+
+                    let tableHtml = '<div class="chat-table-wrapper"><table class="chat-table"><thead><tr>';
+                    for (let c = 0; c < headers.length; c++) {
+                        const align = alignments[c] ? ` style="text-align: ${alignments[c]};"` : '';
+                        tableHtml += `<th${align}>${headers[c]}</th>`;
+                    }
+                    tableHtml += '</tr></thead>';
+
+                    if (rows.length > 0) {
+                        tableHtml += '<tbody>';
+                        for (let r = 0; r < rows.length; r++) {
+                            tableHtml += '<tr>';
+                            const row = rows[r];
+                            for (let c = 0; c < headers.length; c++) {
+                                const val = c < row.length ? row[c] : '';
+                                const align = alignments[c] ? ` style="text-align: ${alignments[c]};"` : '';
+                                tableHtml += `<td${align}>${val}</td>`;
+                            }
+                            tableHtml += '</tr>';
+                        }
+                        tableHtml += '</tbody>';
+                    }
+                    tableHtml += '</table></div>';
+
+                    const tableIdx = tables.length;
+                    tables.push(tableHtml);
+
+                    processedLines.push('');
+                    processedLines.push(`__TABLE_BLOCK_${tableIdx}__`);
+                    processedLines.push('');
+
+                    lineIdx = rowIdx;
+                    continue;
+                }
+            }
+
+            processedLines.push(lines[lineIdx]);
+            lineIdx++;
+        }
+
+        html = processedLines.join('\n');
+
         // Headers
         html = html.replace(/^### (.*$)/gim, '<h4 style="margin: 0.5rem 0 0.25rem 0; font-size: 1rem;">$1</h4>');
         html = html.replace(/^## (.*$)/gim, '<h3 style="margin: 0.75rem 0 0.25rem 0; font-size: 1.1rem;">$1</h3>');
@@ -343,6 +444,14 @@
         html = html.replace(/\n\n+/g, '</p><p>');
         html = '<p>' + html + '</p>';
         html = html.replace(/<p><\/p>/g, '');
+
+        // Clean up paragraph wrappers around table blocks
+        html = html.replace(/<p>\s*(__TABLE_BLOCK_\d+__)\s*<\/p>/g, '$1');
+
+        // Restore table blocks
+        html = html.replace(/__TABLE_BLOCK_(\d+)__/g, function(match, idx) {
+            return tables[parseInt(idx, 10)] || '';
+        });
 
         // 6. Restore inline code
         html = html.replace(/__INLINE_CODE_(\d+)__/g, function(match, idx) {
@@ -396,11 +505,13 @@
             return `<pre><code class="language-${escape(lang)}">${escape(code)}</code></pre>`;
         });
 
-        // Clean up paragraph wrappers around pre & mermaid blocks
+        // Clean up paragraph wrappers around pre, mermaid & table blocks
         html = html.replace(/<p><pre>/g, '<pre>');
         html = html.replace(/<\/pre><\/p>/g, '</pre>');
         html = html.replace(/<p>\s*<div class="mermaid-diagram-card"/g, '<div class="mermaid-diagram-card"');
         html = html.replace(/<\/div>\s*<\/p>/g, '</div>');
+        html = html.replace(/<p>\s*<div class="chat-table-wrapper"/g, '<div class="chat-table-wrapper"');
+        html = html.replace(/<\/table><\/div>\s*<\/p>/g, '</table></div>');
 
         return html;
     };
