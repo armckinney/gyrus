@@ -12,7 +12,9 @@ import (
 // -----------------------------------------------------------------------------
 // [Test Level]: Integration Test
 // [Purpose]: Verifies that 'gyrus hook pre-invocation' outputs valid JSON containing
-//            SDLC directives and context, and honors GYRUS_HOOKS_ENABLED=false.
+//
+//	SDLC directives and context, and honors GYRUS_HOOKS_ENABLED=false.
+//
 // [Assertions]: Outputs valid JSON with injectSteps, or {} when disabled.
 // -----------------------------------------------------------------------------
 func TestHookPreInvocation(t *testing.T) {

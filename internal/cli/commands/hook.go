@@ -225,7 +225,7 @@ func newStopHookCmd(application *app.App) *cobra.Command {
 
 			out := StopOutput{
 				Decision: "continue",
-				Reason: "Gyrus SDLC Architectural Check: If this task introduced a new architectural decision, updated public API/config contracts, or changed system boundaries, consider updating the corresponding living spec (specification), technical reference (technical-reference), or recording an ADR (adr). If this was an internal implementation-only change, you may conclude without documentation updates.",
+				Reason:   "Gyrus SDLC Architectural Check: If this task introduced a new architectural decision, updated public API/config contracts, or changed system boundaries, consider updating the corresponding living spec (specification), technical reference (technical-reference), or recording an ADR (adr). If this was an internal implementation-only change, you may conclude without documentation updates.",
 			}
 
 			bytes, err := json.Marshal(out)
