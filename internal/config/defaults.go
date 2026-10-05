@@ -43,3 +43,11 @@ var ValidIndexProviders = []string{
 var ValidGraphProviders = []string{
 	"sqlite", "postgres",
 }
+
+// DefaultIgnoredPaths lists standard files and directories ignored during architectural checks.
+var DefaultIgnoredPaths = []string{
+	"tests/**", "*_test.go", "*.test.*", "*.spec.*",
+	"*.lock", "go.sum", "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
+	".git/**", ".agents/**", ".vscode/**", ".idea/**",
+	"vendor/**", "node_modules/**", "tmp/**",
+}

@@ -34,6 +34,7 @@ func NewClientInstallCmd(application *app.App) *cobra.Command {
 		image     string
 		global    bool
 		pluginDir string
+		noHooks   bool
 	)
 
 	cmd := &cobra.Command{
@@ -80,6 +81,7 @@ func NewClientInstallCmd(application *app.App) *cobra.Command {
 				ContainerImage: image,
 				BinaryCmd:      binaryCmd,
 				PluginDir:      pluginDir,
+				NoHooks:        noHooks,
 			})
 			if err != nil {
 				return err
@@ -138,6 +140,7 @@ func NewClientInstallCmd(application *app.App) *cobra.Command {
 	cmd.Flags().StringVar(&image, "mcp-container-image", "ghcr.io/armckinney/gyrus:latest", "Container image for containerized stdio MCP execution")
 	cmd.Flags().BoolVarP(&global, "global", "g", false, "Register MCP servers and plugin globally in user home directory (~)")
 	cmd.Flags().StringVar(&pluginDir, "plugin-dir", "", "Custom destination directory for Agent Plugin bundle")
+	cmd.Flags().BoolVar(&noHooks, "no-hooks", false, "Do not install lifecycle hooks in the Agent Plugin")
 
 	return cmd
 }

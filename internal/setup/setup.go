@@ -57,6 +57,7 @@ type ClientSetupOptions struct {
 	ContainerImage string
 	BinaryCmd      string
 	PluginDir      string
+	NoHooks        bool
 }
 
 // ClientSetupResult contains execution details from client plugin & MCP equipping.
@@ -113,6 +114,7 @@ func RunClientSetup(opts ClientSetupOptions) (*ClientSetupResult, error) {
 			Mode:           opts.Mode,
 			ContainerImage: opts.ContainerImage,
 			BinaryCmd:      opts.BinaryCmd,
+			NoHooks:        opts.NoHooks,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed installing Agent Plugin: %w", err)

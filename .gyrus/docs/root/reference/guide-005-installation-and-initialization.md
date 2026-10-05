@@ -123,6 +123,7 @@ gyrus client install --target antigravity
 | `--mcp-container-image` | | Docker container image tag for containerized mode. | `ghcr.io/armckinney/gyrus:latest` |
 | `--global` | `-g` | Install into user home runtime path rather than repository workspace. | `false` |
 | `--plugin-dir` | | Custom target directory for the extracted plugin bundle. | Derived per target |
+| `--no-hooks` | | Skip installing agent lifecycle hooks in the plugin. | `false` |
 
 ### Target Platform Mapping
 
@@ -133,7 +134,42 @@ gyrus client install --target antigravity
 | **OpenAI Codex** | `gyrus client install -t codex` | `.agents/plugins/gyrus/` | `.codex/mcp.json` |
 | **Claude Desktop / Code** | `gyrus client install -t claude` | *(MCP only)* | `.claude/mcp.json` (or `~/.config/Claude/claude_desktop_config.json` with `-g`) |
 
-> 📖 **Full Guide:** For detailed agent plugin architecture and manual MCP configuration snippets, see the **[Gyrus Agent Plugin & Client Setup Guide](guide-003-agent-skills-setup.md)**.
+---
+
+## 🎛️ 5. Configuring & Enabling/Disabling Agent Automation & Hooks
+
+Gyrus installs lifecycle hooks (`PreInvocation` and `Stop`) into the Agent Plugin bundle to automate context retrieval and encourage documentation compliance without nagging on routine code changes.
+
+You can configure, enable, or disable this functionality at multiple levels:
+
+### 1. In Workspace Configuration (`.gyrus.yaml`)
+To customize or disable hooks for your repository, add the `automation` block:
+
+```yaml
+automation:
+  hooks_enabled: true         # Master switch (set to false to disable all hooks)
+  auto_context: true          # Inject high-level context before agent reasoning
+  architectural_check: true   # Prompt agent on stop if architectural contracts change
+  ignored_paths:              # Files and directories ignored during checks
+    - "tests/**"
+    - "*_test.go"
+    - "*.lock"
+    - "vendor/**"
+    - "node_modules/**"
+```
+
+### 2. Temporary Shell Override (Environment Variable)
+To temporarily disable all hook execution without modifying configuration:
+```bash
+export GYRUS_HOOKS_ENABLED=false
+```
+
+### 3. Installation Without Hooks
+To install the plugin bundle without generating `hooks.json`:
+```bash
+gyrus client install --target antigravity --no-hooks
+```
+
 
 ---
 

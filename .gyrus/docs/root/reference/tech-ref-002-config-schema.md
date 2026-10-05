@@ -93,6 +93,26 @@ Controls full-text lexical and semantic search indexing.
 | :--- | :--- | :--- | :--- |
 | **`search.provider`** | String | `sqlite_fts5` | Full-text search engine. Options: `none`, `okf_scan`, `sqlite_fts5`, `postgres_fts`. |
 
+---
+
+### Automation & Agent Lifecycle Settings (`automation`)
+
+Controls autonomous agent integration and lifecycle hook behaviors (`PreInvocation`, `Stop`).
+
+| Property | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| **`automation.hooks_enabled`** | Boolean | `true` | Master switch to enable or disable all Gyrus agent lifecycle hooks. Set to `false` to completely disable hooks without uninstalling the plugin. |
+| **`automation.auto_context`** | Boolean | `true` | Automatically injects relevant high-level context (PRDs, living specs, ADRs) and SDLC directives into the agent's turn on `PreInvocation`. |
+| **`automation.architectural_check`** | Boolean | `true` | Checks uncommitted changes on `Stop`. Prompts the agent to reflect on whether architectural decisions (`adr`) or living specs (`specification`) should be recorded when code changes. Features a single-prompt escape hatch to prevent infinite loops. |
+| **`automation.ignored_paths`** | Array of Strings | *(See defaults)* | Glob patterns ignored during architectural checks. Defaults: `tests/**`, `*_test.go`, `*.test.*`, `*.spec.*`, `*.lock`, `go.sum`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `.git/**`, `.agents/**`, `.vscode/**`, `vendor/**`, `node_modules/**`, `tmp/**`. |
+
+> [!TIP]
+> **Quick Override via Environment Variable**: You can temporarily disable all hook execution in any shell or CI environment by running:
+> ```bash
+> export GYRUS_HOOKS_ENABLED=false
+> ```
+
+
 ## 3. Provider Capability Matrix
 
 The table below indicates which provider drivers are **Implemented** versus **Planned**:

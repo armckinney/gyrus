@@ -107,16 +107,51 @@ func TestRunClientSetupAntigravity(t *testing.T) {
 		t.Errorf("Expected rules/AGENTS.md at %s", rulesPath)
 	}
 
-	// 5. Verify skills
+	// 5. Verify hooks.json
+	hooksPath := filepath.Join(pluginDir, "hooks.json")
+	if _, err := os.Stat(hooksPath); os.IsNotExist(err) {
+		t.Errorf("Expected hooks.json at %s", hooksPath)
+	}
+
+	// 6. Verify skills (gyrus and gyrus-index)
 	gyrusSkill := filepath.Join(pluginDir, "skills", "gyrus", "SKILL.md")
 	if _, err := os.Stat(gyrusSkill); os.IsNotExist(err) {
 		t.Errorf("Expected Gyrus skill at %s", gyrusSkill)
 	}
+	indexSkill := filepath.Join(pluginDir, "skills", "gyrus-index", "SKILL.md")
+	if _, err := os.Stat(indexSkill); os.IsNotExist(err) {
+		t.Errorf("Expected Gyrus-index skill at %s", indexSkill)
+	}
 
-	// 6. Verify client MCP auto-discovery via plugin (and no redundant .antigravity/mcp.json)
+	// 7. Verify client MCP auto-discovery via plugin (and no redundant .antigravity/mcp.json)
 	antigravityMCP := filepath.Join(tempDir, ".antigravity", "mcp.json")
 	if _, err := os.Stat(antigravityMCP); !os.IsNotExist(err) {
 		t.Errorf("Expected redundant Antigravity MCP config not to be created at %s", antigravityMCP)
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that NoHooks option omits hooks.json during plugin install.
+// [Assertions]: hooks.json does not exist when NoHooks is true.
+// -----------------------------------------------------------------------------
+func TestRunClientSetupNoHooks(t *testing.T) {
+	tempDir := t.TempDir()
+
+	result, err := setup.RunClientSetup(setup.ClientSetupOptions{
+		WorkspaceDir: tempDir,
+		Target:       setup.ClientTargetAntigravity,
+		Mode:         setup.MCPModeLocal,
+		BinaryCmd:    "gyrus",
+		NoHooks:      true,
+	})
+	if err != nil {
+		t.Fatalf("RunClientSetup failed: %v", err)
+	}
+
+	hooksPath := filepath.Join(result.PluginDir, "hooks.json")
+	if _, err := os.Stat(hooksPath); !os.IsNotExist(err) {
+		t.Errorf("Expected hooks.json NOT to exist when NoHooks=true at %s", hooksPath)
 	}
 }
 

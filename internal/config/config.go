@@ -53,6 +53,12 @@ type Config struct {
 		Client  string `yaml:"client" json:"client"`
 		Command string `yaml:"command" json:"command"`
 	} `yaml:"ui" json:"ui"`
+	Automation struct {
+		HooksEnabled       *bool    `yaml:"hooks_enabled,omitempty" json:"hooks_enabled,omitempty"`
+		AutoContext        *bool    `yaml:"auto_context,omitempty" json:"auto_context,omitempty"`
+		ArchitecturalCheck *bool    `yaml:"architectural_check,omitempty" json:"architectural_check,omitempty"`
+		IgnoredPaths       []string `yaml:"ignored_paths,omitempty" json:"ignored_paths,omitempty"`
+	} `yaml:"automation,omitempty" json:"automation,omitempty"`
 }
 
 // StorageProvider returns the configured storage provider.
@@ -125,6 +131,39 @@ func (c *Config) UICommand() string {
 		return ""
 	}
 	return c.UI.Command
+}
+
+// HooksEnabled returns true unless explicitly disabled in config.
+func (c *Config) HooksEnabled() bool {
+	if c == nil || c.Automation.HooksEnabled == nil {
+		return true
+	}
+	return *c.Automation.HooksEnabled
+}
+
+// AutoContext returns true unless explicitly disabled in config.
+func (c *Config) AutoContext() bool {
+	if c == nil || c.Automation.AutoContext == nil {
+		return true
+	}
+	return *c.Automation.AutoContext
+}
+
+// ArchitecturalCheck returns true unless explicitly disabled in config.
+func (c *Config) ArchitecturalCheck() bool {
+	if c == nil || c.Automation.ArchitecturalCheck == nil {
+		return true
+	}
+	return *c.Automation.ArchitecturalCheck
+}
+
+// IgnoredPaths returns configured paths to ignore during architectural check,
+// falling back to DefaultIgnoredPaths if none specified.
+func (c *Config) IgnoredPaths() []string {
+	if c == nil || len(c.Automation.IgnoredPaths) == 0 {
+		return DefaultIgnoredPaths
+	}
+	return c.Automation.IgnoredPaths
 }
 
 // ConfigSource indicates which configuration tier provided the resolved config.
