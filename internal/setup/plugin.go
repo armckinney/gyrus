@@ -151,6 +151,62 @@ func InstallAgentPlugin(opts PluginInstallOptions) ([]string, error) {
 	}
 	createdFiles = append(createdFiles, antigravityMCPPath)
 
+	// 4b. Write .claude-plugin/plugin.json and .mcp.json (Claude Code compatibility)
+	claudePluginDir := filepath.Join(opts.TargetDir, ".claude-plugin")
+	if err := os.MkdirAll(claudePluginDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed creating .claude-plugin dir: %w", err)
+	}
+	claudeManifest := map[string]interface{}{
+		"name":        "gyrus",
+		"version":     "1.0.0",
+		"description": "Gyrus: Unified Context Control Plane & Memory Engine for AI Agents",
+		"author": map[string]string{
+			"name": "Andrew McKinney",
+			"url":  "https://github.com/armckinney",
+		},
+		"homepage":   "https://github.com/armckinney/gyrus",
+		"repository": "https://github.com/armckinney/gyrus",
+		"license":    "Apache-2.0",
+		"keywords": []string{
+			"gyrus",
+			"context-engine",
+			"okf",
+			"mcp",
+			"agent-skills",
+			"memory",
+		},
+	}
+	claudeManifestBytes, err := json.MarshalIndent(claudeManifest, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	claudeManifestPath := filepath.Join(claudePluginDir, "plugin.json")
+	if err := os.WriteFile(claudeManifestPath, claudeManifestBytes, 0644); err != nil {
+		return nil, err
+	}
+	createdFiles = append(createdFiles, claudeManifestPath)
+
+	claudeMCP := map[string]interface{}{
+		"mcpServers": map[string]interface{}{
+			"gyrus": map[string]interface{}{
+				"command": mcpCommand,
+				"args":    mcpArgs,
+				"env": map[string]string{
+					"GYRUS_WORKSPACE": "${workspaceFolder}",
+				},
+			},
+		},
+	}
+	claudeMCPBytes, err := json.MarshalIndent(claudeMCP, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	claudeMCPPath := filepath.Join(opts.TargetDir, ".mcp.json")
+	if err := os.WriteFile(claudeMCPPath, claudeMCPBytes, 0644); err != nil {
+		return nil, err
+	}
+	createdFiles = append(createdFiles, claudeMCPPath)
+
 	// 5. Write hooks.json (Antigravity & Agent Plugins lifecycle hooks)
 	if !opts.NoHooks {
 		hooksPayload := map[string]interface{}{

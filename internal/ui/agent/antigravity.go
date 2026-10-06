@@ -99,7 +99,7 @@ func (r *AntigravityRunner) StreamTurn(ctx context.Context, opts TurnOptions, ou
 		args = append(args, "--effort", opts.Effort)
 	}
 
-	args = append(args, "-p", opts.Prompt, "--output-format", "stream-json", "--dangerously-skip-permissions")
+	args = append(args, "-p", opts.Prompt, "--output-format", "stream-json")
 
 	cmd := exec.CommandContext(ctx, r.binaryPath, args...)
 	if r.workspaceDir != "" {

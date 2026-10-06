@@ -5,10 +5,10 @@ category: technical
 type: guide
 format: markdown
 owner_group: root
-version: 4
+version: 5
 status: active
 last_modified_by: antigravity
-last_updated: 2026-10-02T05:52:00Z
+last_updated: 2026-10-06T09:15:00Z
 tags:
   - installation
   - initialization
@@ -132,9 +132,20 @@ gyrus client install --target antigravity
 | **Google Antigravity** | `gyrus client install -t antigravity` | `.agents/plugins/gyrus/` *(Global: `~/.gemini/config/plugins/gyrus/`)* | Discovered directly from plugin `mcp_config.json` |
 | **GitHub Copilot** | `gyrus client install -t copilot` | `.agents/plugins/gyrus/` | `.vscode/mcp.json` |
 | **OpenAI Codex** | `gyrus client install -t codex` | `.agents/plugins/gyrus/` | `.codex/mcp.json` |
-| **Claude Desktop / Code** | `gyrus client install -t claude` | *(MCP only)* | `.claude/mcp.json` (or `~/.config/Claude/claude_desktop_config.json` with `-g`) |
+| **Claude Desktop / Code** | `gyrus client install -t claude` | `marketplace.json` / `.claude-plugin` | `.claude/mcp.json` (or `~/.config/Claude/claude_desktop_config.json` with `-g`) |
 
----
+#### Direct Plugin Installation from GitHub Repository (Claude Code & OpenAI Codex)
+You can install the Gyrus plugin directly from this GitHub repository into Claude Code or OpenAI Codex using their native Git marketplace discovery without manual cloning:
+
+```bash
+# Claude Code
+claude plugin marketplace add armckinney/gyrus
+claude plugin install gyrus@gyrus
+
+# OpenAI Codex CLI
+codex plugin marketplace add armckinney/gyrus
+codex plugin install gyrus@gyrus
+```
 
 ## 🎛️ 5. Configuring & Enabling/Disabling Agent Automation & Hooks
 

@@ -55,7 +55,7 @@ func (r *ClaudeRunner) StreamTurn(ctx context.Context, opts TurnOptions, out cha
 	r.sessionTurns[opts.SessionID] = turnCount + 1
 	r.mu.Unlock()
 
-	args := []string{"-p", opts.Prompt, "--dangerously-skip-permissions"}
+	args := []string{"-p", opts.Prompt}
 	if opts.Model != "" && opts.Model != "default" {
 		args = append(args, "--model", opts.Model)
 	}

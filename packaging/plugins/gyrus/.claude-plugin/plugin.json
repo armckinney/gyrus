@@ -1,0 +1,20 @@
+{
+  "name": "gyrus",
+  "version": "1.0.0",
+  "description": "Gyrus: Unified Context Control Plane & Memory Engine for AI Agents",
+  "author": {
+    "name": "Andrew McKinney",
+    "url": "https://github.com/armckinney"
+  },
+  "homepage": "https://github.com/armckinney/gyrus",
+  "repository": "https://github.com/armckinney/gyrus",
+  "license": "Apache-2.0",
+  "keywords": [
+    "gyrus",
+    "context-engine",
+    "okf",
+    "mcp",
+    "agent-skills",
+    "memory"
+  ]
+}

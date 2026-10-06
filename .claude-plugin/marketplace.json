@@ -1,0 +1,25 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "gyrus",
+  "description": "Gyrus Context Control Plane & Memory Engine plugin marketplace",
+  "owner": {
+    "name": "Andrew McKinney",
+    "url": "https://github.com/armckinney"
+  },
+  "plugins": [
+    {
+      "name": "gyrus",
+      "description": "Gyrus: Unified Context Control Plane & Memory Engine for AI Agents",
+      "version": "1.0.0",
+      "author": {
+        "name": "Andrew McKinney"
+      },
+      "category": "development",
+      "source": "./packaging/plugins/gyrus",
+      "homepage": "https://github.com/armckinney/gyrus",
+      "repository": "https://github.com/armckinney/gyrus",
+      "license": "Apache-2.0"
+    }
+  ]
+}
+

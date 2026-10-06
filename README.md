@@ -162,6 +162,19 @@ gyrus client install --target antigravity
 ```
 Installs the Gyrus Agent Plugin package (compliant with the [Agent Plugins Standard 1.0.0](https://agent-plugins.org/)) into your project or user environment, equipping the unified Gyrus skill (`skills/gyrus/SKILL.md`), instructions (`rules/AGENTS.md`), and registering stdio MCP servers for your target AI coding assistant (`antigravity`, `claude`, `codex`, or `copilot`).
 
+##### Direct Plugin Installation from GitHub Repository (Claude Code & OpenAI Codex)
+Install the plugin directly via Git-backed marketplace discovery without cloning manually:
+
+```bash
+# Claude Code
+claude plugin marketplace add armckinney/gyrus
+claude plugin install gyrus@gyrus
+
+# OpenAI Codex CLI
+codex plugin marketplace add armckinney/gyrus
+codex plugin install gyrus@gyrus
+```
+
 > 📖 **Full Guide:** For advanced customization, multi-client options, global user-home installation (`--global`), Docker execution (`--mode docker`), and enterprise storage profiles, see the **[Gyrus Installation & Initialization Guide](.gyrus/docs/root/reference/guide-005-installation-and-initialization.md)**.
 
 Once initialized, AI agents have immediate access to Gyrus CLI commands and OKF frontmatter schema references.
