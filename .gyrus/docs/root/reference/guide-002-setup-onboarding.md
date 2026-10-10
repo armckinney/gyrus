@@ -20,7 +20,7 @@ This guide walks human developers and team leads through initializing Gyrus, org
 Install the pre-compiled `gyrus` executable automatically:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/packaging/install.sh | bash
 ```
 
 ---

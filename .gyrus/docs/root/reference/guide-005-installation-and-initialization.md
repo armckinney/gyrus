@@ -35,7 +35,7 @@ Choose one of the following methods to install the `gyrus` executable into your 
 
 ### Option A: One-Liner Installer Script (Recommended)
 ```bash
-curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/packaging/install.sh | bash
 ```
 This automatically detects your OS (`linux`, `darwin`, `windows`) and architecture (`amd64`, `arm64`), downloads the latest binary release from GitHub, and places `gyrus` into `/usr/local/bin` (or `~/.local/bin`).
 
