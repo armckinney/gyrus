@@ -126,7 +126,7 @@ graph LR
 Install the pre-compiled `gyrus` binary automatically across Linux, macOS, and Windows (Git Bash/WSL):
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/packaging/install.sh | bash
 ```
 
 *Alternatively, build from source using Go 1.25+:*

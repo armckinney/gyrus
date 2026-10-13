@@ -2,7 +2,7 @@
 set -e
 
 # Gyrus Installer Script
-# Usage: curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/install.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/packaging/install.sh | bash
 
 REPO="armckinney/gyrus"
 BINARY="gyrus"
