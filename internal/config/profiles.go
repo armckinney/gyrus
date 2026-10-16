@@ -265,4 +265,3 @@ func RunConfigSetup(opts ConfigSetupOptions) (*ConfigSetupResult, error) {
 		OwnerGroup: opts.OwnerGroup,
 	}, nil
 }
-

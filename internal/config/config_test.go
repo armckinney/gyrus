@@ -591,4 +591,3 @@ func TestWriteGlobalConfigFile(t *testing.T) {
 		t.Errorf("Expected overwritten config to contain postgres, got: %s", string(data))
 	}
 }
-

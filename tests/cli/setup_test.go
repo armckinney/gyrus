@@ -335,7 +335,6 @@ func TestCLI_InitConfigGlobalForce(t *testing.T) {
 	}
 }
 
-
 // -----------------------------------------------------------------------------
 // [Test Level]: Product E2E Test
 // [Purpose]: Verifies that 'gyrus config init' generates .gyrus.yaml configuration.
