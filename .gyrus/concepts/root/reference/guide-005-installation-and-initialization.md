@@ -4,9 +4,9 @@ id: guide-005-installation-and-initialization
 type: guide
 format: markdown
 category: operations
-version: 7
+version: 8
 status: active
-last_updated: 2026-10-16T16:57:36Z
+last_updated: 2026-10-16T19:41:57Z
 last_modified_by: antigravity
 tenant: root
 tags:
@@ -88,7 +88,7 @@ gyrus config init --global
 ### Storage Profile Options (`--profile`)
 
 ```bash
-gyrus config init --profile local     # LocalFS Storage + SQLite FTS5 (default)
+gyrus config init --profile local     # LocalFS storage + OKF index/graph/search (default)
 gyrus config init --profile git       # Remote Git Repository Persistence
 gyrus config init --profile s3        # AWS S3 Bucket Storage
 gyrus config init --profile azure     # Azure Blob Container Storage

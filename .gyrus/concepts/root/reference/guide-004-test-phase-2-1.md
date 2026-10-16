@@ -4,9 +4,9 @@ id: guide-004-test-phase-2-1
 type: guide
 format: markdown
 category: technical
-version: 6
+version: 7
 status: active
-last_updated: 2026-10-16T16:47:49Z
+last_updated: 2026-10-16T19:41:57Z
 last_modified_by: ""
 tenant: root
 tags:
@@ -115,7 +115,7 @@ head -n 6 .agents/skills/gyrus-mcp/SKILL.md
 # 2. Verify stdio MCP server responds to JSON-RPC initialization request
 echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test-client","version":"1.0.0"}}}' | ../gyrus mcp serve
 
-# 3. Test listing registered native MCP tools (gyrus_suggest_context, gyrus_search, gyrus_get_document, gyrus_create_document, gyrus_update_document, gyrus_link_documents, gyrus_sync)
+# 3. Discover current native MCP tools (gyrus_suggest_context, gyrus_search, gyrus_get, gyrus_create, gyrus_update, gyrus_link); sync is removed
 echo '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' | ../gyrus mcp serve
 
 # 4. Test listing registered MCP resources (gyrus://documents/{id}, gyrus://schema/{type}, gyrus://graph/topology)
@@ -280,8 +280,8 @@ postgres:
 
 ### 3.3 Execution & Verification Steps
 ```bash
-# 1. Run sync to execute DDL migrations and initialize PostgreSQL schema
-../gyrus sync --json
+# 1. Verify the configured PostgreSQL provider and browse the collection
+../gyrus search --query "" --scope all --max-results 0 --json
 
 # 2. Create a contract document directly in PostgreSQL
 ../gyrus create \

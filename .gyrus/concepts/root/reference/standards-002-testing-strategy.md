@@ -4,9 +4,9 @@ id: standards-002-testing-strategy
 type: standards
 format: markdown
 category: technical
-version: 7
+version: 8
 status: active
-last_updated: 2026-10-16T16:47:49Z
+last_updated: 2026-10-16T19:41:57Z
 last_modified_by: ""
 tenant: root
 tags:
@@ -57,8 +57,8 @@ graph TD
 
     subgraph "Layer 2: Provider Infrastructure Matrix (Integration)"
         P1["Storage: LocalFS, Git, Postgres, Blob Mock"]
-        P2["Index & Search: SQLite FTS5, Postgres FTS, Vector Embeddings"]
-        P3["Graph: SQLite & Postgres Directed Edge Stores"]
+        P2["Index & Search: OKF, Postgres FTS, Vector Embeddings"]
+        P3["Graph: OKF Links & Postgres Directed Edge Stores"]
     end
 
     subgraph "Layer 3: CLI Binary & Protocol Contract (Product E2E)"
@@ -238,11 +238,11 @@ go test -v ./tests/integration -run TestIntegration_VectorHybrid
   - `postgres`: Real PostgreSQL backend testing via Docker container (`pgx/v5`), transaction isolation, reconnection pooling.
   - `blob`: Cloud Object Storage (S3, Azure Blob, GCS) via `gocloud.dev/blob` mock server, chunked writes, key prefixing.
 - [x] **Real Infrastructure Search & Index Drivers (`search`, `index`)**:
-  - `sqlite` / `fts5`: FTS5 full-text indexing, BM25 relevance ranking, special character sanitization (`"`, `'`, `-`, `*`), full re-index on `gyrus sync`.
-  - `postgres_fts`: `tsvector` generation, `tsquery` execution, relevance scoring.
+  - `okf`: Authoritative scans, malformed-file recovery, qualified identity ranking, exact metadata/scope/project filters, default ten keyword matches, explicit CLI/MCP limit passthrough, uncapped metadata browsing.
+  - `postgres_fts`: Shared storage/index/search query implementation, tsvector matching, scope/project filters, deterministic ranking, and default/explicit limits. Unit tests use mocks; live integration requires GYRUS_TEST_POSTGRES_URL pointing to an isolated test database.
   - `vector`: Semantic vector embeddings (Local Ollama sidecar, OpenAI mock), Reciprocal Rank Fusion (RRF) score blending, distance thresholding.
 - [x] **Real Infrastructure Graph Drivers (`graph`)**:
-  - Directed edge creation (`depends_on`, `supersedes`, `implements`, `mitigates`) in `sqlite` & `postgres`.
+  - Directed edge creation (`depends_on`, `supersedes`, `implements`, `mitigates`) in `okf` and `postgres`.
   - Circular dependency detection and resolution.
   - Cascade unlink and orphaned link cleanup on document archiving.
 
@@ -276,7 +276,7 @@ go test -v ./tests/integration -run TestIntegration_VectorHybrid
 - [x] **MCP Container Serving (`docker run -i ghcr.io/armckinney/gyrus:latest`)**:
   - Running containerized MCP server in interactive stdio mode, verifying stdio pipe persistence, signal handling (SIGTERM, SIGINT).
 - [x] **MCP Tool Suite Integration**:
-  - Complete verification of all 11 implemented MCP tools (`gyrus_create`, `gyrus_get`, `gyrus_update`, `gyrus_archive`, `gyrus_search`, `gyrus_suggest_context`, `gyrus_link`, `gyrus_unlink`, `gyrus_neighbors`, `gyrus_traverse`, `gyrus_sync`).
+  - Discovery and execution of CRUD, search, context, graph, and schema tools. Verify that retired sync is absent, keyword max_results passes through, and prepare-adr uses the active shared schema without obsolete metadata.
 - [x] **MCP Resources & Prompts**:
   - Resource fetching (`gyrus://documents`, `gyrus://schemas`) and prompt template rendering (`architect_review`, etc.).
 
@@ -312,9 +312,9 @@ go test -v ./tests/integration -run TestIntegration_VectorHybrid
 - [x] **Data Race Detector (`-race`)**:
   - Parallel Go test suite execution verifying zero data races under concurrent CLI/MCP operations.
 - [x] **Crash Consistency & Transaction Rollback**:
-  - Verifying that interrupted sync operations or database write failures rollback cleanly without corrupting the SQLite index or leaving orphan graph links.
+  - Verify atomic local concept replacement, rejected Git pushes, conditional blob mutations, and PostgreSQL transaction behavior without corrupting authoritative concepts or graph edges.
 - [x] **Database Migration & Upgrade Compatibility**:
-  - Backward compatibility tests ensuring existing SQLite databases migrate cleanly across version upgrades without data loss.
+  - Legacy SQLite data is exported through the migration skill, with consistent backups, qualified tuple parity, unchanged bodies/statuses, and idempotency. SQLite runtime providers and sync are removed; there is no automatic database migration.
 - [x] **Path Traversal Security**:
   - Rejection of directory traversal attacks (e.g. `../../etc/passwd` injection attempts).
 - [x] **Credential Masking**:

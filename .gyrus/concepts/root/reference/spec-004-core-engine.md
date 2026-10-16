@@ -1,12 +1,12 @@
 ---
-title: Core SDK Provider Architecture & SQLite Engine Specs
+title: Core SDK Provider Architecture
 id: spec-004-core-engine
 type: specification
 format: markdown
 category: technical
-version: 6
+version: 7
 status: active
-last_updated: 2026-10-16T18:59:08Z
+last_updated: 2026-10-16T19:41:57Z
 last_modified_by: ""
 tenant: root
 ---
@@ -17,11 +17,11 @@ Gyrus composes ConceptStore, IndexStore, GraphStore, and SearchProvider through 
 
 ConceptStore provides Create, Get, version-checked Update, Delete, and Archive. Optional ConceptScanner.Scan(context.Context, func(Concept) error) (SyncReport, error) enumerates authoritative validated concepts. Localfs, Git, and blob implement this capability; PostgreSQL storage does not in this release.
 
-IndexStore exposes Index, Remove, Search, and Sync. GraphStore exposes UpsertEdges, DeleteEdges, Neighbors, and Traverse. SearchProvider exposes keyword/metadata Search. Database adapters reuse their selected index dependencies; an all-OKF composition never opens a database.
+IndexStore exposes Index, Remove, and Search. GraphStore exposes UpsertEdges, DeleteEdges, Neighbors, and Traverse. SearchProvider accepts SearchQuery including Query, Filter, and MaxResults. Engine.Search retains the default-limit convenience method; Engine.SearchQuery accepts explicit limits. PostgreSQL storage/index/search delegate to one shared full-text query implementation. SQLite index/graph/search adapters and CLI/MCP sync operations have been removed; internal/persistence/db retains SQLite connection support for future cache work.
 
 ## Direct-scan OKF providers
 
-OKF index/search share filtering and ranking over ephemeral snapshots. Index and Remove validate requests without mutating storage. Sync validates the injected collection rather than walking the storageRoot argument, including for remote storage. ScannedFiles counts candidates, IndexedFiles counts validated/visited concepts, UnchangedFiles and RemovedFiles remain zero. Record errors include locations; CLI renders them and exits with validation code 1, and MCP returns report JSON with isError=true.
+OKF index/search share filtering and ranking over ephemeral snapshots. Index and Remove validate requests without mutating storage. Scanner errors include record locations; queries fail explicitly rather than returning partial results. Keyword requests default to ten results; positive MaxResults values override the default. Empty-query browsing is unlimited unless capped explicitly. CLI and MCP pass limits to the provider before retrieval; PostgreSQL applies the same scope/project filters. The vector profile uses OKF index/graph and lexical fallback.
 
 Graph reads derive source-owned {concept, rel} links keyed by qualified concept names. Neighbors supports incoming/outgoing/both, defaulting to both. Traverse follows outgoing edges breadth-first and returns one GraphPath of reached nodes/edges, with deterministic ordering and cycle detection. Nonpositive depth defaults to one. Missing target nodes remain visible and are not expanded.
 
@@ -31,7 +31,7 @@ Localfs/fileblob serialize cooperating processes with a stable root lock and rep
 
 Positive expected versions are checked before mutation. Conflicts map to CLI code 4. Multi-source graph batches preflight sources, then apply one patch per source in qualified-name order; later failure reports already-applied sources. There is no cross-concept transaction, automatic retry, cloud-wide snapshot, or automatic cross-concept transaction. Local IDs may repeat across tenants/projects; duplicate qualified names and inconsistent locations fail queries.
 
-Context suggestions expand normalized depends_on relationships from project concepts. Other relation types do not automatically expand context. OKF graph mutations refresh an explicitly selected database metadata index; a post-persistence indexing failure is reported as requiring repair without rolling back source data.
+Context suggestions expand depends_on edges from the selected graph provider for project concepts, including PostgreSQL database-only edges. Other relation types do not automatically expand context. OKF graph mutations refresh an explicitly selected PostgreSQL metadata index; a post-persistence indexing failure is reported as requiring repair without rolling back source data.
 
 ## Lifecycle
 

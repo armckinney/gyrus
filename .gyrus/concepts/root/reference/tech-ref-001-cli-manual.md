@@ -4,9 +4,9 @@ id: tech-ref-001-cli-manual
 type: technical-reference
 format: markdown
 category: technical
-version: 5
+version: 6
 status: active
-last_updated: 2026-10-16T18:59:08Z
+last_updated: 2026-10-16T19:41:57Z
 last_modified_by: ""
 tenant: root
 ---
@@ -119,13 +119,6 @@ Archives (deletes) a document payload from storage and search index.
 gyrus archive root/reference/adr-001-storage [--json]
 ```
 
-### 7. `gyrus sync`
-Validates the authoritative collection or rebuilds the selected database index.
-
-```bash
-gyrus sync
-```
-
 ### 8. `gyrus validate <file-path>`
 Validates an OKF Markdown file or JSON envelope schema without saving.
 
@@ -134,7 +127,7 @@ gyrus validate docs/gyrus/okf/platform/reference/adr-001.md
 ```
 
 ### 9. `gyrus search`
-Executes an FTS5 lexical keyword search query over documents.
+Executes search through the selected OKF, PostgreSQL, or vector provider. Positive --max-results values pass through to the provider. Keyword queries default to ten matches; empty-query metadata browsing is unlimited by default.
 
 ```bash
 gyrus search \
@@ -180,9 +173,9 @@ File-backed profiles now generate OKF index, graph, and search. The same default
 
 OKF keyword search returns the top ten matches; `gyrus search --query "" --scope all --json` browses the complete matching metadata collection. Keyword terms use case-insensitive Unicode substring matching with OR semantics; FTS expression syntax and stemming are not interpreted by OKF.
 
-Link/unlink persist source-owned {concept, rel} links with qualified concept names. Missing targets remain valid. Neighbors/traversal operate on persisted relationships. Version/Git/object-precondition conflicts map to exit code 4. Sync scans and validates the authoritative provider; IndexedFiles counts validated concepts. Invalid-record reports remain visible in text/JSON and produce validation exit code 1.
+OKF link/unlink persist source-owned {concept, rel} links with qualified concept names. Missing targets remain valid. Neighbors/traversal operate on persisted relationships. Version/Git/object-precondition conflicts map to exit code 4. Queries reject malformed collections with validation exit code 1. The sync command/tool has been removed; validate individual files with gyrus validate.
 
-Before switching a SQLite graph, use the packaged gyrus-migrate-sqlite-to-okf skill to back up and export database-only edges, prove qualified tuple parity, change all three provider fields, and restart MCP processes. There is no gyrus migrate command, and sync alone cannot export database-only edges.
+For legacy SQLite data, use the packaged gyrus-migrate-sqlite-to-okf skill to back up and export database-only edges, prove qualified tuple parity, choose OKF for all three providers, and restart MCP processes. There is no gyrus migrate command, and SQLite provider selections are no longer supported.
 
 ## Qualified-name arguments
 

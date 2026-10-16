@@ -2,11 +2,11 @@
 title: Gyrus Core System Architecture & Specification Suite
 id: spec-000-overview
 type: specification
-format: ""
+format: markdown
 category: technical
-version: 1
+version: 2
 status: active
-last_updated: 2026-07-22T06:38:56Z
+last_updated: 2026-10-16T19:41:57Z
 last_modified_by: ""
 tenant: root
 ---
@@ -56,7 +56,7 @@ The system is centered around the **Gyrus Core SDK**—a composable Go framework
 ## 2. Modular Specifications
 
 1. **[01. Open Knowledge Format (OKF) Contract Schema & Topology](01_contract_schema.md):** Defines metadata envelope rules, Open Knowledge Format (OKF) attributes, tags, standard document types, and the **OKF Bundle Topology**.
-2. **[02. CLI Interface & Programmatic Exit Codes](02_cli_interface.md):** Outlines the `gyrus` command-line reference, flag signatures, `gyrus sync` indexing, relationship linking, and exit code definitions.
+2. **[CLI Interface & Programmatic Exit Codes](spec-002-cli-interface.md):** Describes public commands, result limits, qualified relationship endpoints, validation, and exit codes. SQLite providers and the sync command/tool have been removed.
 3. **[03. MCP Interface & Skill Specifications](03_mcp_interface.md):** Formulates tools, resources, prompt templates, and Open Skill Format integrations exposed natively to AI editors (Cursor, Claude Desktop, Copilot).
 4. **[04. Core Engine SDK & SQLite DDL](04_core_engine.md):** Details the **Gyrus Core SDK** architecture, complete SQLite DDL (`documents_index`, `documents_fts`, `document_edges`), relationship extraction rules, and comprehensive state lifecycle matrices for all 11 document types.
 5. **[05. Composability, Provider Framework & Profiles](05_composability.md):** Defines the **5 Provider Interfaces** (`StorageProvider`, `IndexProvider`, `KnowledgeGraphProvider`, `SearchProvider`, `DocumentPersistenceService`) and **5 Deployment Profiles** (`Test`, `Local Full`, `Small`, `Medium`, `Large`), storage path resolution, and Serverless Content Navigator Web App architecture.

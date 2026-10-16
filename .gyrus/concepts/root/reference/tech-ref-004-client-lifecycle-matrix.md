@@ -4,9 +4,9 @@ id: tech-ref-004-client-lifecycle-matrix
 type: technical-reference
 format: markdown
 category: technical
-version: 5
+version: 6
 status: active
-last_updated: 2026-10-16T16:57:36Z
+last_updated: 2026-10-16T19:41:57Z
 last_modified_by: antigravity
 tenant: root
 tags:
@@ -65,7 +65,7 @@ This technical reference defines the standard lifecycle operations—including p
 | **Claude Code** | Run: `claude plugin list` | **Install:** `gyrus` appears in installed plugins.<br>**Uninstall:** List excludes `gyrus`. |
 | **OpenAI Codex** | Run: `codex plugin list` | **Install:** `gyrus@armckinney` is listed as installed.<br>**Uninstall:** Excludes `gyrus@armckinney`. |
 | **GitHub Copilot** | Run: `copilot plugin list` | **Install:** Server `gyrus` active and connected.<br>**Uninstall:** `gyrus` absent from plugin list. |
-| **SQLite Index (Gyrus Engine)** | Run: `gyrus search --query ""` | Returns count of all synchronized living and immutable documents in the workspace. |
+| **OKF collection (Gyrus Engine)** | Run: `gyrus search --query "" --scope all --max-results 0 --json` | Returns all matching concepts directly from authoritative storage. |
 
 ---
 
@@ -110,7 +110,7 @@ This technical reference defines the standard lifecycle operations—including p
 
 ## 6. Process & Daemon Management Protocol
 
-When unregistering or reinstalling Gyrus across agents, lingering background instances of `gyrus mcp serve` can maintain locks on the SQLite index store (`.gyrus/index.db`) or graph edge tables.
+When unregistering or reinstalling Gyrus across agents, stop the relevant owned `gyrus mcp serve` instances so they release resources and reload provider configuration on restart. SQLite index/graph/search providers have been removed; OKF uses short-lived interprocess locks while accessing authoritative concepts.
 
 * **List running processes:** `pgrep -fl "gyrus mcp serve"`
 * **Graceful termination:** `pkill -TERM -f "gyrus mcp serve"`

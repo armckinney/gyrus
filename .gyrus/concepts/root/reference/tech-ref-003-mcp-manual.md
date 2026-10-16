@@ -4,9 +4,9 @@ id: tech-ref-003-mcp-manual
 type: technical-reference
 format: markdown
 category: technical
-version: 4
+version: 5
 status: active
-last_updated: 2026-10-16T18:59:19Z
+last_updated: 2026-10-16T19:41:57Z
 last_modified_by: ""
 tenant: root
 ---
@@ -23,12 +23,11 @@ Run `gyrus mcp serve` over stdio using the installed Gyrus binary. The canonical
 | gyrus_get | id |
 | gyrus_update | id; optional title/status/content/tags/expected_version |
 | gyrus_archive | id |
-| gyrus_search | Optional query/category/type/status/tag/tenant/project/scope |
+| gyrus_search | Optional query/category/type/status/tag/tenant/project/scope/max_results |
 | gyrus_suggest_context | prompt; optional max_concepts/project/scope |
 | gyrus_link / gyrus_unlink | from_id, to_id; optional rel_type (defaults depends_on) |
 | gyrus_neighbors | id; optional direction/rel_type |
 | gyrus_traverse | start_id; optional max_depth (tool default 2) |
-| gyrus_sync | No arguments |
 | gyrus_schema_get / gyrus_schema_delete | type |
 | gyrus_schema_list | No arguments |
 | gyrus_schema_set | type, content |
@@ -37,17 +36,17 @@ Valid relationships are depends_on, supersedes, implements, and mitigates. Neigh
 
 ## OKF retrieval and graph behavior
 
-File-backed profiles default to OKF index/graph/search. Keyword queries use case-insensitive Unicode substring terms with OR semantics and return ten matches by default. Empty-query metadata browsing returns all matching concepts. OKF does not interpret FTS operators or stemming; explicit SQLite/PostgreSQL/vector search retains its provider semantics.
+File-backed profiles default to OKF index/graph/search. Keyword queries use case-insensitive Unicode substring terms with OR semantics and return ten matches by default. Positive max_results values pass to the selected provider and override the default. Empty-query metadata browsing returns all matching concepts unless capped. PostgreSQL applies scope/project filters with native full-text matching; vector uses OKF index/graph and lexical fallback. SQLite providers have been removed.
 
 Link/unlink persist typed source frontmatter links and use qualified concept names with concept and rel only. Targets may be unresolved. Metadata-only links remain editable on immutable concepts without changing the body. Mutations reject version/Git/object-precondition conflicts, and multi-source batches report any already-applied sources.
 
-Sync validates the provider's authoritative collection without a database in OKF mode. IndexedFiles counts validated concepts, not retained index rows. Invalid-record reports return JSON content with isError=true; fatal failures return tool errors. Invalid concepts and duplicate qualified names fail queries rather than hiding partial results.
+The sync tool/command has been removed. Invalid concepts and duplicate qualified names fail queries with tool errors rather than hiding partial results. Validate individual Markdown files through the CLI and verify complete collection browsing through empty-query search.
 
-Before switching an existing SQLite graph, use the packaged gyrus-migrate-sqlite-to-okf skill to back up, export, and verify database-only edges. Change all three provider fields and restart the server afterward. Sync alone cannot export old graph edges.
+Use the packaged gyrus-migrate-sqlite-to-okf skill to back up, export, and verify legacy database-only edges before choosing OKF providers. Change all three provider fields and restart the server afterward; the runtime no longer opens SQLite provider configurations.
 
 ## Resources and prompts
 
-Concept resources use `memory://concept/{id}` and return Markdown; existing legacy resource aliases remain available. Embedded/persisted schema templates and registered context prompts use the server's existing resource/prompt interfaces. Use tool/resource discovery for the precise schema of the installed server version.
+Concept resources use `memory://concept/{id}` with a qualified name and return Markdown. Schema resources expose active persisted templates or embedded fallbacks. The prepare-adr prompt uses that same active ADR template and serializes the supplied title safely in canonical metadata order, without obsolete dependencies. Use tool/resource discovery for the precise installed schema.
 
 ## Qualified-name contract
 

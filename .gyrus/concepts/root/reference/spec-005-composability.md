@@ -4,9 +4,9 @@ id: spec-005-composability
 type: specification
 format: markdown
 category: technical
-version: 4
+version: 5
 status: active
-last_updated: 2026-10-16T18:59:08Z
+last_updated: 2026-10-16T19:41:57Z
 last_modified_by: ""
 tenant: root
 ---
@@ -20,9 +20,9 @@ Provider capability is defined by the source factories and config resolver, not 
 | Role | Providers |
 | --- | --- |
 | Storage | localfs, git, blob, s3, azure_blob, gcs, postgres |
-| Index | okf, sqlite, postgres |
-| Graph | okf, sqlite, postgres |
-| Search | okf, sqlite_fts5 (sqlite alias), postgres_fts, vector |
+| Index | okf, postgres |
+| Graph | okf, postgres |
+| Search | okf, postgres_fts, vector |
 
 Storage aliases: aws_s3 maps to s3, azure to azure_blob, gcp/gcp_gcs to gcs. OKF requires scanner-capable storage: localfs, Git, or blob/cloud aliases. PostgreSQL storage remains database-backed.
 
@@ -37,17 +37,17 @@ Storage aliases: aws_s3 maps to s3, azure to azure_blob, gcp/gcp_gcs to gcs. OKF
 | azure | azure_blob | okf | okf | okf |
 | gcs | gcs | okf | okf | okf |
 | postgres | postgres | postgres | postgres | postgres_fts |
-| vector | localfs | sqlite | sqlite | vector |
+| vector | localfs | okf | okf | vector |
 
 ## Omitted fields and compatible combinations
 
-Omitted storage uses localfs. File-backed storage defaults index to okf. Graph defaults to the effective index. Search defaults according to index: okf, sqlite_fts5, or postgres_fts. Explicit vector search with omitted index chooses SQLite. PostgreSQL storage defaults all secondary providers to PostgreSQL.
+Omitted storage uses localfs. File-backed storage defaults index to okf. Graph defaults to the effective index. Search defaults according to index: okf or postgres_fts. Explicit vector search with omitted index uses OKF index/graph and lexical fallback. PostgreSQL storage defaults all secondary providers to PostgreSQL.
 
-An OKF index requires OKF graph/search. SQLite indexes support SQLite or OKF graph, and SQLite FTS5/vector/OKF search. PostgreSQL indexes support PostgreSQL or OKF graph and PostgreSQL FTS/OKF search, subject to scanner-capable storage for every OKF component. PostgreSQL storage requires postgres/postgres/postgres_fts. Unknown or incompatible providers fail before resource creation.
+An OKF index requires OKF graph and OKF or vector search. PostgreSQL indexes support PostgreSQL or OKF graph and PostgreSQL FTS/OKF search, subject to scanner-capable storage for every OKF component. PostgreSQL storage requires postgres/postgres/postgres_fts. Removed SQLite providers and unknown/incompatible providers fail before resource creation.
 
 ## Retrieval and portability
 
-OKF uses direct collection scans without persistent caches/indexes. Keyword search defaults to ten results; metadata-only browsing is uncapped unless the SDK request supplies a limit. SQLite and PostgreSQL retain their own retrieval semantics. Scope/project derive from canonical concept paths.
+OKF uses direct collection scans without persistent caches/indexes. Keyword search defaults to ten results; positive SDK MaxResults, CLI --max-results, and MCP max_results values override that limit. Metadata-only browsing is uncapped unless a positive limit is supplied. PostgreSQL uses the same limits and scope/project filter contract with native full-text matching. Scope/project derive from canonical concept identity. The sync command/tool has been removed.
 
 Typed source-owned links make graph relationships portable. Before switching an existing SQLite graph, use the packaged gyrus-migrate-sqlite-to-okf skill to back up, export, and verify every database-only edge. PostgreSQL migration and legacy blob-layout conversion are outside v1.
 

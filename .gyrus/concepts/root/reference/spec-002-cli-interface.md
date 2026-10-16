@@ -2,11 +2,11 @@
 title: Cobra CLI Executable & Command Line Interface Specs
 id: spec-002-cli-interface
 type: specification
-format: ""
+format: markdown
 category: technical
-version: 1
+version: 2
 status: active
-last_updated: 2026-07-22T06:38:56Z
+last_updated: 2026-10-16T19:41:57Z
 last_modified_by: ""
 tenant: root
 ---
@@ -78,7 +78,9 @@ The CLI tool (`gyrus`) is a compiled standalone Go binary that serves as the exe
 ### `gyrus search`
 * **Description:** Performs full-text lexical search and metadata filtering over indexed documents.
 * **Flags:**
-  * `--query <search-string>` (required): Search term.
+  * `--query <search-string>` (optional): Search terms; empty for metadata browsing.
+  * `--max-results <num>` (optional): Provider limit; default ten for keywords, unlimited for empty queries.
+  * `--tenant`, `--scope`, `--project` (optional): Qualified identity filters.
   * `--type <type>` (optional): Filter by document type.
   * `--category <category>` (optional): Filter by category.
   * `--status <status>` (optional): Filter by status.
@@ -88,12 +90,11 @@ The CLI tool (`gyrus`) is a compiled standalone Go binary that serves as the exe
 ### `gyrus suggest-context`
 * **Description:** Assembles a linearized context package relevant to an input prompt or user request.
 * **Flags:**
-  * `--request <prompt>` (required): Coding task or prompt context.
-  * `--max-results <num>` (optional): Maximum document count (default: 5).
+  * `--prompt <prompt>` (required): Coding task or prompt context.
+  * `--max-concepts <num>` (optional): Maximum concept count (default: 5).
   * `--json` (optional): Output JSON package.
 
-### `gyrus sync`
-* **Description:** Triggers an explicit re-index scan over the configured storage directory to synchronize SQLite metadata indexes with files on disk.
+SQLite index/graph/search providers and the sync command/tool are removed. OKF reads concepts and links directly. Legacy SQLite data requires explicit export through the migration skill.
 
 ### `gyrus validate`
 * **Description:** Validates document frontmatter and state-machine transitions without persisting changes.

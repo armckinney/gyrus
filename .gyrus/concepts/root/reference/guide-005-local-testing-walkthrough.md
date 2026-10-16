@@ -2,11 +2,11 @@
 title: Gyrus Local Testing Commands Walkthrough
 id: guide-005-local-testing-walkthrough
 type: guide
-format: ""
+format: markdown
 category: technical
-version: 2
+version: 3
 status: active
-last_updated: 2026-07-22T07:10:43Z
+last_updated: 2026-10-16T19:41:57Z
 last_modified_by: ""
 tenant: root
 tags:
@@ -141,23 +141,23 @@ Validate OKF frontmatter schema rules on disk without saving:
 
 ---
 
-## 8. Indexing Storage Directory (`gyrus sync`)
+## 8. Browse the authoritative collection
 
-Re-index filesystem documents, calculate SHA-256 checksums, and extract dependency links:
+OKF reads concept metadata and links directly. SQLite providers and the sync command/tool have been removed:
 
 ```bash
 # Human readable output
-./gyrus sync
+./gyrus search --query "" --scope all
 
-# Structured JSON report
-./gyrus sync --json
+# Complete structured inventory
+./gyrus search --query "" --scope all --max-results 0 --json
 ```
 
 ---
 
 ## 9. Full-Text Search (`gyrus search`)
 
-Query indexed contract documents using FTS5 lexical matching:
+Query concepts through the configured provider. OKF keyword queries default to ten results; --max-results overrides the limit:
 
 ```bash
 # Basic keyword search

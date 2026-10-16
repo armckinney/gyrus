@@ -4,9 +4,9 @@ id: spec-001-contract-schema
 type: specification
 format: markdown
 category: technical
-version: 7
+version: 8
 status: active
-last_updated: 2026-10-16T18:59:19Z
+last_updated: 2026-10-16T19:41:57Z
 last_modified_by: ""
 tenant: root
 ---
@@ -110,13 +110,13 @@ Graph normalization deduplicates source/target/relation tuples; it does not requ
 
 With the OKF graph provider, reads derive edges from source-owned links in validated concept snapshots. A write requires an existing source, permits a qualified missing target, and patches only the source's link metadata using its expected version. Duplicate link and absent-unlink operations are no-ops and do not increment the version. Multi-source batches preflight all sources, then apply updates in qualified-name order; later failures report the sources already updated. They are not a cross-concept transaction.
 
-Explicit database graph providers persist edges in their database tables rather than patching source frontmatter. Their existence constraints differ: PostgreSQL foreign keys require both endpoint concepts, while SQLite graph tables do not impose those foreign keys. Source-frontmatter ownership, per-source revision updates, and no-op revision behavior above describe the OKF provider, not every database adapter. Public edge responses retain the field names `from_concept_id`, `to_concept_id`, and `relationship_type`, with qualified endpoint values and no creation metadata.
+The PostgreSQL graph provider persists edges in database tables rather than patching source frontmatter; foreign keys require both endpoint concepts. Source-frontmatter ownership, per-source revision updates, and no-op revision behavior above describe the OKF provider. SQLite index/graph/search providers have been removed. Public edge responses retain the field names `from_concept_id`, `to_concept_id`, and `relationship_type`, with qualified endpoint values and no creation metadata. Context expansion reads the selected graph provider.
 
 ## Validation boundaries, revisions, and lifecycle
 
 Markdown/JSON format readers parse metadata and reject obsolete or malformed relationship shapes. Parsing alone is not full structural validation. `okf.Validate` checks required values, supported category/type, version, safe identifiers, qualified link targets, and relationship vocabulary. The standalone `gyrus validate <file>` validates its payload; it does not establish that the file belongs at a canonical collection path, that an ID is unique in a collection, or that a link target exists. Location-aware storage reads and collection scans perform those additional identity/location checks where applicable.
 
-Scanner-backed OKF index/search/graph queries fail if the authoritative collection contains malformed concepts or duplicate qualified names. Scans enumerate canonical concepts and exclude schemas/backups outside that collection. Sync reports per-record errors; the CLI exits with validation code 1, and MCP marks the report as a tool error. A scan report can contain validated-record counts alongside errors; it is not a guarantee of a usable partial query result.
+Scanner-backed OKF index/search/graph queries fail if the authoritative collection contains malformed concepts or duplicate qualified names. Scans enumerate canonical concepts and exclude schemas/backups outside that collection. CLI queries exit with validation code 1 and MCP queries return tool errors. There is no public sync command/tool. Validate individual files through gyrus validate; query the complete collection with an empty query, scope all, and no positive result cap.
 
 Normal file-backed patches increment the version and update `last_updated`, including accepted metadata-only patches. A positive expected version enables the version check; zero means no caller-supplied version check. File-backed providers retain local interprocess locks, Git conflict detection, or conditional blob mutations. Link mutations made through the OKF graph provider supply the source's observed version. The structural schema does not itself impose these storage concurrency mechanisms.
 
@@ -138,7 +138,7 @@ Persisted schema templates override embedded templates for schema retrieval. Tem
 
 The packaged `gyrus-migrate-sqlite-to-okf` skill provides an agent-led local conversion procedure separate from strict runtime readers. It requires installed Gyrus plus available file tools, and a SQLite-capable tool when database-only graph edges exist; it requires no Go installation or source checkout. The agent inventories the entire collection, merges legacy dependencies as `depends_on` with old/new typed links and SQLite edges, deduplicates qualified tuples, and removes link creation metadata. Short targets resolve only when unique; ambiguous or absent short targets require explicit recorded mappings. Already-qualified missing targets remain valid for OKF.
 
-Applying changed records requires backups outside the concept collection, quiescent writers, and a fully converted and validated staging copy. The procedure preserves exact body bytes and statuses, increments each changed source revision once, and verifies tuple/body/status/revision parity plus zero planned changes on repeat. SQLite export uses a consistent database snapshot and ignores old edge creation metadata. Missing database tooling blocks export rather than dropping edges. Old database identity schemas require explicit export/rebuild, not automatic runtime reuse; sync alone performs neither conversion nor graph export.
+Applying changed records requires backups outside the concept collection, quiescent writers, and a fully converted and validated staging copy. The procedure preserves exact body bytes and statuses, increments each changed source revision once, and verifies tuple/body/status/revision parity plus zero planned changes on repeat. SQLite export uses a consistent database snapshot and ignores old edge creation metadata. Missing database tooling blocks export rather than dropping edges. Old databases require explicit export; the retired SQLite providers cannot be selected by the runtime.
 
 ## Implementation references
 
