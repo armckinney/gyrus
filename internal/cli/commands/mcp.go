@@ -43,8 +43,7 @@ func NewMCPCmd(application *app.App) *cobra.Command {
 		},
 	}
 
-	mcpServeCmd.Flags().StringVar(&project, "project", "", "Project root directory for context resolution")
-	mcpServeCmd.Flags().StringVarP(&project, "workspace", "w", "", "Project root directory for context resolution (legacy alias)")
+	mcpServeCmd.Flags().StringVarP(&project, "project", "p", "", "Project root directory for context resolution")
 	mcpServeCmd.Flags().StringVarP(&cfgPath, "config", "c", "", "Explicit path to .gyrus.yaml configuration file")
 
 	mcpCmd.AddCommand(mcpServeCmd)

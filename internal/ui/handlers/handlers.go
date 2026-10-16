@@ -228,7 +228,6 @@ func (h *Handlers) buildScopeData(results []gyrus.SearchResult, scopeMap map[str
 	return ScopeNavData{
 		ReferenceCount: refCount,
 		Projects:       projList,
-		Workspaces:     projList, // for backward-compatible template reference
 	}
 }
 

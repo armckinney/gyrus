@@ -2,23 +2,23 @@
 <div class="content-container">
     <div class="card" style="margin-bottom: 2rem;">
         <div class="doc-header">
-            <h1 class="doc-title">{{.Doc.Title}}</h1>
+            <h1 class="doc-title">{{.Concept.Title}}</h1>
             <div class="meta-badges">
-                <span class="badge badge-id">ID: {{.Doc.ID}}</span>
-                <span class="badge badge-category">{{.Doc.Category}}</span>
-                <span class="badge badge-type">{{.Doc.Type}}</span>
-                <span class="badge badge-{{.Doc.Status}}">{{.Doc.Status}}</span>
-                <span class="badge badge-id">v{{.Doc.Version}}</span>
-                {{if or .Doc.Tenant .Doc.OwnerGroup}}
-                <span class="badge badge-id">Tenant: {{if .Doc.Tenant}}{{.Doc.Tenant}}{{else}}{{.Doc.OwnerGroup}}{{end}}</span>
+                <span class="badge badge-id">ID: {{.Concept.ID}}</span>
+                <span class="badge badge-category">{{.Concept.Category}}</span>
+                <span class="badge badge-type">{{.Concept.Type}}</span>
+                <span class="badge badge-{{.Concept.Status}}">{{.Concept.Status}}</span>
+                <span class="badge badge-id">v{{.Concept.Version}}</span>
+                {{if .Concept.Tenant}}
+                <span class="badge badge-id">Tenant: {{.Concept.Tenant}}</span>
                 {{end}}
-                {{if .Doc.Immutable}}
+                {{if .Concept.Immutable}}
                 <span class="badge" style="background-color: rgba(239, 68, 68, 0.15); color: var(--color-danger);">🔒 Immutable</span>
                 {{end}}
             </div>
-            {{if .Doc.Tags}}
+            {{if .Concept.Tags}}
             <div class="flex gap-2" style="margin-top: 0.75rem; flex-wrap: wrap;">
-                {{range .Doc.Tags}}
+                {{range .Concept.Tags}}
                 <span class="text-xs" style="background: var(--bg-sidebar); border: 1px solid var(--border-color); padding: 1px 6px; border-radius: 4px; color: var(--text-muted);">#{{.}}</span>
                 {{end}}
             </div>
@@ -32,7 +32,7 @@
         <div class="relationships-panel">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <h3 style="font-size: 1.1rem; font-weight: 600;">Concept Relationships & Lineage</h3>
-                <a href="/graph?focus={{.Doc.ID}}" class="btn btn-outline btn-sm" hx-get="/graph?focus={{.Doc.ID}}" hx-target="#main-content" hx-push-url="true">
+                <a href="/graph?focus={{.Concept.ID}}" class="btn btn-outline btn-sm" hx-get="/graph?focus={{.Concept.ID}}" hx-target="#main-content" hx-push-url="true">
                     Explore in Graph Visualizer →
                 </a>
             </div>

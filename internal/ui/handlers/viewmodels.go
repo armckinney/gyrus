@@ -19,14 +19,10 @@ type ProjectScopeCount struct {
 	Count int
 }
 
-// WorkspaceScopeCount is an alias for ProjectScopeCount.
-type WorkspaceScopeCount = ProjectScopeCount
-
 // ScopeNavData represents navigation hierarchy counts for Reference and Projects scopes.
 type ScopeNavData struct {
 	ReferenceCount int
 	Projects       []ProjectScopeCount
-	Workspaces     []ProjectScopeCount
 }
 
 // DocListItem represents a concept summary displayed in lists and search results.
@@ -43,7 +39,6 @@ type DocListItem struct {
 // SearchResultItem represents an individual search result card.
 type SearchResultItem struct {
 	Concept     gyrus.Concept
-	Document    gyrus.Concept // alias for template backward compatibility
 	Snippet     string
 	Score       float64
 	MatchReason string
@@ -79,7 +74,6 @@ type DocsPageData struct {
 type DocPageData struct {
 	BasePageData
 	Concept       gyrus.Concept
-	Doc           gyrus.Concept // alias for template backward compatibility
 	ContentHTML   template.HTML
 	OutgoingEdges []gyrus.ConceptEdge
 	IncomingEdges []gyrus.ConceptEdge

@@ -212,7 +212,6 @@ func (h *Handlers) Doc(w http.ResponseWriter, r *http.Request) {
 			TypeCounts:       typeCounts,
 		},
 		Concept:       doc,
-		Doc:           doc,
 		ContentHTML:   renderedHTML,
 		OutgoingEdges: outgoingEdges,
 		IncomingEdges: incomingEdges,
@@ -262,7 +261,6 @@ func (h *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 				}
 				resultsView = append(resultsView, SearchResultItem{
 					Concept:     res.Concept,
-					Document:    res.Concept,
 					Snippet:     extractSnippet(res.Concept.Content),
 					Score:       res.Score,
 					MatchReason: res.MatchReason,
@@ -281,9 +279,8 @@ func (h *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			resultsView = append(resultsView, SearchResultItem{
-				Concept:  res.Concept,
-				Document: res.Concept,
-				Snippet:  extractSnippet(res.Concept.Content),
+				Concept: res.Concept,
+				Snippet: extractSnippet(res.Concept.Content),
 			})
 		}
 	}
