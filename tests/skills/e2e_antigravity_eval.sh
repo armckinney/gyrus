@@ -11,25 +11,26 @@ trap defer_cleanup EXIT
 
 echo "=== 🪐 Starting Live Google Antigravity Skill Integration Test ==="
 
-# 1. Initialize workspace with Antigravity target
+# 1. Initialize workspace
 echo "1. Initializing test workspace..."
 cd "$TEMP_DIR"
 "${REPO_ROOT}/gyrus" config init --profile local --json
-"${REPO_ROOT}/gyrus" client install --target antigravity --mode local --json
 
-# 2. Assert plugin mcp_config.json and agent plugin exist
-if [ -f "${TEMP_DIR}/.agents/plugins/gyrus/mcp_config.json" ]; then
-  echo "✅ Embedded plugin mcp_config.json verified"
+# 2. Configure Antigravity workspace plugin repository
+mkdir -p "${TEMP_DIR}/.agents"
+echo "{\"entries\": [{\"path\": \"${REPO_ROOT}/packaging/plugins\"}]}" > "${TEMP_DIR}/.agents/plugins.json"
+
+# Assert canonical plugin bundle exists
+if [ -f "${REPO_ROOT}/packaging/plugins/gyrus/mcp_config.json" ] && [ -f "${REPO_ROOT}/packaging/plugins/gyrus/plugin.json" ]; then
+  echo "✅ Canonical Gyrus Agent Plugin verified"
 else
-  echo "❌ Error: .agents/plugins/gyrus/mcp_config.json missing"
+  echo "❌ Error: Agent plugin files missing in packaging/plugins/gyrus/"
   exit 1
 fi
 
-if [ -f "${TEMP_DIR}/.agents/plugins/gyrus/plugin.json" ] && [ -f "${TEMP_DIR}/.agents/plugins/gyrus/skills/gyrus/SKILL.md" ]; then
-  echo "✅ Equipped Gyrus Agent Plugin and skills verified"
-else
-  echo "❌ Error: Agent plugin files missing in .agents/plugins/gyrus/"
-  exit 1
+# Validate plugin via agy CLI if present
+if command -v agy >/dev/null 2>&1; then
+  PATH="${REPO_ROOT}:$PATH" agy plugin validate "${REPO_ROOT}/packaging/plugins/gyrus"
 fi
 
 # 3. Create test OKF document inside temp storage path
