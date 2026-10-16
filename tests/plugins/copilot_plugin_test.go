@@ -77,6 +77,12 @@ func TestMultiAgentCopilotAndClaudeIntegration(t *testing.T) {
 		if manifest["name"] != "gyrus" {
 			t.Errorf("Expected plugin name 'gyrus', got '%v'", manifest["name"])
 		}
+		if manifest["skills"] != "./skills/" {
+			t.Errorf("Expected skills './skills/', got '%v'", manifest["skills"])
+		}
+		if manifest["mcpServers"] != "./.mcp.json" {
+			t.Errorf("Expected mcpServers './.mcp.json', got '%v'", manifest["mcpServers"])
+		}
 	})
 
 	// 3. GitHub Copilot & Standard Agent Plugin (plugin.json and mcp.json)

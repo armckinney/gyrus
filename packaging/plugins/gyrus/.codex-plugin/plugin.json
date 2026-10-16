@@ -4,6 +4,7 @@
   "description": "Unified Context Control Plane & Memory Engine for AI Agents",
   "author": {
     "name": "armckinney"
-  }
+  },
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
 }
-
