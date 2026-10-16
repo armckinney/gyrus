@@ -45,12 +45,12 @@ func TestIntegration_OllamaVectorLive(t *testing.T) {
 	ctx := context.Background()
 	embedder := searchvector.NewOllamaEmbedder(host, "nomic-embed-text")
 
-	doc1 := gyrus.Document{
+	doc1 := gyrus.Concept{
 		ID:      "adr-sql",
 		Title:   "Relational Database Architecture",
 		Content: "We use PostgreSQL relational database with SQL tables and ACID transactions.",
 	}
-	doc2 := gyrus.Document{
+	doc2 := gyrus.Concept{
 		ID:      "adr-ui",
 		Title:   "Frontend React Visual Dashboard",
 		Content: "We build a Single Page Application using React, Tailwind CSS, and WebSockets.",
@@ -58,16 +58,16 @@ func TestIntegration_OllamaVectorLive(t *testing.T) {
 
 	lexicalMock := &mockLexical{
 		results: []gyrus.SearchResult{
-			{Document: doc1, Score: 1.0, MatchReason: "FTS Match"},
+			{Concept: doc1, Score: 1.0, MatchReason: "FTS Match"},
 		},
 	}
 
 	vectorStore := searchvector.NewStore(lexicalMock, embedder)
-	if err := vectorStore.AddDocument(ctx, doc1); err != nil {
-		t.Fatalf("Vector AddDocument doc1 failed: %v", err)
+	if err := vectorStore.AddConcept(ctx, doc1); err != nil {
+		t.Fatalf("Vector AddConcept doc1 failed: %v", err)
 	}
-	if err := vectorStore.AddDocument(ctx, doc2); err != nil {
-		t.Fatalf("Vector AddDocument doc2 failed: %v", err)
+	if err := vectorStore.AddConcept(ctx, doc2); err != nil {
+		t.Fatalf("Vector AddConcept doc2 failed: %v", err)
 	}
 
 	// Query: "structured relational SQL database"
@@ -79,8 +79,8 @@ func TestIntegration_OllamaVectorLive(t *testing.T) {
 	if len(results) == 0 {
 		t.Fatalf("Expected vector search results, got 0")
 	}
-	if results[0].Document.ID != "adr-sql" {
-		t.Errorf("Expected top vector result to be 'adr-sql', got %s", results[0].Document.ID)
+	if results[0].Concept.ID != "adr-sql" {
+		t.Errorf("Expected top vector result to be 'adr-sql', got %s", results[0].Concept.ID)
 	}
 }
 
@@ -101,20 +101,20 @@ func TestIntegration_VectorHybrid(t *testing.T) {
 		},
 	}
 
-	doc1 := gyrus.Document{ID: "doc-vector", Content: "vector document", Title: "Vector Title"}
-	doc2 := gyrus.Document{ID: "doc-other", Content: "unrelated content", Title: "Other Title"}
+	doc1 := gyrus.Concept{ID: "doc-vector", Content: "vector document", Title: "Vector Title"}
+	doc2 := gyrus.Concept{ID: "doc-other", Content: "unrelated content", Title: "Other Title"}
 
 	lexicalMock := &mockLexical{
 		results: []gyrus.SearchResult{
-			{Document: doc1, Score: 1.0, MatchReason: "FTS Match"},
+			{Concept: doc1, Score: 1.0, MatchReason: "FTS Match"},
 		},
 	}
 
 	vectorStore := searchvector.NewStore(lexicalMock, embedder)
-	if err := vectorStore.AddDocument(ctx, doc1); err != nil {
+	if err := vectorStore.AddConcept(ctx, doc1); err != nil {
 		t.Fatalf("Vector index doc1 failed: %v", err)
 	}
-	if err := vectorStore.AddDocument(ctx, doc2); err != nil {
+	if err := vectorStore.AddConcept(ctx, doc2); err != nil {
 		t.Fatalf("Vector index doc2 failed: %v", err)
 	}
 
@@ -123,7 +123,7 @@ func TestIntegration_VectorHybrid(t *testing.T) {
 		t.Fatalf("Hybrid search failed: %v", err)
 	}
 
-	if len(results) == 0 || results[0].Document.ID != "doc-vector" {
+	if len(results) == 0 || results[0].Concept.ID != "doc-vector" {
 		t.Errorf("Expected top hybrid result to be doc-vector, got %v", results)
 	}
 }

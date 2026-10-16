@@ -13,19 +13,19 @@ type NavCount struct {
 	Count int
 }
 
-// WorkspaceScopeCount represents item counts for a specific workspace under Scopes.
-type WorkspaceScopeCount struct {
+// ProjectScopeCount represents item counts for a specific project under Scopes.
+type ProjectScopeCount struct {
 	Name  string
 	Count int
 }
 
-// ScopeNavData represents navigation hierarchy counts for Reference and Workspaces scopes.
+// ScopeNavData represents navigation hierarchy counts for Reference and Projects scopes.
 type ScopeNavData struct {
 	ReferenceCount int
-	Workspaces     []WorkspaceScopeCount
+	Projects       []ProjectScopeCount
 }
 
-// DocListItem represents a document summary displayed in lists and search results.
+// DocListItem represents a concept summary displayed in lists and search results.
 type DocListItem struct {
 	ID       string
 	Title    string
@@ -38,7 +38,7 @@ type DocListItem struct {
 
 // SearchResultItem represents an individual search result card.
 type SearchResultItem struct {
-	Document    gyrus.Document
+	Concept     gyrus.Concept
 	Snippet     string
 	Score       float64
 	MatchReason string
@@ -62,7 +62,7 @@ type BasePageData struct {
 	TypeCounts       []NavCount
 }
 
-// DocsPageData represents view data for index.html (document list & filtered view).
+// DocsPageData represents view data for index.html (concept list & filtered view).
 type DocsPageData struct {
 	BasePageData
 	Documents      []DocListItem
@@ -70,13 +70,13 @@ type DocsPageData struct {
 	FilterSubtitle string
 }
 
-// DocPageData represents view data for doc.html (single document reader & lineage).
+// DocPageData represents view data for doc.html (single concept reader & lineage).
 type DocPageData struct {
 	BasePageData
-	Doc           gyrus.Document
+	Concept       gyrus.Concept
 	ContentHTML   template.HTML
-	OutgoingEdges []gyrus.DocumentEdge
-	IncomingEdges []gyrus.DocumentEdge
+	OutgoingEdges []gyrus.ConceptEdge
+	IncomingEdges []gyrus.ConceptEdge
 }
 
 // SearchPageData represents view data for search_results.html.

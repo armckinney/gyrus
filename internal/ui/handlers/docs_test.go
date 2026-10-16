@@ -31,31 +31,31 @@ func setupDocsTestEnvironment(t *testing.T) (*Handlers, func()) {
 	h := New(application, engine, tmplMgr, renderer)
 
 	ctx := context.Background()
-	doc1 := gyrus.Document{
-		ID:         "adr-001-architecture",
-		Title:      "Storage Engine Selection",
-		Category:   "architecture",
-		Type:       gyrus.TypeADR,
-		Status:     "accepted",
-		Version:    1,
-		OwnerGroup: "test-core",
-		Tags:       []string{"storage", "sqlite"},
-		Content:    "# Decision\nWe choose SQLite and PostgreSQL for unified persistence.\n\n| Engine | Score |\n|---|---|\n| SQLite | 9.5 |",
+	doc1 := gyrus.Concept{
+		ID:       "adr-001-architecture",
+		Title:    "Storage Engine Selection",
+		Category: "architecture",
+		Type:     gyrus.TypeADR,
+		Status:   "accepted",
+		Version:  1,
+		Tenant:   "test-core",
+		Tags:     []string{"storage", "sqlite"},
+		Content:  "# Decision\nWe choose SQLite and PostgreSQL for unified persistence.\n\n| Engine | Score |\n|---|---|\n| SQLite | 9.5 |",
 	}
 	if _, err := engine.Create(ctx, doc1); err != nil {
 		t.Fatalf("failed creating doc1: %v", err)
 	}
 
-	doc2 := gyrus.Document{
-		ID:         "prd-001-roadmap",
-		Title:      "Product Roadmap Specification",
-		Category:   "product",
-		Type:       gyrus.TypePRD,
-		Status:     "active",
-		Version:    1,
-		OwnerGroup: "test-core",
-		Tags:       []string{"roadmap"},
-		Content:    "# Roadmap\nPhase 2.9 includes Web UI development.",
+	doc2 := gyrus.Concept{
+		ID:       "prd-001-roadmap",
+		Title:    "Product Roadmap Specification",
+		Category: "product",
+		Type:     gyrus.TypePRD,
+		Status:   "active",
+		Version:  1,
+		Tenant:   "test-core",
+		Tags:     []string{"roadmap"},
+		Content:  "# Roadmap\nPhase 2.9 includes Web UI development.",
 	}
 	if _, err := engine.Create(ctx, doc2); err != nil {
 		t.Fatalf("failed creating doc2: %v", err)
@@ -111,9 +111,9 @@ func TestDocs_HomeAndDocsList(t *testing.T) {
 		}
 	})
 
-	// 3. Category Filter GET /docs?category=architecture
+	// 3. Category Filter GET /concepts?category=architecture
 	t.Run("Docs category filter", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/docs?category=architecture", nil)
+		req := httptest.NewRequest(http.MethodGet, "/concepts?category=architecture", nil)
 		rec := httptest.NewRecorder()
 
 		h.Docs(rec, req)
@@ -127,9 +127,9 @@ func TestDocs_HomeAndDocsList(t *testing.T) {
 		}
 	})
 
-	// 4. Type Filter GET /docs?type=prd
+	// 4. Type Filter GET /concepts?type=prd
 	t.Run("Docs type filter", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/docs?type=prd", nil)
+		req := httptest.NewRequest(http.MethodGet, "/concepts?type=prd", nil)
 		rec := httptest.NewRecorder()
 
 		h.Docs(rec, req)
@@ -149,7 +149,7 @@ func TestDocs_DocView(t *testing.T) {
 	defer cleanup()
 
 	t.Run("Doc view success", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/docs/adr-001-architecture", nil)
+		req := httptest.NewRequest(http.MethodGet, "/concepts/adr-001-architecture", nil)
 		rec := httptest.NewRecorder()
 
 		h.Doc(rec, req)
@@ -170,7 +170,7 @@ func TestDocs_DocView(t *testing.T) {
 	})
 
 	t.Run("Doc view 404 for missing document", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/docs/non-existent-doc", nil)
+		req := httptest.NewRequest(http.MethodGet, "/concepts/non-existent-doc", nil)
 		rec := httptest.NewRecorder()
 
 		h.Doc(rec, req)

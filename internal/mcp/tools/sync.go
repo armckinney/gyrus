@@ -12,7 +12,7 @@ import (
 func (h *Handler) registerSyncTools(s *server.MCPServer) {
 	// 11. gyrus_sync
 	syncTool := mcp.NewTool("gyrus_sync",
-		mcp.WithDescription("Scan workspace storage and rebuild/sync the search index"),
+		mcp.WithDescription("Scan project storage and rebuild/sync the search index"),
 	)
 	s.AddTool(syncTool, h.HandleSync)
 }

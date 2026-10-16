@@ -26,7 +26,7 @@ func NewUpdateCmd(application *app.App) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "update <id>",
-		Short: "Update existing document fields or body content",
+		Short: "Update existing concept fields or body content",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]
@@ -35,7 +35,7 @@ func NewUpdateCmd(application *app.App) *cobra.Command {
 				return err
 			}
 
-			patch := gyrus.DocumentPatch{}
+			patch := gyrus.ConceptPatch{}
 
 			if cmd.Flags().Changed("title") {
 				patch.Title = &title
@@ -72,20 +72,20 @@ func NewUpdateCmd(application *app.App) *cobra.Command {
 				data, _ := json.MarshalIndent(ref, "", "  ")
 				fmt.Println(string(data))
 			} else {
-				fmt.Printf("Updated document '%s' (v%d, %s)\n", ref.ID, ref.Version, ref.Status)
+				fmt.Printf("Updated concept '%s' (v%d, %s)\n", ref.ID, ref.Version, ref.Status)
 			}
 
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&title, "title", "", "New Document Title")
-	cmd.Flags().StringVar(&status, "status", "", "New Document Status")
+	cmd.Flags().StringVar(&title, "title", "", "New Concept Title")
+	cmd.Flags().StringVar(&status, "status", "", "New Concept Status")
 	cmd.Flags().StringVar(&tags, "tags", "", "New comma-separated list of tags")
 	cmd.Flags().StringVar(&dependencies, "dependencies", "", "New comma-separated list of dependent IDs")
 	cmd.Flags().StringVar(&content, "content", "", "New inline body content")
 	cmd.Flags().StringVar(&contentFile, "content-file", "", "Path to file containing new body content")
-	cmd.Flags().IntVar(&expectedVersion, "expected-version", 0, "Expected document version for optimistic concurrency check")
+	cmd.Flags().IntVar(&expectedVersion, "expected-version", 0, "Expected concept version for optimistic concurrency check")
 
 	return cmd
 }

@@ -12,9 +12,9 @@ type EmbeddingProvider interface {
 	Embed(ctx context.Context, text string) ([]float32, error)
 }
 
-// VectorDocument stores a document along with its vector embedding
-type VectorDocument struct {
-	gyrus.Document
+// VectorConcept stores a concept along with its vector embedding
+type VectorConcept struct {
+	gyrus.Concept
 	Vector []float32
 }
 
@@ -22,26 +22,26 @@ type VectorDocument struct {
 type Store struct {
 	LexicalProvider gyrus.SearchProvider
 	Embedder        EmbeddingProvider
-	Vectors         []VectorDocument // In-memory store for local cosine similarity
+	Vectors         []VectorConcept // In-memory store for local cosine similarity
 }
 
 func NewStore(lexical gyrus.SearchProvider, embedder EmbeddingProvider) *Store {
 	return &Store{
 		LexicalProvider: lexical,
 		Embedder:        embedder,
-		Vectors:         make([]VectorDocument, 0),
+		Vectors:         make([]VectorConcept, 0),
 	}
 }
 
-// AddDocument is used to index a document in the vector store
-func (s *Store) AddDocument(ctx context.Context, doc gyrus.Document) error {
+// AddConcept is used to index a concept in the vector store
+func (s *Store) AddConcept(ctx context.Context, doc gyrus.Concept) error {
 	vec, err := s.Embedder.Embed(ctx, doc.Content)
 	if err != nil {
 		return err
 	}
-	s.Vectors = append(s.Vectors, VectorDocument{
-		Document: doc,
-		Vector:   vec,
+	s.Vectors = append(s.Vectors, VectorConcept{
+		Concept: doc,
+		Vector:  vec,
 	})
 	return nil
 }
@@ -64,13 +64,13 @@ func (s *Store) Search(ctx context.Context, query string, filter gyrus.SearchFil
 
 	var vectorResults []gyrus.SearchResult
 	for _, vDoc := range s.Vectors {
-		if !matchFilter(vDoc.Document, filter) {
+		if !matchFilter(vDoc.Concept, filter) {
 			continue
 		}
 
 		sim := cosineSimilarity(queryVec, vDoc.Vector)
 		vectorResults = append(vectorResults, gyrus.SearchResult{
-			Document:    vDoc.Document,
+			Concept:     vDoc.Concept,
 			Score:       float64(sim),
 			MatchReason: "semantic similarity",
 		})
@@ -86,7 +86,7 @@ func (s *Store) Search(ctx context.Context, query string, filter gyrus.SearchFil
 	return merged, nil
 }
 
-func matchFilter(doc gyrus.Document, filter gyrus.SearchFilter) bool {
+func matchFilter(doc gyrus.Concept, filter gyrus.SearchFilter) bool {
 	if filter.Category != "" && doc.Category != filter.Category {
 		return false
 	}
@@ -96,7 +96,7 @@ func matchFilter(doc gyrus.Document, filter gyrus.SearchFilter) bool {
 	if filter.Status != "" && doc.Status != filter.Status {
 		return false
 	}
-	if filter.OwnerGroup != "" && doc.OwnerGroup != filter.OwnerGroup {
+	if filter.Tenant != "" && doc.Tenant != filter.Tenant {
 		return false
 	}
 	if filter.Tag != "" {
@@ -131,31 +131,31 @@ func cosineSimilarity(a, b []float32) float32 {
 func rrf(lexical, vector []gyrus.SearchResult) []gyrus.SearchResult {
 	const k = 60
 	scores := make(map[string]float64)
-	docs := make(map[string]gyrus.Document)
+	docs := make(map[string]gyrus.Concept)
 	reasons := make(map[string]string)
 
 	for i, res := range lexical {
 		rank := i + 1
-		scores[res.Document.ID] += 1.0 / float64(k+rank)
-		docs[res.Document.ID] = res.Document
-		reasons[res.Document.ID] = "lexical"
+		scores[res.Concept.ID] += 1.0 / float64(k+rank)
+		docs[res.Concept.ID] = res.Concept
+		reasons[res.Concept.ID] = "lexical"
 	}
 
 	for i, res := range vector {
 		rank := i + 1
-		scores[res.Document.ID] += 1.0 / float64(k+rank)
-		docs[res.Document.ID] = res.Document
-		if existing, ok := reasons[res.Document.ID]; ok {
-			reasons[res.Document.ID] = existing + ", semantic"
+		scores[res.Concept.ID] += 1.0 / float64(k+rank)
+		docs[res.Concept.ID] = res.Concept
+		if existing, ok := reasons[res.Concept.ID]; ok {
+			reasons[res.Concept.ID] = existing + ", semantic"
 		} else {
-			reasons[res.Document.ID] = "semantic"
+			reasons[res.Concept.ID] = "semantic"
 		}
 	}
 
 	var merged []gyrus.SearchResult
 	for id, score := range scores {
 		merged = append(merged, gyrus.SearchResult{
-			Document:    docs[id],
+			Concept:     docs[id],
 			Score:       score,
 			MatchReason: "hybrid: " + reasons[id],
 		})

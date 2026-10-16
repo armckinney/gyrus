@@ -12,7 +12,7 @@ import (
 //go:embed templates/*.md
 var embeddedTemplates embed.FS
 
-// ListEmbeddedTemplates returns all built-in document template types compiled in the binary.
+// ListEmbeddedTemplates returns all built-in concept template types compiled in the binary.
 func ListEmbeddedTemplates() []string {
 	entries, err := embeddedTemplates.ReadDir("templates")
 	if err != nil {
@@ -30,10 +30,10 @@ func ListEmbeddedTemplates() []string {
 }
 
 // ValidateSchemaContent verifies that a schema template contains valid OKF frontmatter
-// and matches the expected document type.
-func ValidateSchemaContent(docType string, content string) error {
-	if docType == "" || !idRegex.MatchString(docType) {
-		return fmt.Errorf("invalid schema document type '%s': must match regex ^[a-z0-9-_]+$", docType)
+// and matches the expected concept type.
+func ValidateSchemaContent(conceptType string, content string) error {
+	if conceptType == "" || !idRegex.MatchString(conceptType) {
+		return fmt.Errorf("invalid schema concept type '%s': must match regex ^[a-z0-9-_]+$", conceptType)
 	}
 	if strings.TrimSpace(content) == "" {
 		return fmt.Errorf("schema content cannot be empty")
@@ -44,14 +44,14 @@ func ValidateSchemaContent(docType string, content string) error {
 		return fmt.Errorf("invalid schema template frontmatter: %w", err)
 	}
 
-	if doc.Type != "" && string(doc.Type) != docType {
-		return fmt.Errorf("schema template type '%s' does not match target document type '%s'", doc.Type, docType)
+	if doc.Type != "" && string(doc.Type) != conceptType {
+		return fmt.Errorf("schema template type '%s' does not match target concept type '%s'", doc.Type, conceptType)
 	}
 
 	return nil
 }
 
-// ValidateSchemaPath verifies that a remote or local schema path conforms to enforced locations (.gyrus/schemas/<docType>.md)
+// ValidateSchemaPath verifies that a remote or local schema path conforms to enforced locations (.gyrus/schemas/<conceptType>.md)
 // and does not contain directory traversals.
 func ValidateSchemaPath(path string) error {
 	clean := filepath.ToSlash(filepath.Clean(path))
@@ -63,7 +63,7 @@ func ValidateSchemaPath(path string) error {
 	}
 	base := strings.TrimSuffix(filepath.Base(clean), ".md")
 	if !idRegex.MatchString(base) {
-		return fmt.Errorf("invalid schema path filename '%s': document type must match ^[a-z0-9-_]+$", base)
+		return fmt.Errorf("invalid schema path filename '%s': concept type must match ^[a-z0-9-_]+$", base)
 	}
 	if !strings.Contains(clean, ".gyrus/schemas/") && !strings.Contains(clean, "schemas/") {
 		return fmt.Errorf("invalid schema path '%s': must be located within .gyrus/schemas/", path)
@@ -71,22 +71,22 @@ func ValidateSchemaPath(path string) error {
 	return nil
 }
 
-// GetTemplate retrieves the schema template for a document type.
+// GetTemplate retrieves the schema template for a concept type.
 // It prioritizes custom templates in customSchemasDir, falling back to embedded binary templates.
-func GetTemplate(docType string, customSchemasDir string) (string, error) {
+func GetTemplate(conceptType string, customSchemasDir string) (string, error) {
 	// 1. Check custom user schemas directory in project repository if specified
 	if customSchemasDir != "" {
-		customPath := filepath.Join(customSchemasDir, fmt.Sprintf("%s.md", docType))
+		customPath := filepath.Join(customSchemasDir, fmt.Sprintf("%s.md", conceptType))
 		if data, err := os.ReadFile(customPath); err == nil {
 			return string(data), nil
 		}
 	}
 
 	// 2. Check embedded templates compiled inside the Gyrus binary
-	embedPath := fmt.Sprintf("templates/%s.md", docType)
+	embedPath := fmt.Sprintf("templates/%s.md", conceptType)
 	if data, err := embeddedTemplates.ReadFile(embedPath); err == nil {
 		return string(data), nil
 	}
 
-	return "", fmt.Errorf("schema template not found for document type '%s'", docType)
+	return "", fmt.Errorf("schema template not found for concept type '%s'", conceptType)
 }

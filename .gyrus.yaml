@@ -1,6 +1,5 @@
-# todo: this should just be owner_group/tenant
-default_owner_group: root
-workspace: gyrus
+tenant: root
+project: gyrus
 
 storage:
   provider: localfs

@@ -29,7 +29,7 @@ func (h *Handlers) Chat(w http.ResponseWriter, r *http.Request) {
 
 	var tenantResults []gyrus.SearchResult
 	if tenantFilter != "" {
-		tenantResults, _ = h.engine.Search(ctx, "", gyrus.SearchFilter{OwnerGroup: tenantFilter})
+		tenantResults, _ = h.engine.Search(ctx, "", gyrus.SearchFilter{Tenant: tenantFilter})
 	} else {
 		tenantResults = allSystemResults
 	}

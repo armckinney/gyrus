@@ -15,30 +15,30 @@ import (
 func (h *Handler) registerDocumentTools(s *server.MCPServer) {
 	// 1. gyrus_create
 	createTool := mcp.NewTool("gyrus_create",
-		mcp.WithDescription("Create a new OKF contract document"),
-		mcp.WithString("id", mcp.Required(), mcp.Description("Document ID (^[a-z0-9-_]+$)")),
-		mcp.WithString("title", mcp.Required(), mcp.Description("Document Title")),
+		mcp.WithDescription("Create a new OKF contract concept"),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Concept ID (^[a-z0-9-_]+$)")),
+		mcp.WithString("title", mcp.Required(), mcp.Description("Concept Title")),
 		mcp.WithString("category", mcp.Required(), mcp.Description("Category (architecture|business-logic|product|operations|technical)")),
 		mcp.WithString("type", mcp.Required(), mcp.Description("Type (adr|prd|guide|specification|...)")),
-		mcp.WithString("owner_group", mcp.Description("Owner Group (default: root)")),
+		mcp.WithString("tenant", mcp.Description("Tenant (default: root)")),
 		mcp.WithString("status", mcp.Description("Status (draft|proposed|active)")),
-		mcp.WithString("scope", mcp.Description("Target scope (workspace or reference)")),
-		mcp.WithString("workspace", mcp.Description("Target workspace name")),
+		mcp.WithString("scope", mcp.Description("Target scope (project or reference)")),
+		mcp.WithString("project", mcp.Description("Target project name")),
 		mcp.WithString("content", mcp.Description("Body content")),
 	)
 	s.AddTool(createTool, h.HandleCreate)
 
 	// 2. gyrus_get
 	getTool := mcp.NewTool("gyrus_get",
-		mcp.WithDescription("Get an OKF document by ID"),
-		mcp.WithString("id", mcp.Required(), mcp.Description("Document ID")),
+		mcp.WithDescription("Get an OKF concept by ID"),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Concept ID")),
 	)
 	s.AddTool(getTool, h.HandleGet)
 
 	// 3. gyrus_update
 	updateTool := mcp.NewTool("gyrus_update",
-		mcp.WithDescription("Update an existing OKF document"),
-		mcp.WithString("id", mcp.Required(), mcp.Description("Document ID")),
+		mcp.WithDescription("Update an existing OKF concept"),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Concept ID")),
 		mcp.WithString("title", mcp.Description("Updated Title")),
 		mcp.WithString("status", mcp.Description("Updated Status")),
 		mcp.WithString("tags", mcp.Description("Comma-separated tags")),
@@ -49,8 +49,8 @@ func (h *Handler) registerDocumentTools(s *server.MCPServer) {
 
 	// 4. gyrus_archive
 	archiveTool := mcp.NewTool("gyrus_archive",
-		mcp.WithDescription("Archive (delete) a document from storage and search index"),
-		mcp.WithString("id", mcp.Required(), mcp.Description("Document ID to archive")),
+		mcp.WithDescription("Archive (delete) a concept from storage and search index"),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Concept ID to archive")),
 	)
 	s.AddTool(archiveTool, h.HandleArchive)
 }
@@ -61,13 +61,13 @@ func (h *Handler) HandleCreate(ctx context.Context, req mcp.CallToolRequest) (*m
 	title := getArgString(req, "title")
 	category := getArgString(req, "category")
 	docType := getArgString(req, "type")
-	ownerGroup := getArgString(req, "owner_group")
-	if ownerGroup == "" {
-		ownerGroup = "root"
+	tenant := getArgString(req, "tenant")
+	if tenant == "" {
+		tenant = "root"
 	}
 	status := getArgString(req, "status")
 	scope := getArgString(req, "scope")
-	workspace := getArgString(req, "workspace")
+	project := getArgString(req, "project")
 	content := getArgString(req, "content")
 
 	if status == "" {
@@ -77,17 +77,17 @@ func (h *Handler) HandleCreate(ctx context.Context, req mcp.CallToolRequest) (*m
 		}
 	}
 
-	doc := gyrus.Document{
-		ID:         id,
-		Title:      title,
-		Category:   gyrus.Category(category),
-		Type:       gyrus.DocumentType(docType),
-		OwnerGroup: ownerGroup,
-		Version:    1,
-		Status:     status,
-		Scope:      scope,
-		Workspace:  workspace,
-		Content:    content,
+	doc := gyrus.Concept{
+		ID:       id,
+		Title:    title,
+		Category: gyrus.Category(category),
+		Type:     gyrus.ConceptType(docType),
+		Tenant:   tenant,
+		Version:  1,
+		Status:   status,
+		Scope:    scope,
+		Project:  project,
+		Content:  content,
 	}
 
 	ref, err := h.engine.Create(ctx, doc)
@@ -104,7 +104,7 @@ func (h *Handler) HandleGet(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	id := getArgString(req, "id")
 	doc, err := h.engine.Get(ctx, id)
 	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("document not found: %v", err)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("concept not found: %v", err)), nil
 	}
 
 	data, _ := okf.SerializeMarkdown(&doc)
@@ -120,7 +120,7 @@ func (h *Handler) HandleUpdate(ctx context.Context, req mcp.CallToolRequest) (*m
 	content := getArgString(req, "content")
 	expectedVersion := getArgInt(req, "expected_version")
 
-	patch := gyrus.DocumentPatch{}
+	patch := gyrus.ConceptPatch{}
 	if title != "" {
 		patch.Title = &title
 	}
@@ -150,6 +150,5 @@ func (h *Handler) HandleArchive(ctx context.Context, req mcp.CallToolRequest) (*
 	if err := h.engine.Archive(ctx, id); err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("archive failed: %v", err)), nil
 	}
-
-	return mcp.NewToolResultText(fmt.Sprintf("Archived document '%s'", id)), nil
+	return mcp.NewToolResultText(fmt.Sprintf("Concept '%s' archived successfully", id)), nil
 }

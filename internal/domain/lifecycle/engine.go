@@ -13,7 +13,7 @@ import (
 
 // TransitionError indicates an illegal state transition attempt.
 type TransitionError struct {
-	DocType       gyrus.DocumentType
+	DocType       gyrus.ConceptType
 	CurrentStatus string
 	NewStatus     string
 }
@@ -22,7 +22,7 @@ func (e *TransitionError) Error() string {
 	return fmt.Sprintf("invalid lifecycle transition for type '%s': cannot transition from '%s' to '%s'", e.DocType, e.CurrentStatus, e.NewStatus)
 }
 
-// adrTransitions defines valid state transitions for ADR documents.
+// adrTransitions defines valid state transitions for ADR concepts.
 var adrTransitions = map[string]map[string]bool{
 	"proposed": {
 		"accepted": true,
@@ -51,7 +51,7 @@ var ipTransitions = map[string]map[string]bool{
 	},
 }
 
-// generalTransitions defines default state transitions for standard document types.
+// generalTransitions defines default state transitions for standard concept types.
 var generalTransitions = map[string]map[string]bool{
 	"draft": {
 		"active":   true,
@@ -67,7 +67,7 @@ var generalTransitions = map[string]map[string]bool{
 }
 
 // ValidateTransition verifies whether moving from currentStatus to newStatus is permitted for docType.
-func ValidateTransition(docType gyrus.DocumentType, currentStatus, newStatus string) error {
+func ValidateTransition(docType gyrus.ConceptType, currentStatus, newStatus string) error {
 	if currentStatus == newStatus {
 		return nil
 	}
@@ -95,18 +95,18 @@ func ValidateTransition(docType gyrus.DocumentType, currentStatus, newStatus str
 	return nil
 }
 
-// ImmutabilityError indicates an illegal attempt to mutate content on a locked/immutable document.
+// ImmutabilityError indicates an illegal attempt to mutate content on a locked/immutable concept.
 type ImmutabilityError struct {
-	DocType gyrus.DocumentType
+	DocType gyrus.ConceptType
 	Status  string
 }
 
 func (e *ImmutabilityError) Error() string {
-	return fmt.Sprintf("cannot modify content of immutable document type '%s' in status '%s'", e.DocType, e.Status)
+	return fmt.Sprintf("cannot modify content of immutable concept type '%s' in status '%s'", e.DocType, e.Status)
 }
 
-// IsImmutableType returns true if the document type is an immutable historical decision log.
-func IsImmutableType(docType gyrus.DocumentType) bool {
+// IsImmutableType returns true if the concept type is an immutable historical decision log.
+func IsImmutableType(docType gyrus.ConceptType) bool {
 	switch docType {
 	case gyrus.TypeADR, gyrus.TypeImprovementProposal, gyrus.TypeReleaseNote:
 		return true
@@ -115,8 +115,8 @@ func IsImmutableType(docType gyrus.DocumentType) bool {
 	}
 }
 
-// IsLockedStatus returns true if the document status represents a finalized/locked state.
-func IsLockedStatus(docType gyrus.DocumentType, status string, isExplicitlyImmutable bool) bool {
+// IsLockedStatus returns true if the concept status represents a finalized/locked state.
+func IsLockedStatus(docType gyrus.ConceptType, status string, isExplicitlyImmutable bool) bool {
 	if isExplicitlyImmutable {
 		return status != "draft" && status != "proposed"
 	}
@@ -129,7 +129,7 @@ func IsLockedStatus(docType gyrus.DocumentType, status string, isExplicitlyImmut
 }
 
 // ValidateMutation verifies whether content modifications are permitted for the given docType, status, and immutability flag.
-func ValidateMutation(docType gyrus.DocumentType, currentStatus string, isExplicitlyImmutable bool, contentChanged bool) error {
+func ValidateMutation(docType gyrus.ConceptType, currentStatus string, isExplicitlyImmutable bool, contentChanged bool) error {
 	if contentChanged && (isExplicitlyImmutable || IsImmutableType(docType)) && IsLockedStatus(docType, currentStatus, isExplicitlyImmutable) {
 		return &ImmutabilityError{
 			DocType: docType,
@@ -139,59 +139,59 @@ func ValidateMutation(docType gyrus.DocumentType, currentStatus string, isExplic
 	return nil
 }
 
-// Engine orchestrates document lifecycle, indexing, search, and knowledge graph edge operations.
+// Engine orchestrates concept lifecycle, indexing, search, and knowledge graph edge operations.
 type Engine struct {
-	store            gyrus.DocumentStore
-	schemaStore      gyrus.SchemaStore
-	search           gyrus.SearchProvider
-	indexer          gyrus.IndexStore
-	graph            gyrus.GraphStore
-	storageRoot      string
-	defaultWorkspace string
+	store          gyrus.ConceptStore
+	schemaStore    gyrus.SchemaStore
+	search         gyrus.SearchProvider
+	indexer        gyrus.IndexStore
+	graph          gyrus.GraphStore
+	storageRoot    string
+	defaultProject string
 }
 
 // NewEngine constructs a new lifecycle Engine.
-func NewEngine(store gyrus.DocumentStore, search gyrus.SearchProvider, indexer gyrus.IndexStore, graph gyrus.GraphStore, storageRoot string) *Engine {
-	return NewEngineWithWorkspace(store, search, indexer, graph, storageRoot, "")
+func NewEngine(store gyrus.ConceptStore, search gyrus.SearchProvider, indexer gyrus.IndexStore, graph gyrus.GraphStore, storageRoot string) *Engine {
+	return NewEngineWithProject(store, search, indexer, graph, storageRoot, "")
 }
 
-// NewEngineWithWorkspace constructs a new lifecycle Engine with a default workspace name.
-func NewEngineWithWorkspace(store gyrus.DocumentStore, search gyrus.SearchProvider, indexer gyrus.IndexStore, graph gyrus.GraphStore, storageRoot string, defaultWorkspace string) *Engine {
+// NewEngineWithProject constructs a new lifecycle Engine with a default project name.
+func NewEngineWithProject(store gyrus.ConceptStore, search gyrus.SearchProvider, indexer gyrus.IndexStore, graph gyrus.GraphStore, storageRoot string, defaultProject string) *Engine {
 	var schemaStore gyrus.SchemaStore
 	if ss, ok := store.(gyrus.SchemaStore); ok {
 		schemaStore = ss
 	}
 
 	return &Engine{
-		store:            store,
-		schemaStore:      schemaStore,
-		search:           search,
-		indexer:          indexer,
-		graph:            graph,
-		storageRoot:      storageRoot,
-		defaultWorkspace: defaultWorkspace,
+		store:          store,
+		schemaStore:    schemaStore,
+		search:         search,
+		indexer:        indexer,
+		graph:          graph,
+		storageRoot:    storageRoot,
+		defaultProject: defaultProject,
 	}
 }
 
-// DefaultWorkspace returns the engine's default workspace name.
-func (e *Engine) DefaultWorkspace() string {
-	return e.defaultWorkspace
+// DefaultProject returns the engine's default project name.
+func (e *Engine) DefaultProject() string {
+	return e.defaultProject
 }
 
-// Create validates and persists a new OKF contract document.
-func (e *Engine) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentRef, error) {
-	if doc.Workspace == "" && doc.Scope != "reference" && e.defaultWorkspace != "" {
-		doc.Workspace = e.defaultWorkspace
-		doc.Scope = "workspace"
+// Create validates and persists a new OKF contract concept.
+func (e *Engine) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRef, error) {
+	if doc.Project == "" && doc.Scope != "reference" && e.defaultProject != "" {
+		doc.Project = e.defaultProject
+		doc.Scope = "project"
 	}
 
 	if err := okf.Validate(&doc); err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("document validation failed: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("concept validation failed: %w", err)
 	}
 
 	ref, err := e.store.Create(ctx, doc)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	if e.indexer != nil {
@@ -201,32 +201,32 @@ func (e *Engine) Create(ctx context.Context, doc gyrus.Document) (gyrus.Document
 	return ref, nil
 }
 
-// Get retrieves a document by ID.
-func (e *Engine) Get(ctx context.Context, id string) (gyrus.Document, error) {
+// Get retrieves a concept by ID.
+func (e *Engine) Get(ctx context.Context, id string) (gyrus.Concept, error) {
 	return e.store.Get(ctx, id)
 }
 
-// Update mutates an existing document.
-func (e *Engine) Update(ctx context.Context, id string, patch gyrus.DocumentPatch, expectedVersion int) (gyrus.DocumentRef, error) {
+// Update mutates an existing concept.
+func (e *Engine) Update(ctx context.Context, id string, patch gyrus.ConceptPatch, expectedVersion int) (gyrus.ConceptRef, error) {
 	existing, err := e.store.Get(ctx, id)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	contentChanged := patch.Content != nil && *patch.Content != existing.Content
 	if err := ValidateMutation(existing.Type, existing.Status, existing.Immutable, contentChanged); err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	if patch.Status != nil {
 		if err := ValidateTransition(existing.Type, existing.Status, *patch.Status); err != nil {
-			return gyrus.DocumentRef{}, err
+			return gyrus.ConceptRef{}, err
 		}
 	}
 
 	ref, err := e.store.Update(ctx, id, patch, expectedVersion)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	if e.indexer != nil {
@@ -238,7 +238,7 @@ func (e *Engine) Update(ctx context.Context, id string, patch gyrus.DocumentPatc
 	return ref, nil
 }
 
-// Archive marks a document as archived.
+// Archive marks a concept as archived.
 func (e *Engine) Archive(ctx context.Context, id string) error {
 	if err := e.store.Archive(ctx, id); err != nil {
 		return err
@@ -251,8 +251,8 @@ func (e *Engine) Archive(ctx context.Context, id string) error {
 
 // Search executes search over the configured search provider.
 func (e *Engine) Search(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
-	if filter.Workspace == "" && filter.Scope != "all" && filter.Scope != "reference" && e.defaultWorkspace != "" {
-		filter.Workspace = e.defaultWorkspace
+	if filter.Project == "" && filter.Scope != "all" && filter.Scope != "reference" && e.defaultProject != "" {
+		filter.Project = e.defaultProject
 	}
 
 	if e.search != nil {
@@ -267,24 +267,24 @@ func (e *Engine) Search(ctx context.Context, query string, filter gyrus.SearchFi
 	return nil, fmt.Errorf("no search or index provider configured")
 }
 
-// SuggestContext analyzes a prompt and returns relevant context layer documents.
-func (e *Engine) SuggestContext(ctx context.Context, prompt string, category string, maxDocs int) (string, error) {
+// SuggestContext analyzes a prompt and returns relevant context layer concepts.
+func (e *Engine) SuggestContext(ctx context.Context, prompt string, category string, maxConcepts int) (string, error) {
 	filter := gyrus.SearchFilter{}
 	if category != "" {
 		filter.Category = gyrus.Category(category)
 	}
-	return e.SuggestContextWithFilter(ctx, prompt, filter, maxDocs)
+	return e.SuggestContextWithFilter(ctx, prompt, filter, maxConcepts)
 }
 
-// SuggestContextWithFilter analyzes a prompt with explicit search filter constraints, prioritizes workspace documents,
+// SuggestContextWithFilter analyzes a prompt with explicit search filter constraints, prioritizes project concepts,
 // expands linked reference dependencies, and returns a formatted context layer.
-func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, filter gyrus.SearchFilter, maxDocs int) (string, error) {
-	if maxDocs <= 0 {
-		maxDocs = 5
+func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, filter gyrus.SearchFilter, maxConcepts int) (string, error) {
+	if maxConcepts <= 0 {
+		maxConcepts = 5
 	}
 
-	if filter.Workspace == "" && filter.Scope != "all" && filter.Scope != "reference" && e.defaultWorkspace != "" {
-		filter.Workspace = e.defaultWorkspace
+	if filter.Project == "" && filter.Scope != "all" && filter.Scope != "reference" && e.defaultProject != "" {
+		filter.Project = e.defaultProject
 	}
 
 	results, err := e.Search(ctx, prompt, filter)
@@ -293,22 +293,22 @@ func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, fi
 	}
 
 	seenIDs := make(map[string]bool)
-	var wsDocs []gyrus.Document
-	var refDocs []gyrus.Document
+	var projectDocs []gyrus.Concept
+	var refDocs []gyrus.Concept
 
 	for _, res := range results {
-		seenIDs[res.Document.ID] = true
-		if res.Document.Scope == "workspace" {
-			wsDocs = append(wsDocs, res.Document)
+		seenIDs[res.Concept.ID] = true
+		if res.Concept.Scope == "project" {
+			projectDocs = append(projectDocs, res.Concept)
 		} else {
-			refDocs = append(refDocs, res.Document)
+			refDocs = append(refDocs, res.Concept)
 		}
 	}
 
-	// Dependency link expansion: For workspace documents, expand linked reference dependencies
-	var linkedRefDocs []gyrus.Document
-	for _, wsDoc := range wsDocs {
-		for _, depID := range wsDoc.Dependencies {
+	// Dependency link expansion: For project concepts, expand linked reference dependencies
+	var linkedRefDocs []gyrus.Concept
+	for _, projectDoc := range projectDocs {
+		for _, depID := range projectDoc.Dependencies {
 			if !seenIDs[depID] {
 				seenIDs[depID] = true
 				if linkedDoc, err := e.Get(ctx, depID); err == nil {
@@ -318,21 +318,21 @@ func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, fi
 		}
 	}
 
-	// Assemble combined prioritized documents up to maxDocs
-	// Priority: 1) Workspace documents, 2) Linked reference documents, 3) General reference documents
-	var finalDocs []gyrus.Document
-	for _, d := range wsDocs {
-		if len(finalDocs) < maxDocs {
+	// Assemble combined prioritized concepts up to maxConcepts
+	// Priority: 1) Project concepts, 2) Linked reference concepts, 3) General reference concepts
+	var finalDocs []gyrus.Concept
+	for _, d := range projectDocs {
+		if len(finalDocs) < maxConcepts {
 			finalDocs = append(finalDocs, d)
 		}
 	}
 	for _, d := range linkedRefDocs {
-		if len(finalDocs) < maxDocs {
+		if len(finalDocs) < maxConcepts {
 			finalDocs = append(finalDocs, d)
 		}
 	}
 	for _, d := range refDocs {
-		if len(finalDocs) < maxDocs {
+		if len(finalDocs) < maxConcepts {
 			finalDocs = append(finalDocs, d)
 		}
 	}
@@ -340,28 +340,28 @@ func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, fi
 	var sb strings.Builder
 	sb.WriteString("=== SUGGESTED CONTEXT LAYER ===\n\n")
 
-	// Group output by section: Workspace context first, then Shared Reference context
-	var finalWs []gyrus.Document
-	var finalRef []gyrus.Document
+	// Group output by section: Project context first, then Shared Reference context
+	var finalProject []gyrus.Concept
+	var finalRef []gyrus.Concept
 	for _, d := range finalDocs {
-		if d.Scope == "workspace" {
-			finalWs = append(finalWs, d)
+		if d.Scope == "project" {
+			finalProject = append(finalProject, d)
 		} else {
 			finalRef = append(finalRef, d)
 		}
 	}
 
-	if len(finalWs) > 0 {
-		wsName := filter.Workspace
-		if wsName == "" && len(finalWs) > 0 && finalWs[0].Workspace != "" {
-			wsName = finalWs[0].Workspace
+	if len(finalProject) > 0 {
+		projectName := filter.Project
+		if projectName == "" && len(finalProject) > 0 && finalProject[0].Project != "" {
+			projectName = finalProject[0].Project
 		}
-		if wsName != "" {
-			sb.WriteString(fmt.Sprintf("[WORKSPACE CONTEXT: %s]\n\n", wsName))
+		if projectName != "" {
+			sb.WriteString(fmt.Sprintf("[PROJECT CONTEXT: %s]\n\n", projectName))
 		} else {
-			sb.WriteString("[WORKSPACE CONTEXT]\n\n")
+			sb.WriteString("[PROJECT CONTEXT]\n\n")
 		}
-		for _, doc := range finalWs {
+		for _, doc := range finalProject {
 			sb.WriteString(fmt.Sprintf("--- [%s] %s (%s/%s) ---\n", doc.ID, doc.Title, doc.Category, doc.Type))
 			sb.WriteString(doc.Content)
 			sb.WriteString("\n\n")
@@ -369,11 +369,11 @@ func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, fi
 	}
 
 	if len(finalRef) > 0 {
-		owner := "root"
-		if len(finalRef) > 0 && finalRef[0].OwnerGroup != "" {
-			owner = finalRef[0].OwnerGroup
+		tenant := "root"
+		if len(finalRef) > 0 && finalRef[0].Tenant != "" {
+			tenant = finalRef[0].Tenant
 		}
-		sb.WriteString(fmt.Sprintf("[SHARED REFERENCE LAYER: %s]\n\n", owner))
+		sb.WriteString(fmt.Sprintf("[SHARED REFERENCE LAYER: %s]\n\n", tenant))
 		for _, doc := range finalRef {
 			sb.WriteString(fmt.Sprintf("--- [%s] %s (%s/%s) ---\n", doc.ID, doc.Title, doc.Category, doc.Type))
 			sb.WriteString(doc.Content)
@@ -384,7 +384,7 @@ func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, fi
 	return sb.String(), nil
 }
 
-// Link connects two documents with a directed relationship edge.
+// Link connects two concepts with a directed relationship edge.
 func (e *Engine) Link(ctx context.Context, fromID string, toID string, relType gyrus.RelationshipType) error {
 	if e.graph == nil {
 		return fmt.Errorf("no graph store configured")
@@ -394,18 +394,18 @@ func (e *Engine) Link(ctx context.Context, fromID string, toID string, relType g
 		relType = gyrus.RelDependsOn
 	}
 
-	edge := gyrus.DocumentEdge{
-		FromDocumentID:   fromID,
-		ToDocumentID:     toID,
+	edge := gyrus.ConceptEdge{
+		FromConceptID:    fromID,
+		ToConceptID:      toID,
 		RelationshipType: relType,
 		CreatedBy:        "engine",
 		CreatedAt:        time.Now().Truncate(time.Second),
 	}
 
-	return e.graph.UpsertEdges(ctx, []gyrus.DocumentEdge{edge})
+	return e.graph.UpsertEdges(ctx, []gyrus.ConceptEdge{edge})
 }
 
-// Unlink removes a directed relationship edge between two documents.
+// Unlink removes a directed relationship edge between two concepts.
 func (e *Engine) Unlink(ctx context.Context, fromID string, toID string, relType gyrus.RelationshipType) error {
 	if e.graph == nil {
 		return fmt.Errorf("no graph store configured")
@@ -418,15 +418,15 @@ func (e *Engine) Unlink(ctx context.Context, fromID string, toID string, relType
 	return e.graph.DeleteEdges(ctx, fromID, toID, relType)
 }
 
-// Neighbors retrieves neighboring relationship edges for a document.
-func (e *Engine) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilter) ([]gyrus.DocumentEdge, error) {
+// Neighbors retrieves neighboring relationship edges for a concept.
+func (e *Engine) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilter) ([]gyrus.ConceptEdge, error) {
 	if e.graph == nil {
 		return nil, fmt.Errorf("no graph store configured")
 	}
 	return e.graph.Neighbors(ctx, id, filter)
 }
 
-// Traverse executes a graph path search from a start document.
+// Traverse executes a graph path search from a start concept.
 func (e *Engine) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.GraphPath, error) {
 	if e.graph == nil {
 		return nil, fmt.Errorf("no graph store configured")
@@ -442,24 +442,24 @@ func (e *Engine) Sync(ctx context.Context) (gyrus.SyncReport, error) {
 	return e.indexer.Sync(ctx, e.storageRoot)
 }
 
-// GetSchema retrieves the schema template for a document type.
+// GetSchema retrieves the schema template for a concept type.
 // Precedence: Active Persistence Layer -> Pre-compiled Binary Embedded Templates.
 // Returns an error if the schema template is not found in either source.
-func (e *Engine) GetSchema(ctx context.Context, docType string) (string, error) {
+func (e *Engine) GetSchema(ctx context.Context, conceptType string) (string, error) {
 	if e.schemaStore != nil {
-		if content, err := e.schemaStore.GetSchema(ctx, docType); err == nil && strings.TrimSpace(content) != "" {
+		if content, err := e.schemaStore.GetSchema(ctx, conceptType); err == nil && strings.TrimSpace(content) != "" {
 			return content, nil
 		}
 	}
-	return okf.GetTemplate(docType, "")
+	return okf.GetTemplate(conceptType, "")
 }
 
 // SaveSchema persists an OKF schema template into the active persistence layer.
-func (e *Engine) SaveSchema(ctx context.Context, docType string, content string) error {
+func (e *Engine) SaveSchema(ctx context.Context, conceptType string, content string) error {
 	if e.schemaStore == nil {
 		return fmt.Errorf("active storage provider does not support schema persistence")
 	}
-	return e.schemaStore.SaveSchema(ctx, docType, content)
+	return e.schemaStore.SaveSchema(ctx, conceptType, content)
 }
 
 // ListSchemas enumerates all available schemas across persistence layer and embedded templates.
@@ -500,9 +500,9 @@ func (e *Engine) ListSchemas(ctx context.Context) ([]gyrus.SchemaInfo, error) {
 }
 
 // DeleteSchema removes a custom schema template from the persistence layer.
-func (e *Engine) DeleteSchema(ctx context.Context, docType string) error {
+func (e *Engine) DeleteSchema(ctx context.Context, conceptType string) error {
 	if e.schemaStore == nil {
 		return fmt.Errorf("active storage provider does not support schema persistence")
 	}
-	return e.schemaStore.DeleteSchema(ctx, docType)
+	return e.schemaStore.DeleteSchema(ctx, conceptType)
 }

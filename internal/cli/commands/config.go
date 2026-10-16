@@ -66,18 +66,19 @@ func NewConfigCmd(application *app.App) *cobra.Command {
 // NewConfigInitCmd constructs the 'config init' Cobra subcommand.
 func NewConfigInitCmd(application *app.App) *cobra.Command {
 	var (
-		profile    string
-		ownerGroup string
-		global     bool
-		force      bool
+		profile string
+		tenant  string
+		project string
+		global  bool
+		force   bool
 	)
 
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "Initialize .gyrus.yaml workspace or global configuration",
+		Short: "Initialize .gyrus.yaml project or global configuration",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if global {
-				cfgPath, err := config.WriteGlobalConfigFile(config.Profile(profile), ownerGroup, force)
+				cfgPath, err := config.WriteGlobalConfigFile(config.Profile(profile), tenant, force, project)
 				if err != nil {
 					return err
 				}
@@ -89,10 +90,11 @@ func NewConfigInitCmd(application *app.App) *cobra.Command {
 					fmt.Printf("🚀 Initialized Gyrus global configuration successfully!\n")
 					fmt.Printf("   - Configuration: %s (Profile: %s)\n", cfgPath, profile)
 					fmt.Printf("   - Storage Root:  %s\n", storageDir)
-					fmt.Printf("   - Default Owner: %s\n", ownerGroup)
+					fmt.Printf("   - Default Tenant: %s\n", tenant)
+					fmt.Printf("   - Default Project: %s\n", project)
 				} else {
-					fmt.Printf("{\"status\":\"configured\",\"config_file\":\"%s\",\"profile\":\"%s\",\"storage\":\"%s\",\"owner_group\":\"%s\",\"scope\":\"global\"}\n",
-						cfgPath, profile, storageDir, ownerGroup)
+					fmt.Printf("{\"status\":\"configured\",\"config_file\":\"%s\",\"profile\":\"%s\",\"storage\":\"%s\",\"tenant\":\"%s\",\"project\":\"%s\",\"scope\":\"global\"}\n",
+						cfgPath, profile, storageDir, tenant, project)
 				}
 				return nil
 			}
@@ -103,30 +105,33 @@ func NewConfigInitCmd(application *app.App) *cobra.Command {
 			}
 
 			res, err := config.RunConfigSetup(config.ConfigSetupOptions{
-				WorkspaceDir: cwd,
-				Profile:      config.Profile(profile),
-				OwnerGroup:   ownerGroup,
+				ProjectDir: cwd,
+				Profile:    config.Profile(profile),
+				Tenant:     tenant,
+				Project:    project,
 			})
 			if err != nil {
 				return err
 			}
 
 			if !GlobalJSONOutput {
-				fmt.Printf("🚀 Initialized Gyrus workspace configuration successfully!\n")
+				fmt.Printf("🚀 Initialized Gyrus project configuration successfully!\n")
 				fmt.Printf("   - Configuration: %s (Profile: %s)\n", res.ConfigFile, profile)
 				fmt.Printf("   - Storage Root:  %s\n", res.StorageDir)
-				fmt.Printf("   - Default Owner: %s\n", res.OwnerGroup)
+				fmt.Printf("   - Default Tenant: %s\n", res.Tenant)
+				fmt.Printf("   - Default Project: %s\n", res.Project)
 			} else {
-				fmt.Printf("{\"status\":\"configured\",\"config_file\":\"%s\",\"profile\":\"%s\",\"storage\":\"%s\",\"owner_group\":\"%s\",\"scope\":\"workspace\"}\n",
-					res.ConfigFile, profile, res.StorageDir, res.OwnerGroup)
+				fmt.Printf("{\"status\":\"configured\",\"config_file\":\"%s\",\"profile\":\"%s\",\"storage\":\"%s\",\"tenant\":\"%s\",\"project\":\"%s\",\"scope\":\"project\"}\n",
+					res.ConfigFile, profile, res.StorageDir, res.Tenant, res.Project)
 			}
 			return nil
 		},
 	}
 
 	cmd.Flags().StringVarP(&profile, "profile", "p", "local", "Configuration profile: local, git, blob, s3, azure, gcs, postgres, vector")
-	cmd.Flags().StringVarP(&ownerGroup, "owner-group", "o", "root", "Default owner group for context documents")
-	cmd.Flags().BoolVarP(&global, "global", "g", false, "Write configuration to global ~/.gyrus.yaml instead of workspace")
+	cmd.Flags().StringVarP(&tenant, "tenant", "t", "root", "Default tenant for context concepts")
+	cmd.Flags().StringVarP(&project, "project", "P", "default", "Default project for context concepts")
+	cmd.Flags().BoolVarP(&global, "global", "g", false, "Write configuration to global ~/.gyrus.yaml instead of project")
 	cmd.Flags().BoolVarP(&force, "force", "f", false, "Overwrite existing configuration file without prompting")
 
 	return cmd

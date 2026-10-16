@@ -11,18 +11,18 @@ import (
 )
 
 func (s *Server) registerResources() {
-	docTemplate := mcp.NewResourceTemplate(
-		"memory://doc/{id}",
-		"OKF Document Content",
-		mcp.WithTemplateDescription("Reads an Open Knowledge Format contract document by ID"),
+	conceptTemplate := mcp.NewResourceTemplate(
+		"memory://concept/{id}",
+		"OKF Concept Content",
+		mcp.WithTemplateDescription("Reads an Open Knowledge Format contract concept by ID"),
 		mcp.WithTemplateMIMEType("text/markdown"),
 	)
-	s.mcpServer.AddResourceTemplate(docTemplate, s.handleReadResource)
+	s.mcpServer.AddResourceTemplate(conceptTemplate, s.handleReadResource)
 
 	schemaTemplate := mcp.NewResourceTemplate(
-		"memory://schema/{document_type}",
+		"memory://schema/{concept_type}",
 		"OKF Schema Template",
-		mcp.WithTemplateDescription("Retrieves the OKF contract schema template for a document type"),
+		mcp.WithTemplateDescription("Retrieves the OKF contract schema template for a concept type"),
 		mcp.WithTemplateMIMEType("text/markdown"),
 	)
 	s.mcpServer.AddResourceTemplate(schemaTemplate, s.handleReadResource)
@@ -58,16 +58,16 @@ func (s *Server) handleReadResource(ctx context.Context, req mcp.ReadResourceReq
 		}, nil
 	}
 
-	// 2. memory://schema/{document_type}
+	// 2. memory://schema/{concept_type}
 	if strings.HasPrefix(uri, "memory://schema/") {
-		docType := strings.TrimPrefix(uri, "memory://schema/")
-		if docType == "" {
+		conceptType := strings.TrimPrefix(uri, "memory://schema/")
+		if conceptType == "" {
 			return nil, fmt.Errorf("invalid schema URI: %s", uri)
 		}
 
-		template, err := s.engine.GetSchema(ctx, docType)
+		template, err := s.engine.GetSchema(ctx, conceptType)
 		if err != nil {
-			return nil, fmt.Errorf("schema not found for type '%s': %w", docType, err)
+			return nil, fmt.Errorf("schema not found for type '%s': %w", conceptType, err)
 		}
 
 		return []mcp.ResourceContents{
@@ -79,16 +79,16 @@ func (s *Server) handleReadResource(ctx context.Context, req mcp.ReadResourceReq
 		}, nil
 	}
 
-	// 3. memory://doc/{id}
-	if strings.HasPrefix(uri, "memory://doc/") {
-		id := strings.TrimPrefix(uri, "memory://doc/")
+	// 3. memory://concept/{id}
+	if strings.HasPrefix(uri, "memory://concept/") {
+		id := strings.TrimPrefix(uri, "memory://concept/")
 		if id == "" {
-			return nil, fmt.Errorf("invalid document URI: %s", uri)
+			return nil, fmt.Errorf("invalid concept URI: %s", uri)
 		}
 
 		doc, err := s.engine.Get(ctx, id)
 		if err != nil {
-			return nil, fmt.Errorf("document not found: %w", err)
+			return nil, fmt.Errorf("concept not found: %w", err)
 		}
 
 		data, err := okf.SerializeMarkdown(&doc)

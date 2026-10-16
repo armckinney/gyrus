@@ -57,7 +57,7 @@ title: <Clean Document Title>
 category: operations
 type: runbook
 format: markdown
-owner_group: <team-owning-document>
+tenant: <team-owning-document>
 version: 1
 status: active
 tags: []

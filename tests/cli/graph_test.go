@@ -29,7 +29,7 @@ func TestCLI_LinkAndUnlink(t *testing.T) {
 		"--title", "Product Roadmap PRD",
 		"--category", "product",
 		"--type", "prd",
-		"--owner-group", "product-team",
+		"--tenant", "product-team",
 		"--status", "active",
 		"--content", "Roadmap planning document.",
 	)
@@ -43,7 +43,7 @@ func TestCLI_LinkAndUnlink(t *testing.T) {
 		"--title", "Storage Graph Driver",
 		"--category", "architecture",
 		"--type", "adr",
-		"--owner-group", "platform-team",
+		"--tenant", "platform-team",
 		"--status", "accepted",
 		"--content", "SQLite and Postgres graph relationship edges.",
 	)

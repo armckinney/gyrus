@@ -41,7 +41,7 @@ func TestCLILinkAndSyncAndValidate(t *testing.T) {
 		"--title", "Doc One",
 		"--category", "architecture",
 		"--type", "adr",
-		"--owner-group", "team",
+		"--tenant", "team",
 		"--content", "Body 1",
 	})
 	if err := rootCmd.Execute(); err != nil {
@@ -54,7 +54,7 @@ func TestCLILinkAndSyncAndValidate(t *testing.T) {
 		"--title", "Doc Two",
 		"--category", "architecture",
 		"--type", "specification",
-		"--owner-group", "team",
+		"--tenant", "team",
 		"--content", "Body 2",
 	})
 	if err := rootCmd.Execute(); err != nil {
@@ -80,7 +80,7 @@ func TestCLILinkAndSyncAndValidate(t *testing.T) {
 	}
 
 	// 4. gyrus validate file
-	docFile := filepath.Join(tempDir, ".gyrus", "docs", "team", "reference", "doc-1.md")
+	docFile := filepath.Join(tempDir, ".gyrus", "concepts", "team", "reference", "doc-1.md")
 	rootCmd.SetArgs([]string{
 		"validate",
 		docFile,

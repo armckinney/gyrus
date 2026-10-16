@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/armckinney/gyrus/internal/app"
+	"github.com/armckinney/gyrus/internal/config"
 	"github.com/armckinney/gyrus/internal/domain/lifecycle"
 	"github.com/armckinney/gyrus/internal/ui/agent"
 	"github.com/armckinney/gyrus/internal/ui/markdown"
@@ -16,7 +17,7 @@ import (
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
-// Handlers encapsulates HTTP request handlers for the Gyrus Web UI.
+// Handlers encapsulates dependencies for rendering Web UI views and managing chat sessions.
 type Handlers struct {
 	app          *app.App
 	engine       *lifecycle.Engine
@@ -26,7 +27,7 @@ type Handlers struct {
 	sessionStore *agent.SessionStore
 }
 
-// New creates a new Handlers instance.
+// New constructs a Handlers instance with the given dependencies.
 func New(application *app.App, engine *lifecycle.Engine, tmpl *templates.Manager, renderer *markdown.Renderer) *Handlers {
 	var runner agent.Runner
 	var sessionStore *agent.SessionStore
@@ -36,12 +37,12 @@ func New(application *app.App, engine *lifecycle.Engine, tmpl *templates.Manager
 			uiClient := application.Config().UIClient()
 			uiCmd := application.Config().UICommand()
 			if uiClient != "" || uiCmd != "" {
-				runner = agent.NewRunner(uiClient, uiCmd, application.WorkspaceDir())
+				runner = agent.NewRunner(uiClient, uiCmd, application.ProjectDir())
 			}
 		}
 		persistPath := ""
-		if application.WorkspaceDir() != "" {
-			persistPath = fmt.Sprintf("%s/.gyrus/cache/ui_sessions.json", application.WorkspaceDir())
+		if application.ProjectDir() != "" {
+			persistPath = fmt.Sprintf("%s/.gyrus/cache/ui_sessions.json", application.ProjectDir())
 		}
 		sessionStore = agent.NewSessionStore(persistPath)
 	} else {
@@ -56,6 +57,11 @@ func New(application *app.App, engine *lifecycle.Engine, tmpl *templates.Manager
 		runner:       runner,
 		sessionStore: sessionStore,
 	}
+}
+
+// isHTMX checks whether the request originates from an HTMX partial swap.
+func isHTMX(r *http.Request) bool {
+	return r.Header.Get("HX-Request") == "true"
 }
 
 // SessionStore returns the active agent session store.
@@ -78,11 +84,6 @@ func (h *Handlers) uiClientName() string {
 	return ""
 }
 
-// isHTMX checks whether the request originates from an HTMX partial swap.
-func isHTMX(r *http.Request) bool {
-	return r.Header.Get("HX-Request") == "true"
-}
-
 // storageBackend returns the active storage engine name.
 func (h *Handlers) storageBackend() string {
 	if h.app != nil && h.app.Config() != nil && h.app.Config().Storage.Provider != "" {
@@ -91,29 +92,29 @@ func (h *Handlers) storageBackend() string {
 	return "localfs"
 }
 
-func (h *Handlers) defaultOwnerGroup() string {
-	if h.app != nil && h.app.Config() != nil && h.app.Config().OwnerGroup() != "" {
-		return h.app.Config().OwnerGroup()
+func (h *Handlers) defaultTenant() string {
+	if h.app != nil && h.app.Config() != nil && h.app.Config().Tenant != "" {
+		return h.app.Config().Tenant
 	}
 	return "root"
 }
 
 func (h *Handlers) extractAvailableTenants(results []gyrus.SearchResult) []string {
 	tenantMap := make(map[string]bool)
-	def := h.defaultOwnerGroup()
+	def := h.defaultTenant()
 	if def != "" {
 		tenantMap[def] = true
 	}
 
 	for _, res := range results {
-		if res.Document.OwnerGroup != "" {
-			tenantMap[res.Document.OwnerGroup] = true
+		if res.Concept.Tenant != "" {
+			tenantMap[res.Concept.Tenant] = true
 		}
 	}
 
-	if h.app != nil && h.app.WorkspaceDir() != "" {
-		docsDir := filepath.Join(h.app.WorkspaceDir(), ".gyrus", "docs")
-		if entries, err := os.ReadDir(docsDir); err == nil {
+	if h.app != nil && h.app.ProjectDir() != "" {
+		conceptsDir := filepath.Join(h.app.ProjectDir(), ".gyrus", "concepts")
+		if entries, err := os.ReadDir(conceptsDir); err == nil {
 			for _, entry := range entries {
 				if entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
 					tenantMap[entry.Name()] = true
@@ -132,15 +133,16 @@ func (h *Handlers) extractAvailableTenants(results []gyrus.SearchResult) []strin
 
 func (h *Handlers) getDocScopeMap() map[string]string {
 	scopeMap := make(map[string]string)
-	if h.app == nil || h.app.WorkspaceDir() == "" {
+	if h.app == nil || h.app.ProjectDir() == "" {
 		return scopeMap
 	}
-	docsDir := filepath.Join(h.app.WorkspaceDir(), ".gyrus", "docs")
-	_ = filepath.Walk(docsDir, func(path string, info os.FileInfo, err error) error {
+	conceptsDir := filepath.Join(h.app.ProjectDir(), ".gyrus", "concepts")
+
+	_ = filepath.Walk(conceptsDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".md") {
 			return nil
 		}
-		rel, err := filepath.Rel(docsDir, path)
+		rel, err := filepath.Rel(conceptsDir, path)
 		if err != nil {
 			return nil
 		}
@@ -149,8 +151,8 @@ func (h *Handlers) getDocScopeMap() map[string]string {
 			id := strings.TrimSuffix(filepath.Base(path), ".md")
 			if parts[1] == "reference" {
 				scopeMap[id] = "reference"
-			} else if parts[1] == "workspaces" && len(parts) >= 4 {
-				scopeMap[id] = "workspaces/" + parts[2]
+			} else if parts[1] == "projects" && len(parts) >= 4 {
+				scopeMap[id] = "projects/" + parts[2]
 			}
 		}
 		return nil
@@ -158,9 +160,9 @@ func (h *Handlers) getDocScopeMap() map[string]string {
 	return scopeMap
 }
 
-func (h *Handlers) determineDocScope(doc *gyrus.Document, scopeMap map[string]string) string {
-	if doc.Scope == "workspace" && doc.Workspace != "" {
-		return "workspaces/" + doc.Workspace
+func (h *Handlers) determineDocScope(doc *gyrus.Concept, scopeMap map[string]string) string {
+	if doc.Scope == "project" && doc.Project != "" {
+		return "projects/" + doc.Project
 	}
 	if doc.Scope == "reference" {
 		return "reference"
@@ -171,38 +173,43 @@ func (h *Handlers) determineDocScope(doc *gyrus.Document, scopeMap map[string]st
 		}
 	}
 	if doc.Category == gyrus.CategoryBusinessLogic || doc.Category == gyrus.CategoryProduct {
-		return "workspaces/gyrus"
+		projectName := config.DefaultProject
+		if h.app != nil && h.app.Config() != nil && h.app.Config().ProjectName() != "" {
+			projectName = h.app.Config().ProjectName()
+		}
+		return "projects/" + projectName
 	}
 	return "reference"
 }
 
 func (h *Handlers) buildScopeData(results []gyrus.SearchResult, scopeMap map[string]string) ScopeNavData {
 	var refCount int
-	wsMap := make(map[string]int)
+	projMap := make(map[string]int)
 
 	for _, res := range results {
-		scope := h.determineDocScope(&res.Document, scopeMap)
+		scope := h.determineDocScope(&res.Concept, scopeMap)
 		if scope == "reference" {
 			refCount++
-		} else if strings.HasPrefix(scope, "workspaces/") {
-			wsName := strings.TrimPrefix(scope, "workspaces/")
-			wsMap[wsName]++
+		} else if strings.HasPrefix(scope, "projects/") {
+			pName := strings.TrimPrefix(scope, "projects/")
+			projMap[pName]++
 		}
 	}
 
-	if h.app != nil && h.app.WorkspaceDir() != "" {
-		docsDir := filepath.Join(h.app.WorkspaceDir(), ".gyrus", "docs")
-		if owners, err := os.ReadDir(docsDir); err == nil {
-			for _, owner := range owners {
-				if !owner.IsDir() {
+	if h.app != nil && h.app.ProjectDir() != "" {
+		conceptsDir := filepath.Join(h.app.ProjectDir(), ".gyrus", "concepts")
+
+		if tenants, err := os.ReadDir(conceptsDir); err == nil {
+			for _, tenant := range tenants {
+				if !tenant.IsDir() {
 					continue
 				}
-				wsDir := filepath.Join(docsDir, owner.Name(), "workspaces")
-				if wss, err := os.ReadDir(wsDir); err == nil {
-					for _, ws := range wss {
-						if ws.IsDir() && !strings.HasPrefix(ws.Name(), ".") {
-							if _, exists := wsMap[ws.Name()]; !exists {
-								wsMap[ws.Name()] = 0
+				pDir := filepath.Join(conceptsDir, tenant.Name(), "projects")
+				if projs, err := os.ReadDir(pDir); err == nil {
+					for _, p := range projs {
+						if p.IsDir() && !strings.HasPrefix(p.Name(), ".") {
+							if _, exists := projMap[p.Name()]; !exists {
+								projMap[p.Name()] = 0
 							}
 						}
 					}
@@ -211,21 +218,25 @@ func (h *Handlers) buildScopeData(results []gyrus.SearchResult, scopeMap map[str
 		}
 	}
 
-	if len(wsMap) == 0 {
-		wsMap["main"] = 0
+	if len(projMap) == 0 {
+		projectName := config.DefaultProject
+		if h.app != nil && h.app.Config() != nil && h.app.Config().ProjectName() != "" {
+			projectName = h.app.Config().ProjectName()
+		}
+		projMap[projectName] = 0
 	}
 
-	var wsList []WorkspaceScopeCount
-	for name, count := range wsMap {
-		wsList = append(wsList, WorkspaceScopeCount{Name: name, Count: count})
+	var projList []ProjectScopeCount
+	for name, count := range projMap {
+		projList = append(projList, ProjectScopeCount{Name: name, Count: count})
 	}
-	sort.Slice(wsList, func(i, j int) bool {
-		return wsList[i].Name < wsList[j].Name
+	sort.Slice(projList, func(i, j int) bool {
+		return projList[i].Name < projList[j].Name
 	})
 
 	return ScopeNavData{
 		ReferenceCount: refCount,
-		Workspaces:     wsList,
+		Projects:       projList,
 	}
 }
 
@@ -233,11 +244,11 @@ func (h *Handlers) buildTaxonomyCounts(results []gyrus.SearchResult) ([]NavCount
 	categoryMap := make(map[string]int)
 	typeMap := make(map[string]int)
 	for _, res := range results {
-		if res.Document.Category != "" {
-			categoryMap[string(res.Document.Category)]++
+		if res.Concept.Category != "" {
+			categoryMap[string(res.Concept.Category)]++
 		}
-		if res.Document.Type != "" {
-			typeMap[string(res.Document.Type)]++
+		if res.Concept.Type != "" {
+			typeMap[string(res.Concept.Type)]++
 		}
 	}
 

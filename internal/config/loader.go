@@ -11,13 +11,13 @@ import (
 
 // Load resolves the full Gyrus configuration using the precedence chain:
 //  0. Explicit config file via GYRUS_CONFIG env var
-//  1. Explicit workspace directory via GYRUS_WORKSPACE env var
-//  2. Workspace config (.gyrus.yaml) — searched from current working directory upward
-//  3. DevContainer auto-detection (/workspaces/*) if working directory is outside workspace
+//  1. Explicit project directory via GYRUS_PROJECT env var
+//  2. Project config (.gyrus.yaml) — searched from current working directory upward
+//  3. DevContainer auto-detection (/workspaces/*) if working directory is outside project
 //  4. Global config (~/.gyrus.yaml)
 //  5. Hardcoded defaults
 //
-// Full override semantics: if a workspace config file exists, the global
+// Full override semantics: if a project config file exists, the global
 // config is ignored entirely.
 func Load() (*ResolvedConfig, error) {
 	// 0. Check GYRUS_CONFIG
@@ -33,11 +33,11 @@ func Load() (*ResolvedConfig, error) {
 	}
 	inTemp := isTempDirectory(pwd)
 
-	// 1. Check GYRUS_WORKSPACE (ignored if working directory is an isolated temporary directory and GYRUS_WORKSPACE points outside it)
-	if envWs := os.Getenv("GYRUS_WORKSPACE"); envWs != "" {
-		if !inTemp || isTempDirectory(envWs) {
+	// 1. Check GYRUS_PROJECT (ignored if working directory is an isolated temporary directory and GYRUS_PROJECT points outside it)
+	if envProject := os.Getenv("GYRUS_PROJECT"); envProject != "" {
+		if !inTemp || isTempDirectory(envProject) {
 			home, _ := os.UserHomeDir()
-			if res, err := LoadFrom(envWs, home); err == nil && res.Source == SourceWorkspace {
+			if res, err := LoadFrom(envProject, home); err == nil && res.Source == SourceProject {
 				return res, nil
 			}
 		}
@@ -49,14 +49,14 @@ func Load() (*ResolvedConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	if res.Source == SourceWorkspace {
+	if res.Source == SourceProject {
 		return res, nil
 	}
 
 	// 3. DevContainer auto-detection fallback if running inside container and not in a temp directory
 	if isContainerEnvironment() && !inTemp {
-		if ws := findDevcontainerWorkspace(); ws != "" {
-			if devRes, err := LoadFrom(ws, home); err == nil && devRes.Source == SourceWorkspace {
+		if ws := findDevcontainerProject(); ws != "" {
+			if devRes, err := LoadFrom(ws, home); err == nil && devRes.Source == SourceProject {
 				return devRes, nil
 			}
 		}
@@ -77,10 +77,10 @@ func isTempDirectory(path string) bool {
 	return false
 }
 
-// LoadWithWorkspace loads configuration with an explicit workspace directory.
-func LoadWithWorkspace(workspaceDir string) (*ResolvedConfig, error) {
+// LoadWithProject loads configuration with an explicit project directory.
+func LoadWithProject(projectDir string) (*ResolvedConfig, error) {
 	home, _ := os.UserHomeDir()
-	return LoadFrom(workspaceDir, home)
+	return LoadFrom(projectDir, home)
 }
 
 // LoadWithConfig loads configuration from an explicit config file path.
@@ -97,7 +97,7 @@ func LoadWithConfig(configPath string) (*ResolvedConfig, error) {
 	}
 	return &ResolvedConfig{
 		Config:      cfg,
-		Source:      SourceWorkspace,
+		Source:      SourceProject,
 		SourcePath:  path,
 		StorageRoot: resolveStorageRoot(cfg, filepath.Dir(path)),
 	}, nil
@@ -113,7 +113,7 @@ func isContainerEnvironment() bool {
 	return false
 }
 
-func findDevcontainerWorkspace() string {
+func findDevcontainerProject() string {
 	entries, err := os.ReadDir("/workspaces")
 	if err != nil {
 		return ""
@@ -131,15 +131,15 @@ func findDevcontainerWorkspace() string {
 
 // LoadFrom resolves configuration relative to explicit working and home directories.
 func LoadFrom(workingDir, homeDir string) (*ResolvedConfig, error) {
-	// 1. Try to find workspace config (walk workingDir -> filesystem root)
-	if cfg, path, err := findWorkspaceConfig(workingDir); err == nil && cfg != nil {
+	// 1. Try to find project config (walk workingDir -> filesystem root)
+	if cfg, path, err := findProjectConfig(workingDir); err == nil && cfg != nil {
 		if err := validate(cfg, path); err != nil {
 			return nil, err
 		}
 		storageRoot := resolveStorageRoot(cfg, filepath.Dir(path))
 		return &ResolvedConfig{
 			Config:      cfg,
-			Source:      SourceWorkspace,
+			Source:      SourceProject,
 			SourcePath:  path,
 			StorageRoot: storageRoot,
 		}, nil
@@ -179,9 +179,9 @@ func LoadFrom(workingDir, homeDir string) (*ResolvedConfig, error) {
 	}, nil
 }
 
-// findWorkspaceConfig walks parent directories looking for .gyrus.yaml.
+// findProjectConfig walks parent directories looking for .gyrus.yaml.
 // If a file is malformed, it returns nil to allow fallback.
-func findWorkspaceConfig(startDir string) (*Config, string, error) {
+func findProjectConfig(startDir string) (*Config, string, error) {
 	absStart, err := filepath.Abs(startDir)
 	if err != nil {
 		absStart = startDir

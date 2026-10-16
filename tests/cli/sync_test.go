@@ -31,7 +31,7 @@ func TestCLI_Sync(t *testing.T) {
 		"--title", "Sync Specification",
 		"--category", "technical",
 		"--type", "specification",
-		"--owner-group", "platform",
+		"--tenant", "platform",
 		"--status", "active",
 		"--content", "Specification to verify sync scanning.",
 	)
@@ -76,7 +76,7 @@ id: adr-valid-001
 title: Valid ADR Title
 category: architecture
 type: adr
-owner_group: platform
+tenant: platform
 version: 1
 status: proposed
 ---
@@ -106,7 +106,7 @@ Valid body content.
 id: invalid-doc-001
 category: not-a-real-category
 type: adr
-owner_group: platform
+tenant: platform
 version: 1
 status: proposed
 ---

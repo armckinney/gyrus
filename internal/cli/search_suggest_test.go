@@ -41,7 +41,7 @@ func TestCLISearchAndSuggestAndSchema(t *testing.T) {
 		"--title", "Search Index Test ADR",
 		"--category", "architecture",
 		"--type", "adr",
-		"--owner-group", "platform",
+		"--tenant", "platform",
 		"--content", "We test full-text search capability.",
 	})
 	if err := rootCmd.Execute(); err != nil {
@@ -86,8 +86,8 @@ func TestCLISearchAndSuggestAndSchema(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Integration Test
-// [Purpose]: Verifies CLI scoping flags (--scope, --workspace) and workspace-first retrieval in search and suggest-context.
-// [Assertions]: Workspace documents are prioritized, reference dependencies are expanded, and other workspaces are isolated.
+// [Purpose]: Verifies CLI scoping flags (--scope, --project) and project-first retrieval in search and suggest-context.
+// [Assertions]: Project concepts are prioritized, reference dependencies are expanded, and other projects are isolated.
 // -----------------------------------------------------------------------------
 func TestCLIScopedSearchAndSuggestContext(t *testing.T) {
 	tempDir := t.TempDir()
@@ -101,8 +101,8 @@ func TestCLIScopedSearchAndSuggestContext(t *testing.T) {
 	wsYaml := `storage:
   provider: localfs
   root: .gyrus
-workspace: gyrus
-default_owner_group: root
+project: gyrus
+tenant: root
 `
 	if err := os.WriteFile(filepath.Join(tempDir, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
 		t.Fatalf("Failed writing .gyrus.yaml: %v", err)
@@ -127,7 +127,7 @@ default_owner_group: root
 		t.Fatalf("create reference doc failed: %v", err)
 	}
 
-	// 2. Create workspace doc with dependency on reference doc
+	// 2. Create project concept with dependency on reference concept
 	rootCmd.SetArgs([]string{
 		"create",
 		"--id", "ticket-gyrus-core",
@@ -138,21 +138,21 @@ default_owner_group: root
 		"--content", "Implementation details following architecture standards.",
 	})
 	if err := rootCmd.Execute(); err != nil {
-		t.Fatalf("create workspace doc failed: %v", err)
+		t.Fatalf("create project concept failed: %v", err)
 	}
 
-	// 3. Create foreign workspace doc
+	// 3. Create foreign project concept
 	rootCmd.SetArgs([]string{
 		"create",
 		"--id", "ticket-foreign-billing",
 		"--title", "Billing Implementation",
 		"--category", "product",
 		"--type", "prd",
-		"--workspace", "billing",
+		"--project", "billing",
 		"--content", "Foreign billing architecture implementation.",
 	})
 	if err := rootCmd.Execute(); err != nil {
-		t.Fatalf("create foreign workspace doc failed: %v", err)
+		t.Fatalf("create foreign project concept failed: %v", err)
 	}
 
 	// 4. Sync
@@ -161,7 +161,7 @@ default_owner_group: root
 		t.Fatalf("sync failed: %v", err)
 	}
 
-	// 5. Search with workspace scoping (default in workspace: gyrus)
+	// 5. Search with project scoping (default in project: gyrus)
 	rootCmd.SetArgs([]string{
 		"search",
 		"--query", "architecture",
@@ -170,7 +170,7 @@ default_owner_group: root
 		t.Fatalf("scoped search failed: %v", err)
 	}
 
-	// 6. Suggest context with workspace prioritization & dependency expansion
+	// 6. Suggest context with project prioritization & dependency expansion
 	rootCmd.SetArgs([]string{
 		"suggest-context",
 		"--prompt", "architecture standards implementation",

@@ -78,7 +78,7 @@ id: <unique-id>
 title: <Title>
 category: operations
 type: runbook
-owner_group: ops
+tenant: ops
 version: 1
 status: active
 ---
@@ -121,7 +121,7 @@ id: <unique-id>
 title: <Policy>
 category: technical
 type: policy
-owner_group: compliance
+tenant: compliance
 version: 1
 status: active
 ---

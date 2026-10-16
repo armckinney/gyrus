@@ -1,7 +1,7 @@
 package config
 
 const (
-	// DefaultStorageProvider is the default document persistence driver.
+	// DefaultStorageProvider is the default concept persistence driver.
 	DefaultStorageProvider = "localfs"
 
 	// DefaultIndexProvider is the default metadata index driver.
@@ -13,10 +13,13 @@ const (
 	// DefaultGraphProvider is the default graph relation driver.
 	DefaultGraphProvider = "sqlite"
 
-	// DefaultOwnerGroup is the default OKF document owner group.
-	DefaultOwnerGroup = "root"
+	// DefaultTenant is the default OKF concept tenant.
+	DefaultTenant = "root"
 
-	// DefaultStorageRoot is the default directory relative to workspace or home.
+	// DefaultProject is the default OKF concept project.
+	DefaultProject = "default"
+
+	// DefaultStorageRoot is the default directory relative to project or home.
 	DefaultStorageRoot = ".gyrus"
 
 	// GlobalConfigFileName is the canonical configuration file name.
@@ -42,12 +45,4 @@ var ValidIndexProviders = []string{
 // ValidGraphProviders lists all recognized graph provider names.
 var ValidGraphProviders = []string{
 	"sqlite", "postgres",
-}
-
-// DefaultIgnoredPaths lists standard files and directories ignored during architectural checks.
-var DefaultIgnoredPaths = []string{
-	"tests/**", "*_test.go", "*.test.*", "*.spec.*",
-	"*.lock", "go.sum", "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
-	".git/**", ".agents/**", ".vscode/**", ".idea/**",
-	"vendor/**", "node_modules/**", "tmp/**",
 }

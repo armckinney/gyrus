@@ -15,10 +15,10 @@ import (
 // NewUICmd constructs the 'ui' parent Cobra command and its subcommands.
 func NewUICmd(application *app.App) *cobra.Command {
 	var (
-		host      string
-		port      int
-		workspace string
-		cfgPath   string
+		host    string
+		port    int
+		project string
+		cfgPath string
 	)
 
 	uiCmd := &cobra.Command{
@@ -36,8 +36,8 @@ func NewUICmd(application *app.App) *cobra.Command {
 			)
 			if cfgPath != "" {
 				srv, err = ui.NewServerWithConfig(cfgPath, host, port)
-			} else if workspace != "" {
-				srv, err = ui.NewServerWithWorkspace(workspace, host, port)
+			} else if project != "" {
+				srv, err = ui.NewServerWithProject(project, host, port)
 			} else {
 				srv, err = ui.NewServer(host, port)
 			}
@@ -55,7 +55,7 @@ func NewUICmd(application *app.App) *cobra.Command {
 
 	uiServeCmd.Flags().StringVar(&host, "host", "127.0.0.1", "Host address to bind HTTP server")
 	uiServeCmd.Flags().IntVarP(&port, "port", "p", 8080, "Port number to listen on")
-	uiServeCmd.Flags().StringVarP(&workspace, "workspace", "w", "", "Workspace root directory for context resolution")
+	uiServeCmd.Flags().StringVarP(&project, "project", "P", "", "Project root directory for context resolution")
 	uiServeCmd.Flags().StringVarP(&cfgPath, "config", "c", "", "Explicit path to .gyrus.yaml configuration file")
 
 	uiCmd.AddCommand(uiServeCmd)

@@ -4,8 +4,8 @@ import (
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
-// StorageFormat abstracts document serialization and deserialization for storage engines.
+// StorageFormat abstracts concept serialization and deserialization for storage engines.
 type StorageFormat interface {
-	Serialize(doc *gyrus.Document) ([]byte, error)
-	Deserialize(data []byte) (*gyrus.Document, error)
+	Serialize(doc *gyrus.Concept) ([]byte, error)
+	Deserialize(data []byte) (*gyrus.Concept, error)
 }

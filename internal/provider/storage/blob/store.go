@@ -17,13 +17,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Store implements gyrus.DocumentStore using gocloud.dev/blob.
+// Store implements gyrus.ConceptStore using gocloud.dev/blob.
 type Store struct {
 	bucket *blob.Bucket
 	prefix string
 }
 
-// NewStore creates a new blob storage DocumentStore.
+// NewStore creates a new blob storage ConceptStore.
 func NewStore(ctx context.Context, bucketURL string, prefix string) (*Store, error) {
 	bucket, err := blob.OpenBucket(ctx, bucketURL)
 	if err != nil {
@@ -48,15 +48,15 @@ func (s *Store) Close() error {
 	return s.bucket.Close()
 }
 
-func (s *Store) makeKey(doc gyrus.Document) string {
+func (s *Store) makeKey(doc gyrus.Concept) string {
 	prefix := s.prefix
 	if prefix != "" && !strings.HasSuffix(prefix, "/") {
 		prefix += "/"
 	}
-	return fmt.Sprintf("%s%s/%s/%s.md", prefix, doc.OwnerGroup, doc.Category, doc.ID)
+	return fmt.Sprintf("%s%s/%s/%s.md", prefix, doc.Tenant, doc.Category, doc.ID)
 }
 
-func serializeDocument(doc *gyrus.Document) ([]byte, error) {
+func serializeConcept(doc *gyrus.Concept) ([]byte, error) {
 	data, err := yaml.Marshal(doc)
 	if err != nil {
 		return nil, err
@@ -68,8 +68,8 @@ func serializeDocument(doc *gyrus.Document) ([]byte, error) {
 	return content, nil
 }
 
-func deserializeDocument(data []byte) (gyrus.Document, error) {
-	var doc gyrus.Document
+func deserializeConcept(data []byte) (gyrus.Concept, error) {
+	var doc gyrus.Concept
 	str := string(data)
 
 	// Fast path for missing frontmatter
@@ -79,7 +79,7 @@ func deserializeDocument(data []byte) (gyrus.Document, error) {
 
 	parts := strings.SplitN(str, "\n---\n", 2)
 	if len(parts) != 2 {
-		return doc, fmt.Errorf("invalid document format")
+		return doc, fmt.Errorf("invalid concept format")
 	}
 
 	frontmatter := parts[0]
@@ -98,10 +98,6 @@ func deserializeDocument(data []byte) (gyrus.Document, error) {
 func (s *Store) findKeyByID(ctx context.Context, id string) (string, error) {
 	iter := s.bucket.List(&blob.ListOptions{Prefix: s.prefix})
 	targetSuffix := "/" + id + ".md"
-	if s.prefix == "" {
-		// Just in case it's in the root, but format is <owner>/<category>/<id>.md
-		// it still ends with /<id>.md
-	}
 
 	for {
 		obj, err := iter.Next(ctx)
@@ -115,32 +111,32 @@ func (s *Store) findKeyByID(ctx context.Context, id string) (string, error) {
 			return obj.Key, nil
 		}
 	}
-	return "", fmt.Errorf("document not found: %s", id)
+	return "", fmt.Errorf("concept not found: %s", id)
 }
 
-// Create stores a new document.
-func (s *Store) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentRef, error) {
+// Create stores a new concept.
+func (s *Store) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRef, error) {
 	key := s.makeKey(doc)
 
 	exists, err := s.bucket.Exists(ctx, key)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 	if exists {
-		return gyrus.DocumentRef{}, fmt.Errorf("document already exists: %s", doc.ID)
+		return gyrus.ConceptRef{}, fmt.Errorf("concept already exists: %s", doc.ID)
 	}
 
-	data, err := serializeDocument(&doc)
+	data, err := serializeConcept(&doc)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	err = s.bucket.WriteAll(ctx, key, data, nil)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
-	return gyrus.DocumentRef{
+	return gyrus.ConceptRef{
 		ID:          doc.ID,
 		Version:     doc.Version,
 		Status:      doc.Status,
@@ -148,30 +144,30 @@ func (s *Store) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentR
 	}, nil
 }
 
-// Get retrieves a document by ID.
-func (s *Store) Get(ctx context.Context, id string) (gyrus.Document, error) {
+// Get retrieves a concept by ID.
+func (s *Store) Get(ctx context.Context, id string) (gyrus.Concept, error) {
 	key, err := s.findKeyByID(ctx, id)
 	if err != nil {
-		return gyrus.Document{}, err
+		return gyrus.Concept{}, err
 	}
 
 	data, err := s.bucket.ReadAll(ctx, key)
 	if err != nil {
-		return gyrus.Document{}, err
+		return gyrus.Concept{}, err
 	}
 
-	return deserializeDocument(data)
+	return deserializeConcept(data)
 }
 
-// Update patches an existing document.
-func (s *Store) Update(ctx context.Context, id string, patch gyrus.DocumentPatch, expectedVersion int) (gyrus.DocumentRef, error) {
+// Update patches an existing concept.
+func (s *Store) Update(ctx context.Context, id string, patch gyrus.ConceptPatch, expectedVersion int) (gyrus.ConceptRef, error) {
 	doc, err := s.Get(ctx, id)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	if doc.Version != expectedVersion {
-		return gyrus.DocumentRef{}, fmt.Errorf("version mismatch: expected %d, got %d", expectedVersion, doc.Version)
+		return gyrus.ConceptRef{}, fmt.Errorf("version mismatch: expected %d, got %d", expectedVersion, doc.Version)
 	}
 
 	// Apply patch
@@ -191,25 +187,23 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.DocumentPatch
 		doc.Content = *patch.Content
 	}
 	doc.Version++
-	// Not updating LastUpdated/LastModifiedBy here as it's not in the interface/patch fully defined,
-	// but normally we would. The interface just asks us to return a DocumentRef.
 
-	data, err := serializeDocument(&doc)
+	data, err := serializeConcept(&doc)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	key, err := s.findKeyByID(ctx, id)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	err = s.bucket.WriteAll(ctx, key, data, nil)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
-	return gyrus.DocumentRef{
+	return gyrus.ConceptRef{
 		ID:          doc.ID,
 		Version:     doc.Version,
 		Status:      doc.Status,
@@ -217,7 +211,7 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.DocumentPatch
 	}, nil
 }
 
-// Delete permanently removes a document.
+// Delete permanently removes a concept.
 func (s *Store) Delete(ctx context.Context, id string) error {
 	key, err := s.findKeyByID(ctx, id)
 	if err != nil {
@@ -226,18 +220,14 @@ func (s *Store) Delete(ctx context.Context, id string) error {
 	return s.bucket.Delete(ctx, key)
 }
 
-// Archive changes the status of a document to archived.
+// Archive changes the status of a concept to archived.
 func (s *Store) Archive(ctx context.Context, id string) error {
 	archived := "archived"
-	_, err := s.Update(ctx, id, gyrus.DocumentPatch{
-		Status: &archived,
-	}, 0)
-	// Wait, we need expectedVersion. Get it first.
 	doc, err := s.Get(ctx, id)
 	if err != nil {
 		return err
 	}
-	_, err = s.Update(ctx, id, gyrus.DocumentPatch{
+	_, err = s.Update(ctx, id, gyrus.ConceptPatch{
 		Status: &archived,
 	}, doc.Version)
 	return err
@@ -251,13 +241,13 @@ func (s *Store) schemaPrefix() string {
 	return fmt.Sprintf("%s.gyrus/schemas/", prefix)
 }
 
-func (s *Store) schemaKey(docType string) string {
-	return fmt.Sprintf("%s%s.md", s.schemaPrefix(), docType)
+func (s *Store) schemaKey(conceptType string) string {
+	return fmt.Sprintf("%s%s.md", s.schemaPrefix(), conceptType)
 }
 
-// GetSchema retrieves a persisted schema template for a document type from blob storage.
-func (s *Store) GetSchema(ctx context.Context, docType string) (string, error) {
-	key := s.schemaKey(docType)
+// GetSchema retrieves a persisted schema template for a concept type from blob storage.
+func (s *Store) GetSchema(ctx context.Context, conceptType string) (string, error) {
+	key := s.schemaKey(conceptType)
 	if err := okf.ValidateSchemaPath(key); err != nil {
 		return "", err
 	}
@@ -270,12 +260,12 @@ func (s *Store) GetSchema(ctx context.Context, docType string) (string, error) {
 }
 
 // SaveSchema persists an OKF schema template to the enforced .gyrus/schemas/ path in blob storage.
-func (s *Store) SaveSchema(ctx context.Context, docType string, content string) error {
-	if err := okf.ValidateSchemaContent(docType, content); err != nil {
+func (s *Store) SaveSchema(ctx context.Context, conceptType string, content string) error {
+	if err := okf.ValidateSchemaContent(conceptType, content); err != nil {
 		return err
 	}
 
-	key := s.schemaKey(docType)
+	key := s.schemaKey(conceptType)
 	if err := okf.ValidateSchemaPath(key); err != nil {
 		return err
 	}
@@ -311,8 +301,8 @@ func (s *Store) ListSchemas(ctx context.Context) ([]string, error) {
 }
 
 // DeleteSchema removes a persisted schema template from blob storage.
-func (s *Store) DeleteSchema(ctx context.Context, docType string) error {
-	key := s.schemaKey(docType)
+func (s *Store) DeleteSchema(ctx context.Context, conceptType string) error {
+	key := s.schemaKey(conceptType)
 	if err := okf.ValidateSchemaPath(key); err != nil {
 		return err
 	}

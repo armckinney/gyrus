@@ -50,7 +50,7 @@ func (m *mockRunner) StreamTurn(ctx context.Context, opts agent.TurnOptions, out
 
 func setupTestHandlers(t *testing.T) (*handlers.Handlers, *app.App, *lifecycle.Engine) {
 	tempWorkspace := t.TempDir()
-	application, err := app.NewWithWorkspace(tempWorkspace)
+	application, err := app.NewWithProject(tempWorkspace)
 	if err != nil {
 		t.Fatalf("failed initializing app: %v", err)
 	}
@@ -103,8 +103,8 @@ func TestChat_HomeDelegation(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
-	if !strings.Contains(rec.Body.String(), "All Documents") {
-		t.Errorf("expected 'All Documents' on default home page without runner")
+	if !strings.Contains(rec.Body.String(), "All Concepts") {
+		t.Errorf("expected 'All Concepts' on default home page without runner")
 	}
 
 	// When runner is set, Home delegates to Chat

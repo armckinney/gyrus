@@ -37,7 +37,7 @@ title: SQLite FTS5 for Local Search
 category: architecture
 type: adr
 format: markdown
-owner_group: platform
+tenant: platform
 version: 1
 status: accepted
 last_modified_by: root

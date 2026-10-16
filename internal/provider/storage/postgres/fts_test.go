@@ -13,7 +13,7 @@ import (
 // [Test Level]: Provider Integration Test
 // [Purpose]: Verifies that PostgreSQL Store executes full-text search against tsvector index.
 // [Execution Surface]: In-Memory PostgreSQL Mock Pool (pgxmock)
-// [Assertions]: SQL query executes with category filter and tsquery args, returning expected score and document.
+// [Assertions]: SQL query executes with category filter and tsquery args, returning expected score and concept.
 // -----------------------------------------------------------------------------
 func TestStore_SearchFTS(t *testing.T) {
 	mock, err := pgxmock.NewPool()
@@ -24,7 +24,7 @@ func TestStore_SearchFTS(t *testing.T) {
 
 	store := &Store{pool: mock}
 
-	doc := gyrus.Document{
+	doc := gyrus.Concept{
 		ID:       "doc-1",
 		Title:    "Postgres FTS Search",
 		Category: gyrus.CategoryTechnical,
@@ -49,8 +49,8 @@ func TestStore_SearchFTS(t *testing.T) {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
 
-	if results[0].Document.ID != "doc-1" {
-		t.Errorf("expected ID 'doc-1', got '%s'", results[0].Document.ID)
+	if results[0].Concept.ID != "doc-1" {
+		t.Errorf("expected ID 'doc-1', got '%s'", results[0].Concept.ID)
 	}
 	if results[0].Score != 0.9 {
 		t.Errorf("expected Score 0.9, got %f", results[0].Score)

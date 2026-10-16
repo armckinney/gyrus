@@ -21,9 +21,9 @@ import (
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
-// NewDocumentStore creates the appropriate gyrus.DocumentStore implementation
+// NewConceptStore creates the appropriate gyrus.ConceptStore implementation
 // based on configuration settings in .gyrus.yaml.
-func NewDocumentStore(cfg *config.Config, storageRoot string) (gyrus.DocumentStore, error) {
+func NewConceptStore(cfg *config.Config, storageRoot string) (gyrus.ConceptStore, error) {
 	if cfg == nil {
 		cfg = &config.Config{}
 	}
@@ -106,7 +106,7 @@ func NewDocumentStore(cfg *config.Config, storageRoot string) (gyrus.DocumentSto
 		return postgres.NewStore(context.Background(), cfg.Postgres.ConnectionString)
 
 	case "localfs", "":
-		return localfs.NewStoreWithWorkspace(storageRoot, cfg.WorkspaceName())
+		return localfs.NewStoreWithProject(storageRoot, cfg.ProjectName())
 
 	default:
 		return nil, fmt.Errorf("unknown storage_provider: '%s' in configuration file", cfg.StorageProvider())
@@ -201,12 +201,12 @@ func NewSearchProvider(cfg *config.Config, storageRoot string) (gyrus.SearchProv
 		ftsAdapter := fts5search.NewSearchProvider(sqliteStore)
 		vStore := vectorsearch.NewStore(ftsAdapter, embedder)
 
-		store, err := NewDocumentStore(cfg, storageRoot)
+		store, err := NewConceptStore(cfg, storageRoot)
 		if err == nil {
 			if docs, err := sqliteStore.Search(context.Background(), gyrus.SearchQuery{MaxResults: 100}); err == nil {
 				for _, res := range docs {
-					if fullDoc, err := store.Get(context.Background(), res.Document.ID); err == nil {
-						_ = vStore.AddDocument(context.Background(), fullDoc)
+					if fullDoc, err := store.Get(context.Background(), res.Concept.ID); err == nil {
+						_ = vStore.AddConcept(context.Background(), fullDoc)
 					}
 				}
 			}

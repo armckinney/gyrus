@@ -35,15 +35,15 @@ func TestIntegration_GitProfile(t *testing.T) {
 
 	ctx := context.Background()
 
-	doc := gyrus.Document{
-		ID:         "adr-git-001",
-		Title:      "Git Backed Architecture",
-		Category:   gyrus.CategoryArchitecture,
-		Type:       gyrus.TypeADR,
-		OwnerGroup: "platform",
-		Version:    1,
-		Status:     "proposed",
-		Content:    "Persisted directly into remote Git commits.",
+	doc := gyrus.Concept{
+		ID:       "adr-git-001",
+		Title:    "Git Backed Architecture",
+		Category: gyrus.CategoryArchitecture,
+		Type:     gyrus.TypeADR,
+		Tenant:   "platform",
+		Version:  1,
+		Status:   "proposed",
+		Content:  "Persisted directly into remote Git commits.",
 	}
 
 	ref, err := store.Create(ctx, doc)

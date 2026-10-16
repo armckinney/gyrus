@@ -25,12 +25,12 @@ func setupTestApp(t *testing.T) (*app.App, string) {
 
 	cfgContent := `
 version: 1
-workspace: gyrus
+project: gyrus
 storage:
   provider: localfs
   localfs:
-    path: .gyrus/docs
-default_owner_group: test-core
+    path: .gyrus/concepts
+tenant: test-core
 search:
   provider: sqlite_fts5
 `
@@ -38,7 +38,7 @@ search:
 		t.Fatalf("failed writing config: %v", err)
 	}
 
-	application, err := app.NewWithWorkspace(tmpDir)
+	application, err := app.NewWithProject(tmpDir)
 	if err != nil {
 		t.Fatalf("failed initializing app: %v", err)
 	}
@@ -88,9 +88,9 @@ func TestHandlers_LifecycleAndHelpers(t *testing.T) {
 
 	// Test buildTaxonomyCounts helper
 	docs := []gyrus.SearchResult{
-		{Document: gyrus.Document{Category: "architecture", Type: gyrus.TypeADR}},
-		{Document: gyrus.Document{Category: "architecture", Type: gyrus.TypeSpecification}},
-		{Document: gyrus.Document{Category: "product", Type: gyrus.TypePRD}},
+		{Concept: gyrus.Concept{Category: "architecture", Type: gyrus.TypeADR}},
+		{Concept: gyrus.Concept{Category: "architecture", Type: gyrus.TypeSpecification}},
+		{Concept: gyrus.Concept{Category: "product", Type: gyrus.TypePRD}},
 	}
 	catCounts, typeCounts := h.buildTaxonomyCounts(docs)
 	if len(catCounts) != 2 {
@@ -118,15 +118,15 @@ func TestHandlers_ScopesAndTenants(t *testing.T) {
 	renderer := markdown.NewRenderer()
 	h := New(application, engine, tmplMgr, renderer)
 
-	// Test defaultOwnerGroup
-	if h.defaultOwnerGroup() != "test-core" {
-		t.Errorf("expected default owner group 'test-core', got '%s'", h.defaultOwnerGroup())
+	// Test defaultTenant
+	if h.defaultTenant() != "test-core" {
+		t.Errorf("expected default tenant 'test-core', got '%s'", h.defaultTenant())
 	}
 
 	// Test extractAvailableTenants
 	docs := []gyrus.SearchResult{
-		{Document: gyrus.Document{OwnerGroup: "alpha-team"}},
-		{Document: gyrus.Document{OwnerGroup: "beta-team"}},
+		{Concept: gyrus.Concept{Tenant: "alpha-team"}},
+		{Concept: gyrus.Concept{Tenant: "beta-team"}},
 	}
 	tenants := h.extractAvailableTenants(docs)
 	if len(tenants) < 3 { // test-core, alpha-team, beta-team
@@ -134,27 +134,33 @@ func TestHandlers_ScopesAndTenants(t *testing.T) {
 	}
 
 	// Test determineDocScope
-	docRef := gyrus.Document{ID: "spec-001", Category: gyrus.CategoryTechnical, Type: gyrus.TypeSpecification}
+	docRef := gyrus.Concept{ID: "spec-001", Category: gyrus.CategoryTechnical, Type: gyrus.TypeSpecification}
 	if scope := h.determineDocScope(&docRef, nil); scope != "reference" {
 		t.Errorf("expected scope 'reference', got '%s'", scope)
 	}
 
-	docWS := gyrus.Document{ID: "prd-001", Category: gyrus.CategoryProduct, Type: gyrus.TypePRD}
-	if scope := h.determineDocScope(&docWS, nil); scope != "workspaces/gyrus" {
-		t.Errorf("expected scope 'workspaces/gyrus', got '%s'", scope)
+	docProj := gyrus.Concept{ID: "prd-001", Category: gyrus.CategoryProduct, Type: gyrus.TypePRD}
+	if scope := h.determineDocScope(&docProj, nil); scope != "projects/gyrus" {
+		t.Errorf("expected scope 'projects/gyrus', got '%s'", scope)
+	}
+
+	// Test fallback to DefaultProject when unconfigured
+	hUnconfigured := &Handlers{}
+	if scope := hUnconfigured.determineDocScope(&docProj, nil); scope != "projects/default" {
+		t.Errorf("expected scope 'projects/default', got '%s'", scope)
 	}
 
 	// Test buildScopeData
 	scopeDocs := []gyrus.SearchResult{
-		{Document: docRef},
-		{Document: docWS},
+		{Concept: docRef},
+		{Concept: docProj},
 	}
 	data := h.buildScopeData(scopeDocs, nil)
 	if data.ReferenceCount != 1 {
-		t.Errorf("expected 1 reference document, got %d", data.ReferenceCount)
+		t.Errorf("expected 1 reference concept, got %d", data.ReferenceCount)
 	}
-	if len(data.Workspaces) != 1 || data.Workspaces[0].Name != "gyrus" || data.Workspaces[0].Count != 1 {
-		t.Errorf("expected 1 workspace 'gyrus' with count 1, got %+v", data.Workspaces)
+	if len(data.Projects) != 1 || data.Projects[0].Name != "gyrus" || data.Projects[0].Count != 1 {
+		t.Errorf("expected 1 project 'gyrus' with count 1, got %+v", data.Projects)
 	}
 }
 
@@ -178,38 +184,38 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a reference document
-	_, err = engine.Create(ctx, gyrus.Document{
-		ID:         "spec-101",
-		Title:      "Core Storage Spec",
-		Category:   gyrus.CategoryArchitecture,
-		Type:       gyrus.TypeSpecification,
-		OwnerGroup: "test-core",
-		Scope:      "reference",
-		Version:    1,
-		Status:     "accepted",
-		Content:    "# Storage Spec\n\nDetailed storage specification.",
+	_, err = engine.Create(ctx, gyrus.Concept{
+		ID:       "spec-101",
+		Title:    "Core Storage Spec",
+		Category: gyrus.CategoryArchitecture,
+		Type:     gyrus.TypeSpecification,
+		Tenant:   "test-core",
+		Scope:    "reference",
+		Version:  1,
+		Status:   "accepted",
+		Content:  "# Storage Spec\n\nDetailed storage specification.",
 	})
 	if err != nil {
 		t.Fatalf("failed creating reference doc: %v", err)
 	}
 
-	// Create a workspace document
-	_, err = engine.Create(ctx, gyrus.Document{
-		ID:         "prd-101",
-		Title:      "Workspace Feature PRD",
-		Category:   gyrus.CategoryProduct,
-		Type:       gyrus.TypePRD,
-		OwnerGroup: "test-core",
-		Version:    1,
-		Status:     "draft",
-		Content:    "# Feature PRD\n\nDetailed feature requirement.",
+	// Create a project document
+	_, err = engine.Create(ctx, gyrus.Concept{
+		ID:       "prd-101",
+		Title:    "Project Feature PRD",
+		Category: gyrus.CategoryProduct,
+		Type:     gyrus.TypePRD,
+		Tenant:   "test-core",
+		Version:  1,
+		Status:   "draft",
+		Content:  "# Feature PRD\n\nDetailed feature requirement.",
 	})
 	if err != nil {
-		t.Fatalf("failed creating workspace doc: %v", err)
+		t.Fatalf("failed creating project doc: %v", err)
 	}
 
-	// 1. Test GET /docs renders Scopes and tenant selector, and does NOT render Categories nav group
-	req := httptest.NewRequest(http.MethodGet, "/docs", nil)
+	// 1. Test GET /concepts renders Scopes and tenant selector, and does NOT render Categories nav group
+	req := httptest.NewRequest(http.MethodGet, "/concepts", nil)
 	rr := httptest.NewRecorder()
 	h.Docs(rr, req)
 
@@ -224,8 +230,8 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 	if !strings.Contains(body, "Reference") {
 		t.Errorf("expected sidebar to contain 'Reference'")
 	}
-	if !strings.Contains(body, "Workspaces") {
-		t.Errorf("expected sidebar to contain 'Workspaces'")
+	if !strings.Contains(body, "Projects") {
+		t.Errorf("expected sidebar to contain 'Projects'")
 	}
 	if !strings.Contains(body, "tenant-select") {
 		t.Errorf("expected header to contain 'tenant-select'")
@@ -243,8 +249,8 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 		t.Errorf("expected type filter pills to be present in the main content area")
 	}
 
-	// 2. Test GET /docs?scope=reference
-	reqRef := httptest.NewRequest(http.MethodGet, "/docs?scope=reference", nil)
+	// 2. Test GET /concepts?scope=reference
+	reqRef := httptest.NewRequest(http.MethodGet, "/concepts?scope=reference", nil)
 	rrRef := httptest.NewRecorder()
 	h.Docs(rrRef, reqRef)
 
@@ -259,30 +265,30 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 		t.Errorf("expected reference document 'spec-101' to be listed")
 	}
 	if strings.Contains(refBody, "prd-101") {
-		t.Errorf("did not expect workspace document 'prd-101' in scope=reference filter")
+		t.Errorf("did not expect project document 'prd-101' in scope=reference filter")
 	}
 
-	// 3. Test GET /docs?scope=workspaces/gyrus
-	reqWS := httptest.NewRequest(http.MethodGet, "/docs?scope=workspaces/gyrus", nil)
+	// 3. Test GET /concepts?scope=projects/gyrus
+	reqWS := httptest.NewRequest(http.MethodGet, "/concepts?scope=projects/gyrus", nil)
 	rrWS := httptest.NewRecorder()
 	h.Docs(rrWS, reqWS)
 
 	if rrWS.Code != http.StatusOK {
-		t.Fatalf("expected 200 OK for scope=workspaces/gyrus, got %d", rrWS.Code)
+		t.Fatalf("expected 200 OK for scope=projects/gyrus, got %d", rrWS.Code)
 	}
 	wsBody := rrWS.Body.String()
-	if !strings.Contains(wsBody, "Workspace: gyrus") {
-		t.Errorf("expected page title 'Workspace: gyrus'")
+	if !strings.Contains(wsBody, "Project: gyrus") {
+		t.Errorf("expected page title 'Project: gyrus'")
 	}
 	if !strings.Contains(wsBody, "prd-101") {
-		t.Errorf("expected workspace document 'prd-101' to be listed")
+		t.Errorf("expected project document 'prd-101' to be listed")
 	}
 	if strings.Contains(wsBody, "spec-101") {
-		t.Errorf("did not expect reference document 'spec-101' in workspace filter")
+		t.Errorf("did not expect reference document 'spec-101' in project filter")
 	}
 
-	// 4. Test GET /docs?scope=reference&type=specification (combined scope + type filter)
-	reqScopeType := httptest.NewRequest(http.MethodGet, "/docs?scope=reference&type=specification", nil)
+	// 4. Test GET /concepts?scope=reference&type=specification (combined scope + type filter)
+	reqScopeType := httptest.NewRequest(http.MethodGet, "/concepts?scope=reference&type=specification", nil)
 	rrScopeType := httptest.NewRecorder()
 	h.Docs(rrScopeType, reqScopeType)
 

@@ -29,12 +29,12 @@ func TestLocalfsStoreCRUD(t *testing.T) {
 
 	ctx := context.Background()
 
-	doc := gyrus.Document{
+	concept := gyrus.Concept{
 		ID:             "guide-2026-auth",
 		Title:          "OAuth2 Authentication Guide",
 		Category:       gyrus.CategoryArchitecture,
 		Type:           gyrus.TypeGuide,
-		OwnerGroup:     "security",
+		Tenant:         "security",
 		Version:        1,
 		Status:         "active",
 		LastModifiedBy: "sec-engineer",
@@ -42,29 +42,32 @@ func TestLocalfsStoreCRUD(t *testing.T) {
 	}
 
 	// Create
-	ref, err := store.Create(ctx, doc)
+	ref, err := store.Create(ctx, concept)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
-	if ref.ID != doc.ID {
-		t.Errorf("Expected Ref ID %s, got %s", doc.ID, ref.ID)
+	if ref.ID != concept.ID {
+		t.Errorf("Expected Ref ID %s, got %s", concept.ID, ref.ID)
 	}
 
 	// Get
-	fetched, err := store.Get(ctx, doc.ID)
+	fetched, err := store.Get(ctx, concept.ID)
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
 	}
-	if fetched.Title != doc.Title {
-		t.Errorf("Expected Title '%s', got '%s'", doc.Title, fetched.Title)
+	if fetched.Title != concept.Title {
+		t.Errorf("Expected Title '%s', got '%s'", concept.Title, fetched.Title)
+	}
+	if fetched.Tenant != concept.Tenant {
+		t.Errorf("Expected Tenant '%s', got '%s'", concept.Tenant, fetched.Tenant)
 	}
 
 	// Update
 	newTitle := "OAuth2 & OIDC Authentication Guide"
-	patch := gyrus.DocumentPatch{
+	patch := gyrus.ConceptPatch{
 		Title: &newTitle,
 	}
-	updatedRef, err := store.Update(ctx, doc.ID, patch, 1)
+	updatedRef, err := store.Update(ctx, concept.ID, patch, 1)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
@@ -73,20 +76,20 @@ func TestLocalfsStoreCRUD(t *testing.T) {
 	}
 
 	// Concurrency conflict test
-	_, err = store.Update(ctx, doc.ID, patch, 1)
+	_, err = store.Update(ctx, concept.ID, patch, 1)
 	if err == nil {
 		t.Fatal("Expected concurrency error for outdated version 1, got nil")
 	}
 
 	// Delete
-	if err := store.Delete(ctx, doc.ID); err != nil {
+	if err := store.Delete(ctx, concept.ID); err != nil {
 		t.Fatalf("Delete failed: %v", err)
 	}
 
 	// Verify deleted
-	_, err = store.Get(ctx, doc.ID)
+	_, err = store.Get(ctx, concept.ID)
 	if err == nil {
-		t.Fatal("Expected error fetching deleted document, got nil")
+		t.Fatal("Expected error fetching deleted concept, got nil")
 	}
 }
 
@@ -94,7 +97,7 @@ func TestLocalfsStoreCRUD(t *testing.T) {
 // [Test Level]: Unit Test
 // [Purpose]: Verifies that LocalFS Store implements gyrus.SchemaStore for CRUD operations under .gyrus/schemas/.
 // [Execution Surface]: Real Local Filesystem
-// [Assertions]: Saves schema to .gyrus/schemas/<docType>.md, lists persisted schemas, retrieves content, and deletes schema.
+// [Assertions]: Saves schema to .gyrus/schemas/<conceptType>.md, lists persisted schemas, retrieves content, and deletes schema.
 // -----------------------------------------------------------------------------
 func TestLocalfsSchemaStoreCRUD(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "gyrus-localfs-schema-*")
@@ -126,7 +129,7 @@ id: <unique-id>
 title: <Title>
 category: operations
 type: runbook
-owner_group: ops
+tenant: ops
 version: 1
 status: active
 ---
@@ -169,88 +172,88 @@ status: active
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies that LocalFS Store routes documents to workspaces/<ws>/ and reference/ paths and parses scope on Get.
-// [Assertions]: Workspace documents persist to workspaces/<ws>/<id>.md, reference docs to reference/<id>.md.
+// [Purpose]: Verifies that LocalFS Store routes concepts to projects/<project>/ and reference/ paths and parses scope on Get.
+// [Assertions]: Project concepts persist to projects/<project>/<id>.md, reference concepts to reference/<id>.md.
 // -----------------------------------------------------------------------------
-func TestLocalfsStoreWorkspaceScoping(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "gyrus-localfs-ws-*")
+func TestLocalfsStoreProjectScoping(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "gyrus-localfs-project-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	store, err := localfs.NewStoreWithWorkspace(tempDir, "gyrus")
+	store, err := localfs.NewStoreWithProject(tempDir, "gyrus")
 	if err != nil {
 		t.Fatalf("Failed to initialize Store: %v", err)
 	}
 
 	ctx := context.Background()
 
-	// 1. Create workspace document
-	wsDoc := gyrus.Document{
-		ID:         "ticket-101",
-		Title:      "Implement Scoping",
-		Category:   gyrus.CategoryProduct,
-		Type:       gyrus.TypePRD,
-		OwnerGroup: "root",
-		Version:    1,
-		Status:     "active",
-		Content:    "# Implementation Ticket",
+	// 1. Create project concept
+	wsConcept := gyrus.Concept{
+		ID:       "ticket-101",
+		Title:    "Implement Scoping",
+		Category: gyrus.CategoryProduct,
+		Type:     gyrus.TypePRD,
+		Tenant:   "root",
+		Version:  1,
+		Status:   "active",
+		Content:  "# Implementation Ticket",
 	}
 
-	if _, err := store.Create(ctx, wsDoc); err != nil {
-		t.Fatalf("Failed creating wsDoc: %v", err)
+	if _, err := store.Create(ctx, wsConcept); err != nil {
+		t.Fatalf("Failed creating wsConcept: %v", err)
 	}
 
-	// 2. Create reference document
-	refDoc := gyrus.Document{
-		ID:         "adr-007",
-		Title:      "Scoping Architecture",
-		Category:   gyrus.CategoryArchitecture,
-		Type:       gyrus.TypeADR,
-		OwnerGroup: "root",
-		Scope:      "reference",
-		Version:    1,
-		Status:     "proposed",
-		Content:    "# ADR 007",
+	// 2. Create reference concept
+	refConcept := gyrus.Concept{
+		ID:       "adr-007",
+		Title:    "Scoping Architecture",
+		Category: gyrus.CategoryArchitecture,
+		Type:     gyrus.TypeADR,
+		Tenant:   "root",
+		Scope:    "reference",
+		Version:  1,
+		Status:   "proposed",
+		Content:  "# ADR 007",
 	}
 
-	if _, err := store.Create(ctx, refDoc); err != nil {
-		t.Fatalf("Failed creating refDoc: %v", err)
+	if _, err := store.Create(ctx, refConcept); err != nil {
+		t.Fatalf("Failed creating refConcept: %v", err)
 	}
 
-	// Verify file path on disk for wsDoc
-	expectedWsPath := tempDir + "/docs/root/workspaces/gyrus/ticket-101.md"
+	// Verify file path on disk for wsConcept
+	expectedWsPath := tempDir + "/concepts/root/projects/gyrus/ticket-101.md"
 	if _, err := os.Stat(expectedWsPath); err != nil {
-		t.Fatalf("Expected workspace file at %s, got: %v", expectedWsPath, err)
+		t.Fatalf("Expected project file at %s, got: %v", expectedWsPath, err)
 	}
 
-	// Verify file path on disk for refDoc
-	expectedRefPath := tempDir + "/docs/root/reference/adr-007.md"
+	// Verify file path on disk for refConcept
+	expectedRefPath := tempDir + "/concepts/root/reference/adr-007.md"
 	if _, err := os.Stat(expectedRefPath); err != nil {
 		t.Fatalf("Expected reference file at %s, got: %v", expectedRefPath, err)
 	}
 
-	// 3. Test Get() parses scope and workspace
+	// 3. Test Get() parses scope and project
 	fetchedWs, err := store.Get(ctx, "ticket-101")
 	if err != nil {
-		t.Fatalf("Get wsDoc failed: %v", err)
+		t.Fatalf("Get wsConcept failed: %v", err)
 	}
-	if fetchedWs.Scope != "workspace" {
-		t.Errorf("Expected Scope 'workspace', got '%s'", fetchedWs.Scope)
+	if fetchedWs.Scope != "project" {
+		t.Errorf("Expected Scope 'project', got '%s'", fetchedWs.Scope)
 	}
-	if fetchedWs.Workspace != "gyrus" {
-		t.Errorf("Expected Workspace 'gyrus', got '%s'", fetchedWs.Workspace)
+	if fetchedWs.Project != "gyrus" {
+		t.Errorf("Expected Project 'gyrus', got '%s'", fetchedWs.Project)
 	}
 
 	fetchedRef, err := store.Get(ctx, "adr-007")
 	if err != nil {
-		t.Fatalf("Get refDoc failed: %v", err)
+		t.Fatalf("Get refConcept failed: %v", err)
 	}
 	if fetchedRef.Scope != "reference" {
 		t.Errorf("Expected Scope 'reference', got '%s'", fetchedRef.Scope)
 	}
-	if fetchedRef.Workspace != "" {
-		t.Errorf("Expected empty Workspace for reference doc, got '%s'", fetchedRef.Workspace)
+	if fetchedRef.Project != "" {
+		t.Errorf("Expected empty Project for reference concept, got '%s'", fetchedRef.Project)
 	}
 }

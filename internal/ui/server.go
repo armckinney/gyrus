@@ -35,11 +35,11 @@ func NewServer(host string, port int) (*Server, error) {
 	return NewServerFromApp(application, host, port)
 }
 
-// NewServerWithWorkspace initializes a Web UI server for an explicit workspace directory.
-func NewServerWithWorkspace(workspaceDir string, host string, port int) (*Server, error) {
-	application, err := app.NewWithWorkspace(workspaceDir)
+// NewServerWithProject initializes a Web UI server for an explicit project directory.
+func NewServerWithProject(projectDir string, host string, port int) (*Server, error) {
+	application, err := app.NewWithProject(projectDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed creating app container for workspace '%s': %w", workspaceDir, err)
+		return nil, fmt.Errorf("failed creating app container for project '%s': %w", projectDir, err)
 	}
 	return NewServerFromApp(application, host, port)
 }
@@ -102,14 +102,14 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/search", s.handlers.Search)
 	mux.HandleFunc("/graph", s.handlers.Graph)
 	mux.HandleFunc("/chat", s.handlers.Chat)
-	mux.HandleFunc("/docs/", s.handlers.Doc)
-	mux.HandleFunc("/docs", s.handlers.Docs)
+	mux.HandleFunc("/concepts/", s.handlers.Doc)
+	mux.HandleFunc("/concepts", s.handlers.Docs)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			s.handlers.Home(w, r)
 			return
 		}
-		if strings.HasPrefix(r.URL.Path, "/docs/") {
+		if strings.HasPrefix(r.URL.Path, "/concepts/") {
 			s.handlers.Doc(w, r)
 			return
 		}

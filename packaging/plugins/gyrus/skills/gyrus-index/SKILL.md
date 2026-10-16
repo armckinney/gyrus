@@ -31,8 +31,8 @@ Formulate a concise, synthesized proposal of 3-4 core living documents for the r
 - Ask for confirmation or adjustments before creating any files.
 
 ### Step 4: Scaffold Confirmed Documents
-- Once approved, create the documents in `.gyrus/docs/<owner_group>/reference/` using valid OKF YAML frontmatter:
-  - `id`, `title`, `category`, `type`, `owner_group`, `version: 1`, `status: active`.
+- Once approved, create the documents in `.gyrus/concepts/<tenant>/reference/` using valid OKF YAML frontmatter:
+  - `id`, `title`, `category`, `type`, `tenant`, `version: 1`, `status: active`.
 - Ensure documents capture **high-level intent and boundaries**, not line-by-line function implementations.
 
 ### Step 5: Index & Synchronize

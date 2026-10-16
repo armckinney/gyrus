@@ -23,7 +23,7 @@ id: adr-2026-new-proposal
 title: "%s"
 category: architecture
 type: adr
-owner_group: platform
+tenant: platform
 version: 1
 status: proposed
 tags:

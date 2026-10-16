@@ -39,7 +39,7 @@ This document instructs AI agents (Antigravity, Claude Code, GitHub Copilot, Ope
 
 5. **OKF Contract Schema Compliance**:
    - Document IDs MUST match lower-case regex `^[a-z0-9-_]+$` (e.g., `adr-001-storage-engine`).
-   - Every contract document requires YAML frontmatter defining `id`, `title`, `category`, `type`, `owner_group`, `version`, `status`.
+   - Every contract concept requires YAML frontmatter defining `id`, `title`, `category`, `type`, `tenant`, `version`, `status`.
 
 6. **Programmatic Exit Codes Protocol**:
    - `0`: Success

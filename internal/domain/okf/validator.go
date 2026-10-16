@@ -17,7 +17,7 @@ var validCategories = map[gyrus.Category]bool{
 	gyrus.CategoryTechnical:     true,
 }
 
-var validTypes = map[gyrus.DocumentType]bool{
+var validTypes = map[gyrus.ConceptType]bool{
 	gyrus.TypeADR:                 true,
 	gyrus.TypePRD:                 true,
 	gyrus.TypeGuide:               true,
@@ -41,33 +41,33 @@ func (e *ValidationError) Error() string {
 	return fmt.Sprintf("validation error [%s]: %s", e.Field, e.Message)
 }
 
-// Validate checks a Document against mandatory OKF schema boundaries.
-func Validate(doc *gyrus.Document) error {
-	if doc == nil {
-		return &ValidationError{Field: "document", Message: "document cannot be nil"}
+// Validate checks a Concept against mandatory OKF schema boundaries.
+func Validate(concept *gyrus.Concept) error {
+	if concept == nil {
+		return &ValidationError{Field: "concept", Message: "concept cannot be nil"}
 	}
-	if doc.ID == "" {
+	if concept.ID == "" {
 		return &ValidationError{Field: "id", Message: "id is mandatory"}
 	}
-	if !idRegex.MatchString(doc.ID) {
-		return &ValidationError{Field: "id", Message: fmt.Sprintf("id '%s' must match pattern ^[a-z0-9-_]+$", doc.ID)}
+	if !idRegex.MatchString(concept.ID) {
+		return &ValidationError{Field: "id", Message: fmt.Sprintf("id '%s' must match pattern ^[a-z0-9-_]+$", concept.ID)}
 	}
-	if doc.Title == "" {
+	if concept.Title == "" {
 		return &ValidationError{Field: "title", Message: "title is mandatory and cannot be empty"}
 	}
-	if doc.OwnerGroup == "" {
-		return &ValidationError{Field: "owner_group", Message: "owner_group is mandatory and cannot be empty"}
+	if concept.Tenant == "" {
+		return &ValidationError{Field: "tenant", Message: "tenant is mandatory and cannot be empty"}
 	}
-	if !validCategories[doc.Category] {
-		return &ValidationError{Field: "category", Message: fmt.Sprintf("invalid category '%s'", doc.Category)}
+	if !validCategories[concept.Category] {
+		return &ValidationError{Field: "category", Message: fmt.Sprintf("invalid category '%s'", concept.Category)}
 	}
-	if !validTypes[doc.Type] {
-		return &ValidationError{Field: "type", Message: fmt.Sprintf("invalid document type '%s'", doc.Type)}
+	if !validTypes[concept.Type] {
+		return &ValidationError{Field: "type", Message: fmt.Sprintf("invalid concept type '%s'", concept.Type)}
 	}
-	if doc.Version < 1 {
+	if concept.Version < 1 {
 		return &ValidationError{Field: "version", Message: "version must be >= 1"}
 	}
-	if doc.Status == "" {
+	if concept.Status == "" {
 		return &ValidationError{Field: "status", Message: "status is mandatory and cannot be empty"}
 	}
 	return nil

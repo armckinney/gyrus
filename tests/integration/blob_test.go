@@ -33,15 +33,15 @@ func TestIntegration_BlobProfile(t *testing.T) {
 	store := storageblob.NewStoreWithBucket(bucket, "gyrus-docs")
 	ctx := context.Background()
 
-	doc := gyrus.Document{
-		ID:         "spec-blob-001",
-		Title:      "Cloud Blob Spec",
-		Category:   gyrus.CategoryTechnical,
-		Type:       gyrus.TypeSpecification,
-		OwnerGroup: "cloud-eng",
-		Version:    1,
-		Status:     "active",
-		Content:    "Cloud-native object storage envelope bundle.",
+	doc := gyrus.Concept{
+		ID:       "spec-blob-001",
+		Title:    "Cloud Blob Spec",
+		Category: gyrus.CategoryTechnical,
+		Type:     gyrus.TypeSpecification,
+		Tenant:   "cloud-eng",
+		Version:  1,
+		Status:   "active",
+		Content:  "Cloud-native object storage envelope bundle.",
 	}
 
 	ref, err := store.Create(ctx, doc)

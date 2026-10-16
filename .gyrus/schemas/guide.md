@@ -4,7 +4,7 @@ title: <Clean Document Title>
 category: operations
 type: guide
 format: markdown
-owner_group: <team-owning-document>
+tenant: <team-owning-document>
 version: 1
 status: proposed
 last_modified_by: <author-username>

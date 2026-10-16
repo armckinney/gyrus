@@ -13,54 +13,54 @@ const (
 	CategoryTechnical     Category = "technical"
 )
 
-// DocumentType represents an Open Knowledge Format (OKF) document type.
-type DocumentType string
+// ConceptType represents an Open Knowledge Format (OKF) concept type.
+type ConceptType string
 
 const (
-	TypeADR                 DocumentType = "adr"
-	TypePRD                 DocumentType = "prd"
-	TypeGuide               DocumentType = "guide"
-	TypeImprovementProposal DocumentType = "improvement-proposal"
-	TypeReleaseNote         DocumentType = "release-note"
-	TypeSpecification       DocumentType = "specification"
-	TypeStandards           DocumentType = "standards"
-	TypeTechnicalReference  DocumentType = "technical-reference"
-	TypeProduct             DocumentType = "product"
-	TypeGlossary            DocumentType = "glossary"
-	TypeFreeform            DocumentType = "freeform"
+	TypeADR                 ConceptType = "adr"
+	TypePRD                 ConceptType = "prd"
+	TypeGuide               ConceptType = "guide"
+	TypeImprovementProposal ConceptType = "improvement-proposal"
+	TypeReleaseNote         ConceptType = "release-note"
+	TypeSpecification       ConceptType = "specification"
+	TypeStandards           ConceptType = "standards"
+	TypeTechnicalReference  ConceptType = "technical-reference"
+	TypeProduct             ConceptType = "product"
+	TypeGlossary            ConceptType = "glossary"
+	TypeFreeform            ConceptType = "freeform"
 )
 
-// Document represents an Open Knowledge Format (OKF) contract document.
-type Document struct {
-	ID             string       `json:"id" yaml:"id"`
-	Title          string       `json:"title" yaml:"title"`
-	Category       Category     `json:"category" yaml:"category"`
-	Type           DocumentType `json:"type" yaml:"type"`
-	Format         string       `json:"format" yaml:"format"`
-	OwnerGroup     string       `json:"owner_group" yaml:"owner_group"`
-	Version        int          `json:"version" yaml:"version"`
-	Status         string       `json:"status" yaml:"status"`
-	Immutable      bool         `json:"immutable,omitempty" yaml:"immutable,omitempty"`
-	LastModifiedBy string       `json:"last_modified_by" yaml:"last_modified_by"`
-	LastUpdated    time.Time    `json:"last_updated" yaml:"last_updated"`
-	Tags           []string     `json:"tags,omitempty" yaml:"tags,omitempty"`
-	Dependencies   []string     `json:"dependencies,omitempty" yaml:"dependencies,omitempty"`
-	Scope          string       `json:"scope,omitempty" yaml:"-"`
-	Workspace      string       `json:"workspace,omitempty" yaml:"-"`
-	FilePath       string       `json:"filepath,omitempty" yaml:"-"`
-	Content        string       `json:"content" yaml:"-"`
+// Concept represents an Open Knowledge Format (OKF) contract concept.
+type Concept struct {
+	ID             string      `json:"id" yaml:"id"`
+	Title          string      `json:"title" yaml:"title"`
+	Category       Category    `json:"category" yaml:"category"`
+	Type           ConceptType `json:"type" yaml:"type"`
+	Format         string      `json:"format" yaml:"format"`
+	Tenant         string      `json:"tenant" yaml:"tenant"`
+	Version        int         `json:"version" yaml:"version"`
+	Status         string      `json:"status" yaml:"status"`
+	Immutable      bool        `json:"immutable,omitempty" yaml:"immutable,omitempty"`
+	LastModifiedBy string      `json:"last_modified_by" yaml:"last_modified_by"`
+	LastUpdated    time.Time   `json:"last_updated" yaml:"last_updated"`
+	Tags           []string    `json:"tags,omitempty" yaml:"tags,omitempty"`
+	Dependencies   []string    `json:"dependencies,omitempty" yaml:"dependencies,omitempty"`
+	Scope          string      `json:"scope,omitempty" yaml:"-"`
+	Project        string      `json:"project,omitempty" yaml:"-"`
+	FilePath       string      `json:"filepath,omitempty" yaml:"-"`
+	Content        string      `json:"content" yaml:"-"`
 }
 
-// DocumentRef holds lightweight reference metadata returned after a mutation.
-type DocumentRef struct {
+// ConceptRef holds lightweight reference metadata returned after a mutation.
+type ConceptRef struct {
 	ID          string    `json:"id"`
 	Version     int       `json:"version"`
 	Status      string    `json:"status"`
 	LastUpdated time.Time `json:"last_updated"`
 }
 
-// DocumentPatch represents a mutation request to update document fields.
-type DocumentPatch struct {
+// ConceptPatch represents a mutation request to update concept fields.
+type ConceptPatch struct {
 	Title        *string   `json:"title,omitempty"`
 	Status       *string   `json:"status,omitempty"`
 	Tags         *[]string `json:"tags,omitempty"`
@@ -71,13 +71,13 @@ type DocumentPatch struct {
 
 // SearchFilter specifies filter constraints for lexical and metadata queries.
 type SearchFilter struct {
-	Category   Category     `json:"category,omitempty"`
-	Type       DocumentType `json:"type,omitempty"`
-	Status     string       `json:"status,omitempty"`
-	Tag        string       `json:"tag,omitempty"`
-	OwnerGroup string       `json:"owner_group,omitempty"`
-	Scope      string       `json:"scope,omitempty"`     // "workspace", "reference", "all"
-	Workspace  string       `json:"workspace,omitempty"` // target workspace name
+	Category Category    `json:"category,omitempty"`
+	Type     ConceptType `json:"type,omitempty"`
+	Status   string      `json:"status,omitempty"`
+	Tag      string      `json:"tag,omitempty"`
+	Tenant   string      `json:"tenant,omitempty"`
+	Scope    string      `json:"scope,omitempty"`   // "project", "reference", "all"
+	Project  string      `json:"project,omitempty"` // target project name
 }
 
 // SearchQuery represents a search request.
@@ -87,14 +87,14 @@ type SearchQuery struct {
 	MaxResults int          `json:"max_results"`
 }
 
-// SearchResult represents a matching document result from search execution.
+// SearchResult represents a matching concept result from search execution.
 type SearchResult struct {
-	Document    Document `json:"document"`
-	Score       float64  `json:"score"`
-	MatchReason string   `json:"match_reason,omitempty"`
+	Concept     Concept `json:"concept"`
+	Score       float64 `json:"score"`
+	MatchReason string  `json:"match_reason,omitempty"`
 }
 
-// RelationshipType specifies valid edge linkage types between documents.
+// RelationshipType specifies valid edge linkage types between concepts.
 type RelationshipType string
 
 const (
@@ -104,16 +104,16 @@ const (
 	RelMitigates  RelationshipType = "mitigates"
 )
 
-// DocumentEdge represents a directed relationship link between two documents.
-type DocumentEdge struct {
-	FromDocumentID   string           `json:"from_document_id"`
-	ToDocumentID     string           `json:"to_document_id"`
+// ConceptEdge represents a directed relationship link between two concepts.
+type ConceptEdge struct {
+	FromConceptID    string           `json:"from_concept_id"`
+	ToConceptID      string           `json:"to_concept_id"`
 	RelationshipType RelationshipType `json:"relationship_type"`
 	CreatedBy        string           `json:"created_by"`
 	CreatedAt        time.Time        `json:"created_at"`
 }
 
-// EdgeFilter represents parameters to query document relationship edges.
+// EdgeFilter represents parameters to query concept relationship edges.
 type EdgeFilter struct {
 	RelationshipType RelationshipType `json:"relationship_type,omitempty"`
 	Direction        string           `json:"direction,omitempty"` // "outgoing" | "incoming" | "both"
@@ -125,10 +125,10 @@ type GraphQuery struct {
 	MaxDepth int    `json:"max_depth"`
 }
 
-// GraphPath represents a path traversed across document edges.
+// GraphPath represents a path traversed across concept edges.
 type GraphPath struct {
-	Nodes []string       `json:"nodes"`
-	Edges []DocumentEdge `json:"edges"`
+	Nodes []string      `json:"nodes"`
+	Edges []ConceptEdge `json:"edges"`
 }
 
 // SyncReport summarizes the output of an incremental file re-indexing run.

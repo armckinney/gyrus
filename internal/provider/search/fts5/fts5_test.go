@@ -15,7 +15,7 @@ import (
 // [Test Level]: Provider Integration Test
 // [Purpose]: Verifies that SearchProvider over SQLite FTS5 executes keyword searches, applies category/type/status filters, and handles special character sanitization.
 // [Execution Surface]: Real SQLite FTS5 Engine
-// [Assertions]: Queries return matched documents with BM25 rankings; special characters in search queries do not cause SQLite syntax errors.
+// [Assertions]: Queries return matched concepts with BM25 rankings; special characters in search queries do not cause SQLite syntax errors.
 // -----------------------------------------------------------------------------
 func TestFTS5SearchProvider(t *testing.T) {
 	tempDir := t.TempDir()
@@ -29,13 +29,13 @@ func TestFTS5SearchProvider(t *testing.T) {
 
 	ctx := context.Background()
 
-	docs := []gyrus.Document{
+	docs := []gyrus.Concept{
 		{
 			ID:          "adr-001-vector",
 			Title:       "Vector Search Provider",
 			Category:    gyrus.CategoryArchitecture,
 			Type:        gyrus.TypeADR,
-			OwnerGroup:  "platform",
+			Tenant:      "platform",
 			Version:     1,
 			Status:      "accepted",
 			LastUpdated: time.Now(),
@@ -47,7 +47,7 @@ func TestFTS5SearchProvider(t *testing.T) {
 			Title:       "FTS5 Lexical Search Engine",
 			Category:    gyrus.CategoryTechnical,
 			Type:        gyrus.TypeSpecification,
-			OwnerGroup:  "platform",
+			Tenant:      "platform",
 			Version:     1,
 			Status:      "active",
 			LastUpdated: time.Now(),
@@ -69,7 +69,7 @@ func TestFTS5SearchProvider(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Search for 'embeddings' failed: %v", err)
 	}
-	if len(results) != 1 || results[0].Document.ID != "adr-001-vector" {
+	if len(results) != 1 || results[0].Concept.ID != "adr-001-vector" {
 		t.Errorf("Expected match for adr-001-vector, got %v", results)
 	}
 
@@ -78,7 +78,7 @@ func TestFTS5SearchProvider(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Filtered search failed: %v", err)
 	}
-	if len(specResults) != 1 || specResults[0].Document.ID != "spec-001-fts5" {
+	if len(specResults) != 1 || specResults[0].Concept.ID != "spec-001-fts5" {
 		t.Errorf("Expected spec-001-fts5 match, got %v", specResults)
 	}
 

@@ -16,21 +16,21 @@
 
     {{if not .Results}}
     <div class="card text-center" style="padding: 3rem 1rem;">
-        <h3 class="font-bold text-base mb-2">No matching documentation found</h3>
+        <h3 class="font-bold text-base mb-2">No matching concepts found</h3>
         <p class="text-muted text-sm">Try broadening your search terms or clearing filters.</p>
     </div>
     {{else}}
     <div class="search-results-list">
         {{range .Results}}
-        <a href="/docs/{{.Document.ID}}" class="search-card" hx-get="/docs/{{.Document.ID}}" hx-target="#main-content" hx-push-url="true">
+        <a href="/concepts/{{.Concept.ID}}" class="search-card" hx-get="/concepts/{{.Concept.ID}}" hx-target="#main-content" hx-push-url="true">
             <div class="search-card-header">
-                <span class="search-card-title">{{.Document.Title}}</span>
-                <span class="badge badge-{{.Document.Status}}">{{.Document.Status}}</span>
+                <span class="search-card-title">{{.Concept.Title}}</span>
+                <span class="badge badge-{{.Concept.Status}}">{{.Concept.Status}}</span>
             </div>
             <div class="flex gap-2 mb-2">
-                <span class="badge badge-id">{{.Document.ID}}</span>
-                <span class="badge badge-category">{{.Document.Category}}</span>
-                <span class="badge badge-type">{{.Document.Type}}</span>
+                <span class="badge badge-id">{{.Concept.ID}}</span>
+                <span class="badge badge-category">{{.Concept.Category}}</span>
+                <span class="badge badge-type">{{.Concept.Type}}</span>
                 {{if .MatchReason}}
                 <span class="badge badge-id" style="color: var(--color-primary);">{{.MatchReason}}</span>
                 {{end}}

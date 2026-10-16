@@ -562,7 +562,7 @@
                                     <span class="badge badge-type">${escape(node.data('type'))}</span>
                                     <span class="badge badge-${escape(node.data('status'))}">${escape(node.data('status'))}</span>
                                 </div>
-                                <a href="/docs/${encodeURIComponent(docId)}" class="btn btn-primary btn-sm block text-center" hx-get="/docs/${encodeURIComponent(docId)}" hx-target="#main-content" hx-push-url="true">View Document</a>
+                                <a href="/concepts/${encodeURIComponent(docId)}" class="btn btn-primary btn-sm block text-center" hx-get="/concepts/${encodeURIComponent(docId)}" hx-target="#main-content" hx-push-url="true">View Concept</a>
                             </div>
                         `;
                         if (window.htmx) {

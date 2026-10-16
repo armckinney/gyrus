@@ -12,9 +12,9 @@ import (
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies that BlobStore handles document lifecycle (Create, Get, Update, Archive, Delete) via Go CDK fileblob.
+// [Purpose]: Verifies that BlobStore handles concept lifecycle (Create, Get, Update, Archive, Delete) via Go CDK fileblob.
 // [Execution Surface]: In-Memory / Local fileblob bucket
-// [Assertions]: Document is created, retrieved with content matching, updated with version increment, archived, and deleted.
+// [Assertions]: Concept is created, retrieved with content matching, updated with version increment, archived, and deleted.
 // -----------------------------------------------------------------------------
 func TestBlobStore(t *testing.T) {
 	ctx := context.Background()
@@ -34,13 +34,13 @@ func TestBlobStore(t *testing.T) {
 	store := NewStoreWithBucket(bucket, "testprefix")
 
 	now := time.Now().Truncate(time.Second)
-	doc := gyrus.Document{
+	concept := gyrus.Concept{
 		ID:             "adr-2026-001",
 		Title:          "Test ADR",
 		Category:       gyrus.CategoryArchitecture,
 		Type:           gyrus.TypeADR,
 		Format:         "markdown",
-		OwnerGroup:     "platform",
+		Tenant:         "platform",
 		Version:        1,
 		Status:         "draft",
 		LastModifiedBy: "tester",
@@ -50,33 +50,36 @@ func TestBlobStore(t *testing.T) {
 	}
 
 	// Test Create
-	ref, err := store.Create(ctx, doc)
+	ref, err := store.Create(ctx, concept)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
-	if ref.ID != doc.ID {
-		t.Errorf("expected ref ID %q, got %q", doc.ID, ref.ID)
+	if ref.ID != concept.ID {
+		t.Errorf("expected ref ID %q, got %q", concept.ID, ref.ID)
 	}
 
 	// Test Get
-	fetched, err := store.Get(ctx, doc.ID)
+	fetched, err := store.Get(ctx, concept.ID)
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
 	}
-	if fetched.Title != doc.Title {
-		t.Errorf("expected title %q, got %q", doc.Title, fetched.Title)
+	if fetched.Title != concept.Title {
+		t.Errorf("expected title %q, got %q", concept.Title, fetched.Title)
 	}
-	if fetched.Content != doc.Content {
-		t.Errorf("expected content %q, got %q", doc.Content, fetched.Content)
+	if fetched.Tenant != concept.Tenant {
+		t.Errorf("expected tenant %q, got %q", concept.Tenant, fetched.Tenant)
+	}
+	if fetched.Content != concept.Content {
+		t.Errorf("expected content %q, got %q", concept.Content, fetched.Content)
 	}
 
 	// Test Update
 	newTitle := "Updated ADR"
-	patch := gyrus.DocumentPatch{
+	patch := gyrus.ConceptPatch{
 		Title: &newTitle,
 	}
 
-	updRef, err := store.Update(ctx, doc.ID, patch, 1)
+	updRef, err := store.Update(ctx, concept.ID, patch, 1)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
@@ -84,7 +87,7 @@ func TestBlobStore(t *testing.T) {
 		t.Errorf("expected version 2, got %d", updRef.Version)
 	}
 
-	fetched2, err := store.Get(ctx, doc.ID)
+	fetched2, err := store.Get(ctx, concept.ID)
 	if err != nil {
 		t.Fatalf("Get after update failed: %v", err)
 	}
@@ -93,12 +96,12 @@ func TestBlobStore(t *testing.T) {
 	}
 
 	// Test Archive
-	err = store.Archive(ctx, doc.ID)
+	err = store.Archive(ctx, concept.ID)
 	if err != nil {
 		t.Fatalf("Archive failed: %v", err)
 	}
 
-	fetched3, err := store.Get(ctx, doc.ID)
+	fetched3, err := store.Get(ctx, concept.ID)
 	if err != nil {
 		t.Fatalf("Get after archive failed: %v", err)
 	}
@@ -107,14 +110,14 @@ func TestBlobStore(t *testing.T) {
 	}
 
 	// Test Delete
-	err = store.Delete(ctx, doc.ID)
+	err = store.Delete(ctx, concept.ID)
 	if err != nil {
 		t.Fatalf("Delete failed: %v", err)
 	}
 
-	_, err = store.Get(ctx, doc.ID)
+	_, err = store.Get(ctx, concept.ID)
 	if err == nil {
-		t.Fatalf("expected error getting deleted document")
+		t.Fatalf("expected error getting deleted concept")
 	}
 }
 
@@ -122,7 +125,7 @@ func TestBlobStore(t *testing.T) {
 // [Test Level]: Unit Test
 // [Purpose]: Verifies that Blob Store implements gyrus.SchemaStore for remote schema CRUD operations.
 // [Execution Surface]: In-Memory / Local fileblob bucket
-// [Assertions]: Saves schema to enforced .gyrus/schemas/<docType>.md key, lists schemas, retrieves content, and deletes schema.
+// [Assertions]: Saves schema to enforced .gyrus/schemas/<conceptType>.md key, lists schemas, retrieves content, and deletes schema.
 // -----------------------------------------------------------------------------
 func TestBlobSchemaStore(t *testing.T) {
 	ctx := context.Background()
@@ -157,7 +160,7 @@ id: <unique-id>
 title: <Title>
 category: product
 type: spec
-owner_group: product
+tenant: product
 version: 1
 status: active
 ---

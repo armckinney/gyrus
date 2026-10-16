@@ -32,7 +32,7 @@ func TestCLI_Search(t *testing.T) {
 		"--title", "PostgreSQL Vector Store",
 		"--category", "architecture",
 		"--type", "adr",
-		"--owner-group", "platform-team",
+		"--tenant", "platform-team",
 		"--status", "accepted",
 		"--tags", "postgres,vector,search",
 		"--content", "Semantic vector search with pgvector extension.",
@@ -47,7 +47,7 @@ func TestCLI_Search(t *testing.T) {
 		"--title", "Testing Guide for Developers",
 		"--category", "technical",
 		"--type", "guide",
-		"--owner-group", "qa-team",
+		"--tenant", "qa-team",
 		"--status", "active",
 		"--tags", "testing,guide,qa",
 		"--content", "Comprehensive guidelines for writing Go unit and integration tests.",
@@ -84,7 +84,7 @@ func TestCLI_Search(t *testing.T) {
 		t.Fatalf("Failed unmarshaling search JSON output: %v\nOutput:\n%s", err, jsonOut.String())
 	}
 
-	if len(results) != 1 || results[0].Document.ID != "guide-search-001" {
+	if len(results) != 1 || results[0].Concept.ID != "guide-search-001" {
 		t.Errorf("Expected 1 result for 'guide-search-001', got %v", results)
 	}
 
@@ -102,7 +102,7 @@ func TestCLI_Search(t *testing.T) {
 		t.Fatalf("Failed unmarshaling filter JSON output: %v\nOutput:\n%s", err, filterOut.String())
 	}
 
-	if len(filterResults) != 1 || filterResults[0].Document.ID != "adr-search-001" {
+	if len(filterResults) != 1 || filterResults[0].Concept.ID != "adr-search-001" {
 		t.Errorf("Expected 1 filtered result for 'adr-search-001', got %v", filterResults)
 	}
 }
@@ -129,7 +129,7 @@ func TestCLI_SuggestContext(t *testing.T) {
 		"--title", "Authentication & Security Model",
 		"--category", "architecture",
 		"--type", "specification",
-		"--owner-group", "security-team",
+		"--tenant", "security-team",
 		"--status", "active",
 		"--content", "All API endpoints must authenticate with OAuth2 bearer tokens.",
 	)

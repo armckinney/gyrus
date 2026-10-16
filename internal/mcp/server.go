@@ -27,9 +27,9 @@ func NewServer() (*Server, error) {
 	return newServerFromApp(application)
 }
 
-// NewServerWithWorkspace initializes an MCP stdio server using an explicit workspace directory.
-func NewServerWithWorkspace(workspaceDir string) (*Server, error) {
-	application, err := app.NewWithWorkspace(workspaceDir)
+// NewServerWithProject initializes an MCP stdio server using an explicit project directory.
+func NewServerWithProject(projectDir string) (*Server, error) {
+	application, err := app.NewWithProject(projectDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating app container: %w", err)
 	}
@@ -60,24 +60,29 @@ func newServerFromApp(application *app.App) (*Server, error) {
 		engine:      engine,
 	}
 
-	tools.Register(s.mcpServer, s.engine)
+	tools.Register(mcpServer, engine)
 	s.registerResources()
 	s.registerPrompts()
 
 	return s, nil
 }
 
-// MCPServer returns the underlying mark3labs MCPServer instance.
+// MCPServer returns the underlying MCP server instance.
 func (s *Server) MCPServer() *server.MCPServer {
 	return s.mcpServer
 }
 
-// Engine returns the underlying lifecycle Engine service.
+// Engine returns the underlying lifecycle Engine instance.
 func (s *Server) Engine() *lifecycle.Engine {
 	return s.engine
 }
 
-// ServeStdio starts serving MCP requests over stdio.
-func (s *Server) ServeStdio(ctx context.Context) error {
+// Start runs the MCP server over standard input/output.
+func (s *Server) Start(ctx context.Context) error {
 	return server.ServeStdio(s.mcpServer)
+}
+
+// ServeStdio runs the MCP server over standard input/output (alias for Start).
+func (s *Server) ServeStdio(ctx context.Context) error {
+	return s.Start(ctx)
 }

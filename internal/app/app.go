@@ -29,11 +29,11 @@ func New() (*App, error) {
 	}, nil
 }
 
-// NewWithWorkspace initializes an App container resolving configuration from an explicit workspace directory.
-func NewWithWorkspace(workspaceDir string) (*App, error) {
-	resolved, err := config.LoadWithWorkspace(workspaceDir)
+// NewWithProject initializes an App container resolving configuration from an explicit project directory.
+func NewWithProject(projectDir string) (*App, error) {
+	resolved, err := config.LoadWithProject(projectDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load configuration for workspace '%s': %w", workspaceDir, err)
+		return nil, fmt.Errorf("failed to load configuration for project '%s': %w", projectDir, err)
 	}
 
 	return &App{
@@ -76,12 +76,12 @@ func (a *App) StorageRoot() string {
 	return a.resolved.StorageRoot
 }
 
-// WorkspaceDir returns the root workspace directory for the application.
-func (a *App) WorkspaceDir() string {
+// ProjectDir returns the root project directory for the application.
+func (a *App) ProjectDir() string {
 	if a == nil || a.resolved == nil {
 		return "."
 	}
-	if a.resolved.SourcePath != "" && a.resolved.Source == config.SourceWorkspace {
+	if a.resolved.SourcePath != "" && a.resolved.Source == config.SourceProject {
 		return filepath.Dir(a.resolved.SourcePath)
 	}
 	if a.resolved.StorageRoot != "" {
@@ -94,7 +94,7 @@ func (a *App) WorkspaceDir() string {
 	return "."
 }
 
-// Config returns the resolved workspace or global configuration settings.
+// Config returns the resolved project or global configuration settings.
 func (a *App) Config() *config.Config {
 	if a.resolved == nil {
 		return nil
@@ -116,7 +116,7 @@ func (a *App) Engine() (*lifecycle.Engine, error) {
 		return a.engine, nil
 	}
 
-	store, err := provider.NewDocumentStore(a.resolved.Config, a.resolved.StorageRoot)
+	store, err := provider.NewConceptStore(a.resolved.Config, a.resolved.StorageRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed initializing storage provider: %w", err)
 	}
@@ -136,10 +136,10 @@ func (a *App) Engine() (*lifecycle.Engine, error) {
 		return nil, fmt.Errorf("failed initializing graph provider: %w", err)
 	}
 
-	wsName := ""
+	projectName := ""
 	if a.resolved != nil && a.resolved.Config != nil {
-		wsName = a.resolved.Config.WorkspaceName()
+		projectName = a.resolved.Config.ProjectName()
 	}
-	a.engine = lifecycle.NewEngineWithWorkspace(store, search, indexer, graph, a.resolved.StorageRoot, wsName)
+	a.engine = lifecycle.NewEngineWithProject(store, search, indexer, graph, a.resolved.StorageRoot, projectName)
 	return a.engine, nil
 }

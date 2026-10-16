@@ -59,7 +59,7 @@ func TestCLI_CreateAndGet(t *testing.T) {
 		"--title", "CRUD Specification",
 		"--category", "technical",
 		"--type", "specification",
-		"--owner-group", "platform",
+		"--tenant", "platform",
 		"--status", "active",
 		"--tags", "crud,test,e2e",
 		"--content", "Specification body content for CRUD tests.",
@@ -84,7 +84,7 @@ func TestCLI_CreateAndGet(t *testing.T) {
 		t.Fatalf("Get with --json failed: %v", err)
 	}
 
-	var doc gyrus.Document
+	var doc gyrus.Concept
 	if err := json.Unmarshal(getJSONOut.Bytes(), &doc); err != nil {
 		t.Fatalf("Failed unmarshaling --json output: %v\nRaw Output:\n%s", err, getJSONOut.String())
 	}
@@ -122,7 +122,7 @@ func TestCLI_Update(t *testing.T) {
 		"--title", "Initial Guide",
 		"--category", "technical",
 		"--type", "guide",
-		"--owner-group", "docs-team",
+		"--tenant", "docs-team",
 		"--status", "draft",
 		"--content", "Initial draft content.",
 	)
@@ -152,7 +152,7 @@ func TestCLI_Update(t *testing.T) {
 		t.Fatalf("Get after update failed: %v", err)
 	}
 
-	var doc gyrus.Document
+	var doc gyrus.Concept
 	if err := json.Unmarshal(getOut.Bytes(), &doc); err != nil {
 		t.Fatalf("Failed unmarshaling get output: %v", err)
 	}
@@ -190,7 +190,7 @@ func TestCLI_Archive(t *testing.T) {
 		"--title", "Archivable Specification",
 		"--category", "technical",
 		"--type", "specification",
-		"--owner-group", "platform",
+		"--tenant", "platform",
 		"--status", "active",
 		"--content", "Specification to be archived.",
 	)

@@ -14,9 +14,9 @@ import (
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Provider Integration Test
-// [Purpose]: Verifies that the SQLite Indexer properly indexes, searches, updates, and removes documents with FTS5 search.
+// [Purpose]: Verifies that the SQLite Indexer properly indexes, searches, updates, and removes concepts with FTS5 search.
 // [Execution Surface]: Real SQLite Database File (In-Memory / Temp File)
-// [Assertions]: Document is indexed, full-text search returns matching documents, updates overwrite existing, and remove purges the document.
+// [Assertions]: Concept is indexed, full-text search returns matching concepts, updates overwrite existing, and remove purges the concept.
 // -----------------------------------------------------------------------------
 func TestSQLiteIndexerCRUDAndSearch(t *testing.T) {
 	tempDir := t.TempDir()
@@ -30,12 +30,12 @@ func TestSQLiteIndexerCRUDAndSearch(t *testing.T) {
 
 	ctx := context.Background()
 
-	doc := gyrus.Document{
+	doc := gyrus.Concept{
 		ID:             "adr-001-storage",
 		Title:          "Storage Engine Architecture",
 		Category:       gyrus.CategoryArchitecture,
 		Type:           gyrus.TypeADR,
-		OwnerGroup:     "platform",
+		Tenant:         "platform",
 		Version:        1,
 		Status:         "accepted",
 		LastModifiedBy: "developer-alice",
@@ -45,9 +45,9 @@ func TestSQLiteIndexerCRUDAndSearch(t *testing.T) {
 		Content:        "We use SQLite FTS5 for high performance local search.",
 	}
 
-	// 1. Index document
+	// 1. Index concept
 	if err := indexer.Index(ctx, doc); err != nil {
-		t.Fatalf("Failed indexing document: %v", err)
+		t.Fatalf("Failed indexing concept: %v", err)
 	}
 
 	// 2. Search by keyword
@@ -55,7 +55,7 @@ func TestSQLiteIndexerCRUDAndSearch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Search failed: %v", err)
 	}
-	if len(results) != 1 || results[0].Document.ID != doc.ID {
+	if len(results) != 1 || results[0].Concept.ID != doc.ID {
 		t.Errorf("Expected search match for %s, got %v", doc.ID, results)
 	}
 
@@ -73,23 +73,23 @@ func TestSQLiteIndexerCRUDAndSearch(t *testing.T) {
 		t.Errorf("Expected 1 filtered result, got %d", len(filteredResults))
 	}
 
-	// 4. Update document content
+	// 4. Update concept content
 	doc.Content = "Updated content with unique-term-xyz123"
 	if err := indexer.Index(ctx, doc); err != nil {
-		t.Fatalf("Failed re-indexing document: %v", err)
+		t.Fatalf("Failed re-indexing concept: %v", err)
 	}
 
 	updatedResults, err := indexer.Search(ctx, gyrus.SearchQuery{Query: "unique-term-xyz123"})
 	if err != nil {
 		t.Fatalf("Search after update failed: %v", err)
 	}
-	if len(updatedResults) != 1 || updatedResults[0].Document.ID != doc.ID {
+	if len(updatedResults) != 1 || updatedResults[0].Concept.ID != doc.ID {
 		t.Errorf("Expected match for updated term, got %v", updatedResults)
 	}
 
-	// 5. Remove document
+	// 5. Remove concept
 	if err := indexer.Remove(ctx, doc.ID); err != nil {
-		t.Fatalf("Failed removing document: %v", err)
+		t.Fatalf("Failed removing concept: %v", err)
 	}
 
 	afterRemove, err := indexer.Search(ctx, gyrus.SearchQuery{Query: "unique-term-xyz123"})
@@ -103,13 +103,13 @@ func TestSQLiteIndexerCRUDAndSearch(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Provider Integration Test
-// [Purpose]: Verifies that SQLite Indexer syncs a directory of Markdown documents, extracts dependency edges, and prunes stale documents.
+// [Purpose]: Verifies that SQLite Indexer syncs a directory of Markdown concepts, extracts dependency edges, and prunes stale concepts.
 // [Execution Surface]: Real SQLite Database File + Real Filesystem Tree
-// [Assertions]: Sync report indexes all valid documents and extracts cross-document edge dependencies.
+// [Assertions]: Sync report indexes all valid concepts and extracts cross-concept edge dependencies.
 // -----------------------------------------------------------------------------
 func TestSQLiteIndexerSync(t *testing.T) {
 	tempDir := t.TempDir()
-	storageRoot := filepath.Join(tempDir, "docs")
+	storageRoot := filepath.Join(tempDir, "concepts")
 	dbPath := filepath.Join(tempDir, "index.db")
 
 	if err := os.MkdirAll(storageRoot, 0755); err != nil {
@@ -125,12 +125,12 @@ func TestSQLiteIndexerSync(t *testing.T) {
 	ctx := context.Background()
 
 	// Write 2 markdown files
-	doc1 := &gyrus.Document{
+	doc1 := &gyrus.Concept{
 		ID:           "prd-001",
 		Title:        "Core Product",
 		Category:     gyrus.CategoryProduct,
 		Type:         gyrus.TypePRD,
-		OwnerGroup:   "product",
+		Tenant:       "product",
 		Version:      1,
 		Status:       "active",
 		Dependencies: []string{"adr-001"},
@@ -141,15 +141,15 @@ func TestSQLiteIndexerSync(t *testing.T) {
 		t.Fatalf("Failed writing doc1: %v", err)
 	}
 
-	doc2 := &gyrus.Document{
-		ID:         "adr-001",
-		Title:      "Architecture Record",
-		Category:   gyrus.CategoryArchitecture,
-		Type:       gyrus.TypeADR,
-		OwnerGroup: "architecture",
-		Version:    1,
-		Status:     "accepted",
-		Content:    "Architecture design record.",
+	doc2 := &gyrus.Concept{
+		ID:       "adr-001",
+		Title:    "Architecture Record",
+		Category: gyrus.CategoryArchitecture,
+		Type:     gyrus.TypeADR,
+		Tenant:   "architecture",
+		Version:  1,
+		Status:   "accepted",
+		Content:  "Architecture design record.",
 	}
 	doc2Bytes, _ := okf.SerializeMarkdown(doc2)
 	if err := os.WriteFile(filepath.Join(storageRoot, "adr-001.md"), doc2Bytes, 0644); err != nil {
@@ -169,26 +169,26 @@ func TestSQLiteIndexerSync(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Search failed: %v", err)
 	}
-	if len(results) != 1 || results[0].Document.ID != "adr-001" {
+	if len(results) != 1 || results[0].Concept.ID != "adr-001" {
 		t.Errorf("Expected search match for adr-001, got %v", results)
 	}
 }
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Provider Integration Test
-// [Purpose]: Verifies that SQLite Indexer derives scope and workspace from paths during Sync, prioritizes current workspace results, and isolates external workspaces.
-// [Assertions]: Workspace documents rank higher than reference documents, foreign workspaces are excluded by default, and Scope='all' retrieves cross-workspace.
+// [Purpose]: Verifies that SQLite Indexer derives scope and project from paths during Sync, prioritizes current project results, and isolates external projects.
+// [Assertions]: Project concepts rank higher than reference concepts, foreign projects are excluded by default, and Scope='all' retrieves cross-project.
 // -----------------------------------------------------------------------------
-func TestSQLiteIndexerWorkspaceScopingAndPrioritization(t *testing.T) {
+func TestSQLiteIndexerProjectScopingAndPrioritization(t *testing.T) {
 	tempDir := t.TempDir()
-	storageRoot := filepath.Join(tempDir, "docs", "root")
+	storageRoot := filepath.Join(tempDir, "concepts", "root")
 	dbPath := filepath.Join(tempDir, "index.db")
 
 	refDir := filepath.Join(storageRoot, "reference")
-	gyrusWsDir := filepath.Join(storageRoot, "workspaces", "gyrus")
-	billingWsDir := filepath.Join(storageRoot, "workspaces", "billing")
+	gyrusProjDir := filepath.Join(storageRoot, "projects", "gyrus")
+	billingProjDir := filepath.Join(storageRoot, "projects", "billing")
 
-	for _, d := range []string{refDir, gyrusWsDir, billingWsDir} {
+	for _, d := range []string{refDir, gyrusProjDir, billingProjDir} {
 		if err := os.MkdirAll(d, 0755); err != nil {
 			t.Fatalf("Failed creating directory %s: %v", d, err)
 		}
@@ -203,55 +203,55 @@ func TestSQLiteIndexerWorkspaceScopingAndPrioritization(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Reference doc
-	refDoc := &gyrus.Document{
-		ID:         "adr-shared-db",
-		Title:      "Shared Database Strategy",
-		Category:   gyrus.CategoryArchitecture,
-		Type:       gyrus.TypeADR,
-		OwnerGroup: "root",
-		Version:    1,
-		Status:     "accepted",
-		Content:    "High level database patterns across services.",
+	refDoc := &gyrus.Concept{
+		ID:       "adr-shared-db",
+		Title:    "Shared Database Strategy",
+		Category: gyrus.CategoryArchitecture,
+		Type:     gyrus.TypeADR,
+		Tenant:   "root",
+		Version:  1,
+		Status:   "accepted",
+		Content:  "High level database patterns across services.",
 	}
 	refBytes, _ := okf.SerializeMarkdown(refDoc)
 	if err := os.WriteFile(filepath.Join(refDir, "adr-shared-db.md"), refBytes, 0644); err != nil {
 		t.Fatalf("Failed writing refDoc: %v", err)
 	}
 
-	// 2. Current workspace doc (gyrus)
-	wsDoc := &gyrus.Document{
-		ID:         "ticket-gyrus-db",
-		Title:      "Gyrus Database Implementation",
-		Category:   gyrus.CategoryProduct,
-		Type:       gyrus.TypePRD,
-		OwnerGroup: "root",
-		Version:    1,
-		Status:     "active",
-		Content:    "Specific database schema for gyrus.",
+	// 2. Current project doc (gyrus)
+	projDoc := &gyrus.Concept{
+		ID:       "ticket-gyrus-db",
+		Title:    "Gyrus Database Implementation",
+		Category: gyrus.CategoryProduct,
+		Type:     gyrus.TypePRD,
+		Tenant:   "root",
+		Version:  1,
+		Status:   "active",
+		Content:  "Specific database schema for gyrus.",
 	}
-	wsBytes, _ := okf.SerializeMarkdown(wsDoc)
-	if err := os.WriteFile(filepath.Join(gyrusWsDir, "ticket-gyrus-db.md"), wsBytes, 0644); err != nil {
-		t.Fatalf("Failed writing wsDoc: %v", err)
+	projBytes, _ := okf.SerializeMarkdown(projDoc)
+	if err := os.WriteFile(filepath.Join(gyrusProjDir, "ticket-gyrus-db.md"), projBytes, 0644); err != nil {
+		t.Fatalf("Failed writing projDoc: %v", err)
 	}
 
-	// 3. Other workspace doc (billing)
-	otherWsDoc := &gyrus.Document{
-		ID:         "ticket-billing-db",
-		Title:      "Billing Database Implementation",
-		Category:   gyrus.CategoryProduct,
-		Type:       gyrus.TypePRD,
-		OwnerGroup: "root",
-		Version:    1,
-		Status:     "active",
-		Content:    "Specific database schema for billing.",
+	// 3. Other project doc (billing)
+	otherProjDoc := &gyrus.Concept{
+		ID:       "ticket-billing-db",
+		Title:    "Billing Database Implementation",
+		Category: gyrus.CategoryProduct,
+		Type:     gyrus.TypePRD,
+		Tenant:   "root",
+		Version:  1,
+		Status:   "active",
+		Content:  "Specific database schema for billing.",
 	}
-	otherBytes, _ := okf.SerializeMarkdown(otherWsDoc)
-	if err := os.WriteFile(filepath.Join(billingWsDir, "ticket-billing-db.md"), otherBytes, 0644); err != nil {
-		t.Fatalf("Failed writing otherWsDoc: %v", err)
+	otherBytes, _ := okf.SerializeMarkdown(otherProjDoc)
+	if err := os.WriteFile(filepath.Join(billingProjDir, "ticket-billing-db.md"), otherBytes, 0644); err != nil {
+		t.Fatalf("Failed writing otherProjDoc: %v", err)
 	}
 
 	// Sync
-	report, err := indexer.Sync(ctx, filepath.Join(tempDir, "docs"))
+	report, err := indexer.Sync(ctx, filepath.Join(tempDir, "concepts"))
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -259,11 +259,11 @@ func TestSQLiteIndexerWorkspaceScopingAndPrioritization(t *testing.T) {
 		t.Fatalf("Expected 3 indexed files, got %d", report.IndexedFiles)
 	}
 
-	// Test 1: Workspace search prioritizing current workspace (gyrus)
+	// Test 1: Project search prioritizing current project (gyrus)
 	scopedResults, err := indexer.Search(ctx, gyrus.SearchQuery{
 		Query: "database",
 		Filter: gyrus.SearchFilter{
-			Workspace: "gyrus",
+			Project: "gyrus",
 		},
 	})
 	if err != nil {
@@ -272,26 +272,26 @@ func TestSQLiteIndexerWorkspaceScopingAndPrioritization(t *testing.T) {
 
 	// Should contain ticket-gyrus-db and adr-shared-db, but NOT ticket-billing-db
 	if len(scopedResults) != 2 {
-		t.Fatalf("Expected exactly 2 results (current ws + reference), got %d", len(scopedResults))
+		t.Fatalf("Expected exactly 2 results (current proj + reference), got %d", len(scopedResults))
 	}
-	if scopedResults[0].Document.ID != "ticket-gyrus-db" {
-		t.Errorf("Expected workspace doc first, got %s", scopedResults[0].Document.ID)
+	if scopedResults[0].Concept.ID != "ticket-gyrus-db" {
+		t.Errorf("Expected project doc first, got %s", scopedResults[0].Concept.ID)
 	}
-	if scopedResults[1].Document.ID != "adr-shared-db" {
-		t.Errorf("Expected reference doc second, got %s", scopedResults[1].Document.ID)
+	if scopedResults[1].Concept.ID != "adr-shared-db" {
+		t.Errorf("Expected reference doc second, got %s", scopedResults[1].Concept.ID)
 	}
 	if scopedResults[0].Score <= scopedResults[1].Score {
-		t.Errorf("Expected workspace score (%f) to be higher than reference score (%f)",
+		t.Errorf("Expected project score (%f) to be higher than reference score (%f)",
 			scopedResults[0].Score, scopedResults[1].Score)
 	}
 
-	// Check populated scope & workspace
-	if scopedResults[0].Document.Scope != "workspace" || scopedResults[0].Document.Workspace != "gyrus" {
-		t.Errorf("Expected Scope 'workspace' and Workspace 'gyrus', got %s / %s",
-			scopedResults[0].Document.Scope, scopedResults[0].Document.Workspace)
+	// Check populated scope & project
+	if scopedResults[0].Concept.Scope != "project" || scopedResults[0].Concept.Project != "gyrus" {
+		t.Errorf("Expected Scope 'project' and Project 'gyrus', got %s / %s",
+			scopedResults[0].Concept.Scope, scopedResults[0].Concept.Project)
 	}
-	if scopedResults[1].Document.Scope != "reference" {
-		t.Errorf("Expected Scope 'reference', got %s", scopedResults[1].Document.Scope)
+	if scopedResults[1].Concept.Scope != "reference" {
+		t.Errorf("Expected Scope 'reference', got %s", scopedResults[1].Concept.Scope)
 	}
 
 	// Test 2: Reference-only search
@@ -304,11 +304,11 @@ func TestSQLiteIndexerWorkspaceScopingAndPrioritization(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Reference search failed: %v", err)
 	}
-	if len(refOnlyResults) != 1 || refOnlyResults[0].Document.ID != "adr-shared-db" {
+	if len(refOnlyResults) != 1 || refOnlyResults[0].Concept.ID != "adr-shared-db" {
 		t.Errorf("Expected only adr-shared-db, got %v", refOnlyResults)
 	}
 
-	// Test 3: Scope='all' retrieves across all workspaces
+	// Test 3: Scope='all' retrieves across all projects
 	allResults, err := indexer.Search(ctx, gyrus.SearchQuery{
 		Query: "database",
 		Filter: gyrus.SearchFilter{
@@ -319,6 +319,6 @@ func TestSQLiteIndexerWorkspaceScopingAndPrioritization(t *testing.T) {
 		t.Fatalf("Scope all search failed: %v", err)
 	}
 	if len(allResults) != 3 {
-		t.Errorf("Expected all 3 documents, got %d", len(allResults))
+		t.Errorf("Expected all 3 concepts, got %d", len(allResults))
 	}
 }

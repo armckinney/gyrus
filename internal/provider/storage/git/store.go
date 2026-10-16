@@ -188,23 +188,23 @@ func resolveGitCredentialHelper(repoURL string) (transport.AuthMethod, error) {
 	return nil, nil
 }
 
-func (s *Store) docPath(doc *gyrus.Document) string {
-	ownerGroup := doc.OwnerGroup
+func (s *Store) docPath(doc *gyrus.Concept) string {
+	ownerGroup := doc.Tenant
 	if ownerGroup == "" {
 		ownerGroup = "default"
 	}
 	var subdir string
-	if doc.Workspace != "" {
-		subdir = filepath.Join("workspaces", doc.Workspace)
+	if doc.Project != "" {
+		subdir = filepath.Join("projects", doc.Project)
 	} else if doc.Scope == "reference" {
 		subdir = "reference"
 	} else if doc.Category == gyrus.CategoryBusinessLogic || doc.Category == gyrus.CategoryProduct {
-		subdir = "workspaces/gyrus"
+		subdir = "projects/gyrus"
 	} else {
 		subdir = "reference"
 	}
 
-	return filepath.Join(".gyrus", "docs", ownerGroup, subdir, fmt.Sprintf("%s.md", doc.ID))
+	return filepath.Join(".gyrus", "concepts", ownerGroup, subdir, fmt.Sprintf("%s.md", doc.ID))
 }
 
 func (s *Store) findDocPathByID(id string) (string, error) {
@@ -242,13 +242,13 @@ func (s *Store) findDocPathByID(id string) (string, error) {
 	return "", fmt.Errorf("document '%s' not found in git repository", id)
 }
 
-func (s *Store) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentRef, error) {
+func (s *Store) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRef, error) {
 	doc.Version = 1
 	doc.LastUpdated = time.Now()
 
 	data, err := okf.SerializeMarkdown(&doc)
 	if err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("failed to serialize doc: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("failed to serialize doc: %w", err)
 	}
 
 	path := s.docPath(&doc)
@@ -257,28 +257,28 @@ func (s *Store) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentR
 	dir := filepath.Dir(path)
 	if dir != "." && dir != "" {
 		if err := s.fs.MkdirAll(dir, 0755); err != nil {
-			return gyrus.DocumentRef{}, fmt.Errorf("failed to create dir: %w", err)
+			return gyrus.ConceptRef{}, fmt.Errorf("failed to create dir: %w", err)
 		}
 	}
 
 	f, err := s.fs.Create(path)
 	if err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("failed to create file: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("failed to create file: %w", err)
 	}
 	_, err = f.Write(data)
 	f.Close()
 	if err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("failed to write file: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("failed to write file: %w", err)
 	}
 
 	wt, err := s.repo.Worktree()
 	if err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("failed to get worktree: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("failed to get worktree: %w", err)
 	}
 
 	_, err = wt.Add(path)
 	if err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("failed to add file to index: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("failed to add file to index: %w", err)
 	}
 
 	msg := fmt.Sprintf("chore(docs): create document %s v%d", doc.ID, doc.Version)
@@ -290,14 +290,14 @@ func (s *Store) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentR
 		},
 	})
 	if err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("failed to commit: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("failed to commit: %w", err)
 	}
 
 	if err := s.push(); err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("failed to push: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("failed to push: %w", err)
 	}
 
-	return gyrus.DocumentRef{
+	return gyrus.ConceptRef{
 		ID:          doc.ID,
 		Version:     doc.Version,
 		Status:      doc.Status,
@@ -305,46 +305,46 @@ func (s *Store) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentR
 	}, nil
 }
 
-func (s *Store) Get(ctx context.Context, id string) (gyrus.Document, error) {
+func (s *Store) Get(ctx context.Context, id string) (gyrus.Concept, error) {
 	path, err := s.findDocPathByID(id)
 	if err != nil {
-		return gyrus.Document{}, err
+		return gyrus.Concept{}, err
 	}
 
 	f, err := s.fs.Open(path)
 	if err != nil {
-		return gyrus.Document{}, fmt.Errorf("failed to open file %s: %w", path, err)
+		return gyrus.Concept{}, fmt.Errorf("failed to open file %s: %w", path, err)
 	}
 	defer f.Close()
 
 	data, err := io.ReadAll(f)
 	if err != nil {
-		return gyrus.Document{}, fmt.Errorf("failed to read file %s: %w", path, err)
+		return gyrus.Concept{}, fmt.Errorf("failed to read file %s: %w", path, err)
 	}
 
 	if strings.HasSuffix(path, ".json") {
 		doc, err := okf.ParseJSON(data)
 		if err != nil {
-			return gyrus.Document{}, err
+			return gyrus.Concept{}, err
 		}
 		return *doc, nil
 	}
 
 	doc, err := okf.ParseMarkdown(data)
 	if err != nil {
-		return gyrus.Document{}, err
+		return gyrus.Concept{}, err
 	}
 	return *doc, nil
 }
 
-func (s *Store) Update(ctx context.Context, id string, patch gyrus.DocumentPatch, expectedVersion int) (gyrus.DocumentRef, error) {
+func (s *Store) Update(ctx context.Context, id string, patch gyrus.ConceptPatch, expectedVersion int) (gyrus.ConceptRef, error) {
 	doc, err := s.Get(ctx, id)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	if doc.Version != expectedVersion {
-		return gyrus.DocumentRef{}, fmt.Errorf("version mismatch: expected %d, got %d", expectedVersion, doc.Version)
+		return gyrus.ConceptRef{}, fmt.Errorf("version mismatch: expected %d, got %d", expectedVersion, doc.Version)
 	}
 
 	if patch.Title != nil {
@@ -368,7 +368,7 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.DocumentPatch
 
 	data, err := okf.SerializeMarkdown(&doc)
 	if err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("failed to serialize doc: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("failed to serialize doc: %w", err)
 	}
 
 	path, err := s.findDocPathByID(id)
@@ -378,22 +378,22 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.DocumentPatch
 
 	f, err := s.fs.Create(path)
 	if err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("failed to update file: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("failed to update file: %w", err)
 	}
 	_, err = f.Write(data)
 	f.Close()
 	if err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("failed to write file: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("failed to write file: %w", err)
 	}
 
 	wt, err := s.repo.Worktree()
 	if err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("failed to get worktree: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("failed to get worktree: %w", err)
 	}
 
 	_, err = wt.Add(path)
 	if err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("failed to add file to index: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("failed to add file to index: %w", err)
 	}
 
 	msg := fmt.Sprintf("chore(docs): update document %s to v%d", doc.ID, doc.Version)
@@ -408,14 +408,14 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.DocumentPatch
 		},
 	})
 	if err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("failed to commit: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("failed to commit: %w", err)
 	}
 
 	if err := s.push(); err != nil {
-		return gyrus.DocumentRef{}, fmt.Errorf("failed to push: %w", err)
+		return gyrus.ConceptRef{}, fmt.Errorf("failed to push: %w", err)
 	}
 
-	return gyrus.DocumentRef{
+	return gyrus.ConceptRef{
 		ID:          doc.ID,
 		Version:     doc.Version,
 		Status:      doc.Status,
@@ -461,7 +461,7 @@ func (s *Store) Archive(ctx context.Context, id string) error {
 	}
 
 	archivedStatus := "archived"
-	patch := gyrus.DocumentPatch{
+	patch := gyrus.ConceptPatch{
 		Status: &archivedStatus,
 		Reason: "archived",
 	}

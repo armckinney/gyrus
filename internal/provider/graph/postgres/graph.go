@@ -28,7 +28,7 @@ func NewGraphStore(pool PgxPool) *GraphStore {
 }
 
 // UpsertEdges inserts or updates directed relationship edges in PostgreSQL.
-func (g *GraphStore) UpsertEdges(ctx context.Context, edges []gyrus.DocumentEdge) error {
+func (g *GraphStore) UpsertEdges(ctx context.Context, edges []gyrus.ConceptEdge) error {
 	if len(edges) == 0 {
 		return nil
 	}
@@ -40,15 +40,15 @@ func (g *GraphStore) UpsertEdges(ctx context.Context, edges []gyrus.DocumentEdge
 	defer tx.Rollback(ctx)
 
 	query := `
-	INSERT INTO document_edges (from_document_id, to_document_id, relationship_type, created_by, created_at)
+	INSERT INTO concept_edges (from_concept_id, to_concept_id, relationship_type, created_by, created_at)
 	VALUES ($1, $2, $3, $4, $5)
-	ON CONFLICT(from_document_id, to_document_id, relationship_type) DO UPDATE SET
+	ON CONFLICT(from_concept_id, to_concept_id, relationship_type) DO UPDATE SET
 		created_by=EXCLUDED.created_by,
 		created_at=EXCLUDED.created_at;
 	`
 
 	for _, e := range edges {
-		_, err := tx.Exec(ctx, query, e.FromDocumentID, e.ToDocumentID, string(e.RelationshipType), e.CreatedBy, e.CreatedAt)
+		_, err := tx.Exec(ctx, query, e.FromConceptID, e.ToConceptID, string(e.RelationshipType), e.CreatedBy, e.CreatedAt)
 		if err != nil {
 			return err
 		}
@@ -57,15 +57,15 @@ func (g *GraphStore) UpsertEdges(ctx context.Context, edges []gyrus.DocumentEdge
 	return tx.Commit(ctx)
 }
 
-// DeleteEdges removes a directed relationship edge between two documents.
+// DeleteEdges removes a directed relationship edge between two concepts.
 func (g *GraphStore) DeleteEdges(ctx context.Context, fromID string, toID string, relType gyrus.RelationshipType) error {
-	query := "DELETE FROM document_edges WHERE from_document_id = $1 AND to_document_id = $2 AND relationship_type = $3"
+	query := "DELETE FROM concept_edges WHERE from_concept_id = $1 AND to_concept_id = $2 AND relationship_type = $3"
 	_, err := g.pool.Exec(ctx, query, fromID, toID, string(relType))
 	return err
 }
 
-// Neighbors retrieves neighboring edges for a document matching the edge filter.
-func (g *GraphStore) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilter) ([]gyrus.DocumentEdge, error) {
+// Neighbors retrieves neighboring edges for a concept matching the edge filter.
+func (g *GraphStore) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilter) ([]gyrus.ConceptEdge, error) {
 	var rows pgx.Rows
 	var err error
 
@@ -82,14 +82,14 @@ func (g *GraphStore) Neighbors(ctx context.Context, id string, filter gyrus.Edge
 	}
 
 	if dir == "outgoing" {
-		rows, err = g.pool.Query(ctx, "SELECT from_document_id, to_document_id, relationship_type, created_by, created_at FROM document_edges WHERE from_document_id = $1"+whereClause, args...)
+		rows, err = g.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE from_concept_id = $1"+whereClause, args...)
 	} else if dir == "incoming" {
-		rows, err = g.pool.Query(ctx, "SELECT from_document_id, to_document_id, relationship_type, created_by, created_at FROM document_edges WHERE to_document_id = $1"+whereClause, args...)
+		rows, err = g.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE to_concept_id = $1"+whereClause, args...)
 	} else {
 		if filter.RelationshipType != "" {
-			rows, err = g.pool.Query(ctx, "SELECT from_document_id, to_document_id, relationship_type, created_by, created_at FROM document_edges WHERE (from_document_id = $1 OR to_document_id = $1) AND relationship_type = $2", id, string(filter.RelationshipType))
+			rows, err = g.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE (from_concept_id = $1 OR to_concept_id = $1) AND relationship_type = $2", id, string(filter.RelationshipType))
 		} else {
-			rows, err = g.pool.Query(ctx, "SELECT from_document_id, to_document_id, relationship_type, created_by, created_at FROM document_edges WHERE from_document_id = $1 OR to_document_id = $1", id)
+			rows, err = g.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE from_concept_id = $1 OR to_concept_id = $1", id)
 		}
 	}
 
@@ -98,12 +98,12 @@ func (g *GraphStore) Neighbors(ctx context.Context, id string, filter gyrus.Edge
 	}
 	defer rows.Close()
 
-	var edges []gyrus.DocumentEdge
+	var edges []gyrus.ConceptEdge
 	for rows.Next() {
-		var e gyrus.DocumentEdge
+		var e gyrus.ConceptEdge
 		var relStr string
 
-		if err := rows.Scan(&e.FromDocumentID, &e.ToDocumentID, &relStr, &e.CreatedBy, &e.CreatedAt); err != nil {
+		if err := rows.Scan(&e.FromConceptID, &e.ToConceptID, &relStr, &e.CreatedBy, &e.CreatedAt); err != nil {
 			return nil, err
 		}
 		e.RelationshipType = gyrus.RelationshipType(relStr)
@@ -121,18 +121,18 @@ func (g *GraphStore) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gy
 
 	sql := `
 	WITH RECURSIVE traverse AS (
-		SELECT from_document_id, to_document_id, relationship_type, 1 AS depth
-		FROM document_edges
-		WHERE from_document_id = $1
+		SELECT from_concept_id, to_concept_id, relationship_type, 1 AS depth
+		FROM concept_edges
+		WHERE from_concept_id = $1
 		
 		UNION
 		
-		SELECT e.from_document_id, e.to_document_id, e.relationship_type, t.depth + 1
-		FROM document_edges e
-		INNER JOIN traverse t ON e.from_document_id = t.to_document_id
+		SELECT e.from_concept_id, e.to_concept_id, e.relationship_type, t.depth + 1
+		FROM concept_edges e
+		INNER JOIN traverse t ON e.from_concept_id = t.to_concept_id
 		WHERE t.depth < $2
 	)
-	SELECT from_document_id, to_document_id, relationship_type FROM traverse;
+	SELECT from_concept_id, to_concept_id, relationship_type FROM traverse;
 	`
 	rows, err := g.pool.Query(ctx, sql, query.StartID, query.MaxDepth)
 	if err != nil {
@@ -140,11 +140,11 @@ func (g *GraphStore) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gy
 	}
 	defer rows.Close()
 
-	var edges []gyrus.DocumentEdge
+	var edges []gyrus.ConceptEdge
 	for rows.Next() {
-		var e gyrus.DocumentEdge
+		var e gyrus.ConceptEdge
 		var relStr string
-		if err := rows.Scan(&e.FromDocumentID, &e.ToDocumentID, &relStr); err != nil {
+		if err := rows.Scan(&e.FromConceptID, &e.ToConceptID, &relStr); err != nil {
 			return nil, err
 		}
 		e.RelationshipType = gyrus.RelationshipType(relStr)
@@ -161,8 +161,8 @@ func (g *GraphStore) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gy
 	nodesMap := make(map[string]bool)
 	nodesMap[query.StartID] = true
 	for _, e := range edges {
-		nodesMap[e.FromDocumentID] = true
-		nodesMap[e.ToDocumentID] = true
+		nodesMap[e.FromConceptID] = true
+		nodesMap[e.ToConceptID] = true
 	}
 
 	var nodes []string
