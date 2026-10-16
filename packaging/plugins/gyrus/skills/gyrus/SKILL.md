@@ -58,3 +58,9 @@ Use this skill whenever you need to resolve architectural context, align with re
 
 - 📄 **[OKF Schemas Reference](references/okf-schemas.md)**
 
+
+## Qualified identity and relationships
+
+Create takes a local frontmatter id and tenant/scope/project. All existing-concept `id`, `from_id`, `to_id`, and `start_id` arguments require a full name: `root/reference/adr-example` or `root/projects/gyrus/ticket-003`. No short-ID fallback is supported. API envelopes/references expose the derived name; Markdown frontmatter keeps the local id. Use `gyrus get root/reference/adr-example --json` and `gyrus link root/projects/gyrus/ticket-003 root/reference/adr-example --rel-type depends_on`.
+
+Persist links only as `{concept: <qualified-name>, rel: <relationship>}`. Dependencies, old link keys, and per-link creation metadata are obsolete. Use incoming neighbors for backlinks; do not write inverse copies. Retain depends_on, implements, supersedes, and mitigates; do not impose parent/child or DAG rules. Use the packaged migration skill for legacy data. Typed links and Gyrus-required metadata are extensions to upstream OKF.

@@ -5,14 +5,14 @@ import (
 	"context"
 
 	domain "github.com/armckinney/gyrus/internal/domain/okf"
-	"github.com/armckinney/gyrus/internal/provider/okfutil"
+	sharedokf "github.com/armckinney/gyrus/internal/provider/shared/okf"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
 type Indexer struct{ scanner gyrus.ConceptScanner }
 
 func NewIndexer(store gyrus.ConceptStore) (*Indexer, error) {
-	scanner, err := okfutil.Scanner(store)
+	scanner, err := sharedokf.Scanner(store)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (idx *Indexer) Remove(ctx context.Context, id string) error {
 	return domain.ValidateName(id)
 }
 func (idx *Indexer) Search(ctx context.Context, q gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
-	return okfutil.Search(ctx, idx.scanner, q)
+	return sharedokf.Search(ctx, idx.scanner, q)
 }
 func (idx *Indexer) Sync(ctx context.Context, _ string) (gyrus.SyncReport, error) {
 	return idx.scanner.Scan(ctx, func(gyrus.Concept) error { return nil })

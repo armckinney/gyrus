@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/armckinney/gyrus/internal/domain/okf"
 
-	"github.com/armckinney/gyrus/internal/provider/db"
+	"github.com/armckinney/gyrus/internal/persistence/db"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"

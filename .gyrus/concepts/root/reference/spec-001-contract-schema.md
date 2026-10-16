@@ -4,9 +4,9 @@ id: spec-001-contract-schema
 type: specification
 format: markdown
 category: technical
-version: 4
+version: 5
 status: active
-last_updated: 2026-10-16T18:09:38Z
+last_updated: 2026-10-16T18:32:57Z
 last_modified_by: ""
 tenant: root
 ---
@@ -138,7 +138,7 @@ Normal Markdown reading/writing trims surrounding body whitespace, and serializa
 
 Persisted schema templates override embedded templates for schema retrieval. Template validation checks parseability and matching type when supplied; template placeholders/custom headings do not replace the code-defined concept validator or add new supported concept types.
 
-`internal/migration.ConvertLinks` is a dedicated local conversion path, separate from strict runtime readers. It inventories the entire collection, merges legacy dependencies as `depends_on` with old/new typed links, deduplicates qualified tuples, and removes link creation metadata. It resolves short targets only when unique; ambiguous or absent short targets require explicit `NameMappings`. Already-qualified missing targets remain valid for OKF.
+`migration.ConvertLinks`, owned by the `gyrus-migrate-okf` skill under `packaging/plugins/gyrus/skills/gyrus-migrate-okf/scripts/migration`, is a source-checkout local conversion path, separate from strict runtime readers. It inventories the entire collection, merges legacy dependencies as `depends_on` with old/new typed links, deduplicates qualified tuples, and removes link creation metadata. It resolves short targets only when unique; ambiguous or absent short targets require explicit `NameMappings`. Already-qualified missing targets remain valid for OKF.
 
 Applying changed records requires a backup directory outside the concept collection and quiescent writers. Conversion backs up concepts and the supplied configuration, preserves exact body bytes and statuses, increments each changed source revision once, and verifies resulting tuple/body/status/revision parity. A repeat conversion plans zero updates. The SQLite export helper separately preserves database-only relationships as the same minimal qualified links and ignores old edge creation metadata. Old database identity schemas require explicit export/rebuild, not automatic runtime reuse; sync alone performs neither conversion nor graph export.
 
@@ -148,4 +148,4 @@ Applying changed records requires a backup directory outside the concept collect
 - [Structural validation](../../../../internal/domain/okf/validator.go), [qualified names](../../../../internal/domain/okf/name.go), and [collection locations/scans](../../../../internal/domain/okf/collection.go)
 - [Frontmatter order](../../../../internal/format/frontmatter.go), [relationship-shape checks](../../../../internal/format/relationships.go), and [Markdown serialization](../../../../internal/format/okf.go)
 - [Lifecycle transitions](../../../../internal/domain/lifecycle/engine.go) and [file-backed patch rules](../../../../internal/domain/lifecycle/patch.go)
-- [OKF graph persistence](../../../../internal/provider/graph/okf/graph.go) and [legacy conversion](../../../../internal/migration/links.go)
+- [OKF graph persistence](../../../../internal/provider/graph/okf/graph.go) and [legacy conversion](../../../../packaging/plugins/gyrus/skills/gyrus-migrate-okf/scripts/migration/links.go)

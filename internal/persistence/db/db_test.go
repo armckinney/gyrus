@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/armckinney/gyrus/internal/provider/db"
+	"github.com/armckinney/gyrus/internal/persistence/db"
 )
 
 func TestObsoleteSQLiteIdentitySchemaRejected(t *testing.T) {
@@ -31,7 +31,7 @@ func TestObsoleteSQLiteIdentitySchemaRejected(t *testing.T) {
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
 // [Purpose]: Verifies that OpenSQLite implements thread-safe connection pool sharing across services.
-// [Execution Surface]: In-Memory SQLite Connection Registry (internal/provider/db)
+// [Execution Surface]: In-Memory SQLite Connection Registry (internal/persistence/db)
 // [Assertions]: Repeated OpenSQLite calls for same DB path return identical *sql.DB pointer instance.
 // -----------------------------------------------------------------------------
 func TestOpenSQLitePoolSharing(t *testing.T) {

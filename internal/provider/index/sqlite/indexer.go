@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/armckinney/gyrus/internal/domain/okf"
-	"github.com/armckinney/gyrus/internal/provider/db"
+	"github.com/armckinney/gyrus/internal/persistence/db"
 	"github.com/armckinney/gyrus/internal/provider/storage/localfs"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 	_ "modernc.org/sqlite"

@@ -16,7 +16,7 @@ import (
 
 	"github.com/armckinney/gyrus/internal/domain/lifecycle"
 	"github.com/armckinney/gyrus/internal/domain/okf"
-	"github.com/armckinney/gyrus/internal/provider/storage/fileio"
+	"github.com/armckinney/gyrus/internal/persistence/fileio"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 	"gocloud.dev/blob"
 	_ "gocloud.dev/blob/azureblob"

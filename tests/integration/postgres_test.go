@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/armckinney/gyrus/internal/provider/db"
+	"github.com/armckinney/gyrus/internal/persistence/db"
 	graphpostgres "github.com/armckinney/gyrus/internal/provider/graph/postgres"
 	indexpostgres "github.com/armckinney/gyrus/internal/provider/index/postgres"
 	searchpostgres "github.com/armckinney/gyrus/internal/provider/search/postgres_fts"

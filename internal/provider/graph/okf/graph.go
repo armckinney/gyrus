@@ -7,7 +7,7 @@ import (
 	"sort"
 
 	domain "github.com/armckinney/gyrus/internal/domain/okf"
-	"github.com/armckinney/gyrus/internal/provider/okfutil"
+	sharedokf "github.com/armckinney/gyrus/internal/provider/shared/okf"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
@@ -17,7 +17,7 @@ type GraphStore struct {
 }
 
 func NewGraphStore(store gyrus.ConceptStore) (*GraphStore, error) {
-	scanner, err := okfutil.Scanner(store)
+	scanner, err := sharedokf.Scanner(store)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (g *GraphStore) DeleteEdges(ctx context.Context, from, to string, rel gyrus
 	return err
 }
 func (g *GraphStore) snapshot(ctx context.Context) ([]gyrus.ConceptEdge, error) {
-	docs, err := okfutil.Snapshot(ctx, g.scanner)
+	docs, err := sharedokf.Snapshot(ctx, g.scanner)
 	if err != nil {
 		return nil, err
 	}

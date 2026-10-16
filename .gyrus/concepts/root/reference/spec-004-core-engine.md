@@ -4,9 +4,9 @@ id: spec-004-core-engine
 type: specification
 format: markdown
 category: technical
-version: 3
+version: 4
 status: active
-last_updated: 2026-10-16T16:56:27Z
+last_updated: 2026-10-16T18:32:57Z
 last_modified_by: ""
 tenant: root
 ---
@@ -42,3 +42,7 @@ ADR transitions: proposed to accepted/rejected; accepted to superseded/deprecate
 ## Qualified concept identity
 
 Creation accepts a local ID and tenant/scope/project. All existing-concept operations require tenant/reference/id or tenant/projects/project/id. Concept envelopes and mutation references expose the derived name alongside the local id. Storage paths, database keys/history, graph endpoints, UI routes, search identity ranking, and context deduplication use the qualified name. Short IDs are rejected. Persist only links with concept and rel; relationship creation metadata and the dependencies field are removed.
+
+## Shared package boundaries
+
+Provider contracts remain in pkg/gyrus. internal/persistence/fileio supplies local locking, safe paths, and atomic file replacement; internal/persistence/db manages shared SQLite/PostgreSQL connections. These are concrete infrastructure packages, not providers or a second persistence interface. internal/provider/shared/okf supplies scanner validation, snapshots, filtering, and ranking used by the independent OKF adapters. Conversion code and its tests belong to the gyrus-migrate-okf skill under packaging/plugins/gyrus/skills/gyrus-migrate-okf/scripts/migration; application/runtime packages do not import it. All packages remain within the existing Go module.

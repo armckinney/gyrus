@@ -1,5 +1,5 @@
-// Package okfutil implements shared ephemeral OKF snapshots and keyword matching.
-package okfutil
+// Package okf implements shared ephemeral OKF snapshots and keyword matching.
+package okf
 
 import (
 	"context"
