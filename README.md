@@ -229,3 +229,8 @@ Suggest linearized context matching an agent prompt:
 - 📜 **[ADR-004: Agent Plugin Packaging, Distribution & Init Revamp](.gyrus/docs/root/reference/adr-004-agent-plugin-packaging-distribution-and-init-revamp.md):** Architecture Decision Record formalizing the Agent Plugins Standard 1.0.0, canonical embedded plugins, and explicit init subcommands.
 - 📑 **[Value Proposition & Strategic Positioning PRD](.gyrus/docs/root/reference/prd-002-value-proposition-positioning.md):** Comprehensive market-wide strategic comparison PRD of Gyrus vs enterprise context engines, vector DBs, memory platforms, and agent skills.
 - 📋 **[Specification Implementation Roadmap](.gyrus/docs/root/reference/prd-001-specification-roadmap.md):** Master roadmap across Phase 1 MVP, Phase 2 Version 1.0, and Phase 3 Future Extensions.
+
+
+## License
+**Gyrus** is licensed under the **MIT License with the Commons Clause v1.0 Condition**. 
+You are free to use, modify, and distribute this software, provided you do not sell it or offer it as a paid/hosted service. See the [LICENSE](LICENSE) file for details.
