@@ -10,8 +10,8 @@
 
 ## Remediate MVP Multi-Repo Configuration
 - [ ] Fix Git Storage Provider
-- [ ] Remove sqlite from index/graph/search providers
-  - I think we can just remove `gyrus sync`  as well since there is no local database anymore?
+- [x] Remove sqlite from index/graph/search providers and remove `gyrus sync`
+  - Keep shared SQLite persistence for a future cache provider.
 - [ ] Update profile options to logical implementations (local, git, postgres)
 - [ ] Update docs
   - Update guides / root readme
