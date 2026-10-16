@@ -20,7 +20,7 @@ type MockLexicalSearch struct {
 	Results []gyrus.SearchResult
 }
 
-func (m *MockLexicalSearch) Search(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
+func (m *MockLexicalSearch) Search(ctx context.Context, request gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
 	return m.Results, nil
 }
 
@@ -31,7 +31,7 @@ func TestVectorIdentityIncludesTenantAndScope(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	results, err := store.Search(context.Background(), "same", gyrus.SearchFilter{})
+	results, err := store.Search(context.Background(), gyrus.SearchQuery{Query: "same"})
 	if err != nil || len(results) != 2 || results[0].Concept.Name == results[1].Concept.Name {
 		t.Fatalf("qualified vector identities collapsed: %+v %v", results, err)
 	}
@@ -82,7 +82,7 @@ func TestRRFAndHybridSearch(t *testing.T) {
 		t.Fatalf("failed to add doc2: %v", err)
 	}
 
-	results, err := store.Search(context.Background(), "query", gyrus.SearchFilter{})
+	results, err := store.Search(context.Background(), gyrus.SearchQuery{Query: "query", Filter: gyrus.SearchFilter{Scope: "all"}})
 	if err != nil {
 		t.Fatalf("Search error: %v", err)
 	}

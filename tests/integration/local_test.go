@@ -5,37 +5,40 @@ import (
 	"path/filepath"
 	"testing"
 
-	graphsqlite "github.com/armckinney/gyrus/internal/provider/graph/sqlite"
-	indexsqlite "github.com/armckinney/gyrus/internal/provider/index/sqlite"
-	searchfts5 "github.com/armckinney/gyrus/internal/provider/search/fts5"
+	graphokf "github.com/armckinney/gyrus/internal/provider/graph/okf"
+	indexokf "github.com/armckinney/gyrus/internal/provider/index/okf"
+	searchokf "github.com/armckinney/gyrus/internal/provider/search/okf"
 	storagelocal "github.com/armckinney/gyrus/internal/provider/storage/localfs"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Provider Integration Test
-// [Purpose]: Verifies end-to-end functionality for the 'local' profile (LocalFS storage + SQLite Indexer + SQLite Graph + SQLite FTS5 search).
-// [Execution Surface]: Real Local Filesystem + Real SQLite Database
-// [Assertions]: Document creation persists to disk, SQLite index syncs files, FTS5 search finds keywords, and Graph store manages directed edges.
+// [Purpose]: Verifies localfs storage with OKF index, graph, and search providers.
+// [Execution Surface]: Real local concept files.
+// [Assertions]: Creation persists, scans validate concepts, search finds keywords, and typed links persist.
 // -----------------------------------------------------------------------------
 func TestIntegration_LocalProfile(t *testing.T) {
 	tempDir := t.TempDir()
 	storageRoot := filepath.Join(tempDir, "docs")
-	dbPath := filepath.Join(tempDir, "index.db")
 
 	store, err := storagelocal.NewStore(storageRoot)
 	if err != nil {
 		t.Fatalf("Failed localfs initialization: %v", err)
 	}
 
-	indexer, err := indexsqlite.NewIndexer(dbPath)
+	indexer, err := indexokf.NewIndexer(store)
 	if err != nil {
-		t.Fatalf("Failed sqlite indexer initialization: %v", err)
+		t.Fatalf("Failed OKF indexer initialization: %v", err)
 	}
-	defer indexer.Close()
-
-	graphStore := graphsqlite.NewGraphStore(indexer.DB())
-	searcher := searchfts5.NewSearchProvider(indexer)
+	graphStore, err := graphokf.NewGraphStore(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	searcher, err := searchokf.NewSearchProvider(store)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	ctx := context.Background()
 
@@ -60,7 +63,7 @@ func TestIntegration_LocalProfile(t *testing.T) {
 	}
 
 	// 2. Sync / Indexing
-	report, err := indexer.Sync(ctx, storageRoot)
+	report, err := store.Scan(ctx, func(doc gyrus.Concept) error { return indexer.Index(ctx, doc) })
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -69,7 +72,7 @@ func TestIntegration_LocalProfile(t *testing.T) {
 	}
 
 	// 3. Search via SearchProvider
-	results, err := searcher.Search(ctx, "idiomatic", gyrus.SearchFilter{})
+	results, err := searcher.Search(ctx, gyrus.SearchQuery{Query: "idiomatic"})
 	if err != nil {
 		t.Fatalf("Search failed: %v", err)
 	}

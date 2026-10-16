@@ -35,17 +35,17 @@ var ValidStorageProviders = []string{
 // ValidSearchProviders lists all recognized search provider names.
 var ValidSearchProviders = []string{
 	"okf",
-	"sqlite", "sqlite_fts5", "postgres_fts", "vector",
+	"postgres_fts", "vector",
 }
 
 // ValidIndexProviders lists all recognized index provider names.
 var ValidIndexProviders = []string{
 	"okf",
-	"sqlite", "postgres",
+	"postgres",
 }
 
 // ValidGraphProviders lists all recognized graph provider names.
 var ValidGraphProviders = []string{
 	"okf",
-	"sqlite", "postgres",
+	"postgres",
 }

@@ -17,8 +17,8 @@ func NewSearchProvider(store gyrus.ConceptStore) (*SearchProvider, error) {
 	}
 	return &SearchProvider{scanner}, nil
 }
-func (p *SearchProvider) Search(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
-	return sharedokf.Search(ctx, p.scanner, gyrus.SearchQuery{Query: query, Filter: filter})
+func (p *SearchProvider) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
+	return sharedokf.Search(ctx, p.scanner, query)
 }
 
 var _ gyrus.SearchProvider = (*SearchProvider)(nil)

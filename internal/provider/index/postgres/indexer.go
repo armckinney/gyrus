@@ -2,9 +2,9 @@ package postgres
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/armckinney/gyrus/internal/domain/okf"
+	searchpostgres "github.com/armckinney/gyrus/internal/provider/search/postgres_fts"
 
 	"github.com/armckinney/gyrus/internal/persistence/db"
 	"github.com/armckinney/gyrus/pkg/gyrus"
@@ -105,36 +105,7 @@ func (idx *Indexer) Remove(ctx context.Context, id string) error {
 	return err
 }
 
-// Sync is a no-op placeholder for remote database indexers.
-func (idx *Indexer) Sync(ctx context.Context, storageRoot string) (gyrus.SyncReport, error) {
-	return gyrus.SyncReport{}, nil
-}
-
 // Search executes an index search query.
 func (idx *Indexer) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
-	rows, err := idx.pool.Query(ctx, "SELECT frontmatter, content FROM concepts WHERE id = $1", query.Query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var results []gyrus.SearchResult
-	for rows.Next() {
-		var fm []byte
-		var content string
-		if err := rows.Scan(&fm, &content); err != nil {
-			return nil, err
-		}
-
-		var doc gyrus.Concept
-		if err := json.Unmarshal(fm, &doc); err != nil {
-			return nil, err
-		}
-		doc.Content = content
-		if err := okf.SetName(&doc, ""); err != nil {
-			return nil, err
-		}
-		results = append(results, gyrus.SearchResult{Concept: doc, Score: 1.0})
-	}
-	return results, nil
+	return searchpostgres.NewSearchProviderWithPool(idx.pool).Search(ctx, query)
 }

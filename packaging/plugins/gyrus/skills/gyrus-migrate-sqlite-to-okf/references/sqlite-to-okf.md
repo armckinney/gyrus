@@ -65,7 +65,7 @@ Give staging its own config using localfs and OKF for index, graph, and search. 
 
 Before cutover require all of the following:
 
-1. `gyrus validate <staged-file> --json` succeeds for every concept; `gyrus sync --json` succeeds against staging. Inspect resolved config to prove staging-only storage.
+1. `gyrus validate <staged-file> --json` succeeds for every concept; `gyrus search --query '' --scope all --max-results 0 --json` succeeds against staging and matches the complete planned inventory. Inspect resolved config to prove staging-only storage. The sync command/tool and SQLite providers have been removed.
 2. Every staged body matches its original bytes, every status is unchanged, and all unrelated metadata is preserved. Only planned sources changed, with the expected single revision increment.
 3. Read staged links back structurally. Their complete normalized tuple set must equal the planned union of document and SQLite edges, with no extra/missing tuples. Compare sets, not counts. Names must match paths; links contain exactly concept/rel and no audit properties.
 4. Repeat the conversion planning against the staged collection and same SQLite snapshot. Require zero planned changes, identical file bytes, and no new revision increments. Do not rewrite just to change timestamps or link ordering.
@@ -87,7 +87,7 @@ search:
   provider: okf
 ```
 
-Retain storage/tenant/project settings and unrelated config. Remove only now-unused index/graph/search database settings. Do not automatically change process environment overrides; report any that would override the cutover. Restart owned or authorized long-running MCP/UI services, then verify resolved providers, sync, complete inventory, graph tuple parity, keyword search, and qualified reads on live data. Retain originals, backup, snapshot, mappings, evidence, and journal after success.
+Retain storage/tenant/project settings and unrelated config. Remove only now-unused index/graph/search database settings. Do not automatically change process environment overrides; report any that would override the cutover. Restart owned or authorized long-running MCP/UI services, then verify resolved providers, complete inventory, graph tuple parity, keyword search, and qualified reads on live data. Retain originals, backup, snapshot, mappings, evidence, and journal after success.
 
 If applying fails, stop and report installed files plus backup/staging paths. With writers still quiesced and no later edits, restore the consistent backed-up concepts/config set and verify it before resuming services. Keep the original database available for the old configuration; the new runtime cannot open an obsolete identity database, so original behavior may require the previous installed release. Never upgrade/downgrade binaries or overwrite later edits implicitly. If later edits exist, reconcile them before recovery.
 

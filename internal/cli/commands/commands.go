@@ -30,7 +30,6 @@ func Register(rootCmd *cobra.Command, application *app.App) {
 	rootCmd.AddCommand(NewUnlinkCmd(application))
 
 	// Project & Maintenance Commands
-	rootCmd.AddCommand(NewSyncCmd(application))
 	rootCmd.AddCommand(NewValidateCmd(application))
 	rootCmd.AddCommand(NewSchemaCmd(application))
 	rootCmd.AddCommand(NewConfigCmd(application))

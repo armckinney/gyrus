@@ -48,14 +48,6 @@ func TestCLISearchAndSuggestAndSchema(t *testing.T) {
 		t.Fatalf("create failed: %v", err)
 	}
 
-	// 2. gyrus sync
-	rootCmd.SetArgs([]string{
-		"sync",
-	})
-	if err := rootCmd.Execute(); err != nil {
-		t.Fatalf("sync failed: %v", err)
-	}
-
 	// 3. gyrus search
 	rootCmd.SetArgs([]string{
 		"search",
@@ -160,12 +152,6 @@ tenant: root
 	})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("create foreign project concept failed: %v", err)
-	}
-
-	// 4. Sync
-	rootCmd.SetArgs([]string{"sync"})
-	if err := rootCmd.Execute(); err != nil {
-		t.Fatalf("sync failed: %v", err)
 	}
 
 	// 5. Search with project scoping (default in project: gyrus)

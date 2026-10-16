@@ -321,7 +321,8 @@ func (m *mockStoreWithSearch) Delete(ctx context.Context, id string) error {
 func (m *mockStoreWithSearch) Archive(ctx context.Context, id string) error {
 	return nil
 }
-func (m *mockStoreWithSearch) Search(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
+func (m *mockStoreWithSearch) Search(ctx context.Context, request gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
+	filter := request.Filter
 	var results []gyrus.SearchResult
 	for _, doc := range m.docs {
 		if filter.Scope == "reference" && doc.Scope != "reference" {

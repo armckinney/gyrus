@@ -47,11 +47,11 @@ func TestPostgresIndexer_IndexSearchRemove(t *testing.T) {
 
 	// 2. Search
 	fmBytes, _ := json.Marshal(doc)
-	rows := pgxmock.NewRows([]string{"frontmatter", "content"}).
-		AddRow(fmBytes, "PostgreSQL backend persistence.")
+	rows := pgxmock.NewRows([]string{"id", "frontmatter", "content", "score"}).
+		AddRow(doc.Name, fmBytes, "PostgreSQL backend persistence.", 1000.0)
 
-	mock.ExpectQuery("SELECT frontmatter, content FROM concepts WHERE id = \\$1").
-		WithArgs("platform/reference/adr-001-pg").
+	mock.ExpectQuery("SELECT id, frontmatter, content").
+		WithArgs("platform/reference/adr-001-pg", gyrus.DefaultSearchLimit).
 		WillReturnRows(rows)
 
 	results, err := indexer.Search(ctx, gyrus.SearchQuery{Query: "platform/reference/adr-001-pg"})

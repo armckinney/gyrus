@@ -22,7 +22,6 @@ type IndexStore interface {
 	Index(ctx context.Context, doc Concept) error
 	Remove(ctx context.Context, id string) error
 	Search(ctx context.Context, query SearchQuery) ([]SearchResult, error)
-	Sync(ctx context.Context, storageRoot string) (SyncReport, error)
 }
 
 // GraphStore manages directed relationships whose endpoints are qualified names.
@@ -35,7 +34,7 @@ type GraphStore interface {
 
 // SearchProvider handles lexical or semantic text search queries.
 type SearchProvider interface {
-	Search(ctx context.Context, query string, filter SearchFilter) ([]SearchResult, error)
+	Search(ctx context.Context, query SearchQuery) ([]SearchResult, error)
 }
 
 // StorageProvider is the main repository abstraction wrapper over storage and indexing providers.

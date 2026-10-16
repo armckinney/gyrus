@@ -4,16 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/armckinney/gyrus/internal/domain/okf"
 	"strings"
 
+	"github.com/armckinney/gyrus/internal/domain/okf"
 	"github.com/armckinney/gyrus/internal/persistence/db"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// PgxPool defines the interface for pgxpool to allow mocking.
 type PgxPool interface {
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
@@ -22,118 +21,117 @@ type PgxPool interface {
 	Close()
 }
 
-// SearchProvider implements gyrus.SearchProvider over PostgreSQL tsvector FTS.
 type SearchProvider struct {
-	pool       PgxPool
-	connString string
+	pool PgxPool
 }
 
-// NewSearchProvider initializes PostgreSQL SearchProvider.
 func NewSearchProvider(ctx context.Context, connString string) (*SearchProvider, error) {
 	pool, err := db.OpenPostgres(ctx, connString)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open postgres pool: %w", err)
+		return nil, fmt.Errorf("open postgres search pool: %w", err)
 	}
-
-	return &SearchProvider{
-		pool:       pool,
-		connString: connString,
-	}, nil
+	return NewSearchProviderWithPool(pool), nil
 }
 
-// NewSearchProviderWithPool creates a SearchProvider with a custom pool.
 func NewSearchProviderWithPool(pool PgxPool) *SearchProvider {
 	return &SearchProvider{pool: pool}
 }
 
-// Search executes PostgreSQL tsvector FTS queries.
-func (p *SearchProvider) Search(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
-	whereClauses := []string{"1=1"}
-	args := []any{}
-	argCount := 1
-
-	if filter.Category != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'category' = $%d", argCount))
-		args = append(args, string(filter.Category))
-		argCount++
+func (p *SearchProvider) Search(ctx context.Context, request gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
+	filter := request.Filter
+	var conditions []string
+	var args []any
+	bind := func(value any) string {
+		args = append(args, value)
+		return fmt.Sprintf("$%d", len(args))
 	}
-	if filter.Type != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'type' = $%d", argCount))
-		args = append(args, string(filter.Type))
-		argCount++
-	}
-	if filter.Status != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'status' = $%d", argCount))
-		args = append(args, filter.Status)
-		argCount++
-	}
-	if filter.Tenant != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'tenant' = $%d", argCount))
-		args = append(args, filter.Tenant)
-		argCount++
+	for _, field := range []struct{ name, value string }{
+		{"category", string(filter.Category)}, {"type", string(filter.Type)},
+		{"status", filter.Status}, {"tenant", filter.Tenant},
+	} {
+		if field.value != "" {
+			conditions = append(conditions, "frontmatter->>'"+field.name+"' = "+bind(field.value))
+		}
 	}
 	if filter.Tag != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->'tags' @> $%d", argCount))
-		args = append(args, fmt.Sprintf(`["%s"]`, filter.Tag))
-		argCount++
+		tag, err := json.Marshal([]string{filter.Tag})
+		if err != nil {
+			return nil, err
+		}
+		conditions = append(conditions, "frontmatter->'tags' @> "+bind(string(tag))+"::jsonb")
+	}
+	const scope = "COALESCE(frontmatter->>'scope', 'reference')"
+	const project = "COALESCE(frontmatter->>'project', '')"
+	switch filter.Scope {
+	case "all":
+	case "reference":
+		conditions = append(conditions, scope+" = 'reference'")
+	case "project":
+		conditions = append(conditions, scope+" = 'project'")
+		if filter.Project != "" {
+			conditions = append(conditions, project+" = "+bind(filter.Project))
+		}
+	case "":
+		condition := scope + " = 'reference'"
+		if filter.Project != "" {
+			condition = "(" + condition + " OR " + project + " = " + bind(filter.Project) + ")"
+		}
+		conditions = append(conditions, condition)
+	default:
+		return nil, &okf.ValidationError{Field: "scope", Message: "must be project, reference, or all"}
 	}
 
-	ftsClause := ""
-	scoreSelect := "0::float8 AS score"
+	query := strings.TrimSpace(request.Query)
+	score := "0::float8"
+	reason := "All Concepts"
 	if query != "" && okf.ValidateName(query) == nil {
-		ftsClause = fmt.Sprintf(" AND id = $%d", argCount)
-		scoreSelect = "1::float8 AS score"
-		args = append(args, query)
-		argCount++
+		conditions = append(conditions, "id = "+bind(query))
+		score, reason = "1000::float8", "Exact ID Match"
 	} else if query != "" {
-		queryTsQuery := strings.ReplaceAll(query, " ", " | ")
-		ftsClause = fmt.Sprintf(" AND search_vector @@ to_tsquery('english', $%d)", argCount)
-		scoreSelect = fmt.Sprintf("ts_rank_cd(search_vector, to_tsquery('english', $%d)) AS score", argCount)
-		args = append(args, queryTsQuery)
-		argCount++
+		term := bind(strings.Join(strings.Fields(query), " OR "))
+		expression := "websearch_to_tsquery('english', " + term + ")"
+		conditions = append(conditions, "search_vector @@ "+expression)
+		score, reason = "ts_rank_cd(search_vector, "+expression+")", "PostgreSQL tsvector FTS Match"
 	}
-
-	whereSQL := strings.Join(whereClauses, " AND ") + ftsClause
-
-	sql := fmt.Sprintf(`
-		SELECT frontmatter, content, %s
-		FROM concepts
-		WHERE %s
-		ORDER BY score DESC
-		LIMIT 50
-	`, scoreSelect, whereSQL)
-
-	rows, err := p.pool.Query(ctx, sql, args...)
+	where := ""
+	if len(conditions) > 0 {
+		where = " WHERE " + strings.Join(conditions, " AND ")
+	}
+	statement := "SELECT id, frontmatter, content, " + score + " AS score FROM concepts" + where + " ORDER BY score DESC, id ASC"
+	request.Query = query
+	if limit := request.Limit(); limit > 0 {
+		statement += " LIMIT " + bind(limit)
+	}
+	rows, err := p.pool.Query(ctx, statement, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var results []gyrus.SearchResult
+	results := make([]gyrus.SearchResult, 0)
 	for rows.Next() {
-		var fm []byte
-		var content string
-		var score float64
-
-		if err := rows.Scan(&fm, &content, &score); err != nil {
+		var name, content string
+		var metadata []byte
+		var rank float64
+		if err := rows.Scan(&name, &metadata, &content, &rank); err != nil {
 			return nil, err
 		}
-
-		var doc gyrus.Concept
-		if err := json.Unmarshal(fm, &doc); err != nil {
+		doc, err := okf.ParseJSON(metadata)
+		if err != nil {
 			return nil, err
 		}
-		doc.Content = content
-		if err := okf.SetName(&doc, ""); err != nil {
+		tenant, project, id, err := okf.ParseName(name)
+		if err != nil {
 			return nil, err
 		}
-
-		results = append(results, gyrus.SearchResult{
-			Concept:     doc,
-			Score:       score,
-			MatchReason: "PostgreSQL tsvector FTS Match",
-		})
+		if doc.ID != id || doc.Tenant != tenant {
+			return nil, fmt.Errorf("concept metadata does not match qualified name %q", name)
+		}
+		doc.Name, doc.Project, doc.Scope, doc.Content = name, project, "reference", content
+		if project != "" {
+			doc.Scope = "project"
+		}
+		results = append(results, gyrus.SearchResult{Concept: *doc, Score: rank, MatchReason: reason})
 	}
-
-	return results, nil
+	return results, rows.Err()
 }

@@ -32,13 +32,13 @@ func TestEffectiveProviderDefaultsAndCompatibility(t *testing.T) {
 	cfg = &config.Config{}
 	cfg.Search.Provider = "vector"
 	resolved, err = config.ResolveProviders(cfg)
-	if err != nil || resolved.IndexProvider() != "sqlite" || resolved.GraphProvider() != "sqlite" {
+	if err != nil || resolved.IndexProvider() != "okf" || resolved.GraphProvider() != "okf" {
 		t.Fatalf("vector defaults: %+v %v", resolved, err)
 	}
 	for _, tc := range []struct {
 		index, graph, search string
 		valid                bool
-	}{{"okf", "okf", "okf", true}, {"sqlite", "okf", "sqlite_fts5", true}, {"sqlite", "sqlite", "okf", true}, {"postgres", "okf", "okf", true}, {"okf", "okf", "sqlite_fts5", false}, {"okf", "sqlite", "okf", false}, {"sqlite", "postgres", "sqlite_fts5", false}, {"sqlite", "sqlite", "unknown", false}} {
+	}{{"okf", "okf", "okf", true}, {"okf", "okf", "vector", true}, {"postgres", "okf", "okf", true}, {"okf", "okf", "sqlite_fts5", false}, {"okf", "sqlite", "okf", false}, {"sqlite", "okf", "okf", false}, {"okf", "okf", "sqlite", false}, {"sqlite", "sqlite", "unknown", false}} {
 		cfg = &config.Config{}
 		cfg.Index.Provider = tc.index
 		cfg.Graph.Provider = tc.graph

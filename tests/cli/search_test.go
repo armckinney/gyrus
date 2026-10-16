@@ -3,12 +3,55 @@ package cli_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
+
+func TestCLI_SearchLimitPassThrough(t *testing.T) {
+	workspace := t.TempDir()
+	run := func(args ...string) []byte {
+		t.Helper()
+		cmd := exec.Command(gyrusBinPath, args...)
+		cmd.Dir = workspace
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("%v: %v\n%s", args, err, out)
+		}
+		return out
+	}
+	run("config", "init", "--profile", "local")
+	const fixtureCount = 12
+	for i := 0; i < fixtureCount; i++ {
+		run("create", "--id", fmt.Sprintf("limit-%d", i), "--title", "Limit fixture", "--type", "guide", "--category", "technical", "--content", "limitmarker")
+	}
+	for _, tc := range []struct {
+		query, limit string
+		want         int
+	}{
+		{"limitmarker", "", 10}, {"limitmarker", "3", 3}, {"limitmarker", "20", fixtureCount}, {"", "", fixtureCount}, {"", "3", 3},
+	} {
+		args := []string{"search", "--query", tc.query, "--scope", "all", "--json"}
+		if tc.limit != "" {
+			args = append(args, "--max-results", tc.limit)
+		}
+		var results []gyrus.SearchResult
+		if err := json.Unmarshal(run(args...), &results); err != nil {
+			t.Fatal(err)
+		}
+		if len(results) != tc.want {
+			t.Errorf("query=%q limit=%q: got %d, want %d", tc.query, tc.limit, len(results), tc.want)
+		}
+	}
+	cmd := exec.Command(gyrusBinPath, "sync")
+	cmd.Dir = workspace
+	if err := cmd.Run(); err == nil {
+		t.Fatal("removed sync command succeeded")
+	}
+}
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Product E2E Test

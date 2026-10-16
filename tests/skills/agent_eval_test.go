@@ -57,11 +57,6 @@ func TestAgentPromptRoutingSimulation(t *testing.T) {
 			expectedCLISubcommand: "gyrus link",
 			expectedMCPTool:       "gyrus_link",
 		},
-		{
-			intent:                "Reindex workspace markdown files",
-			expectedCLISubcommand: "gyrus sync",
-			expectedMCPTool:       "gyrus_sync",
-		},
 	}
 
 	for _, sc := range scenarios {

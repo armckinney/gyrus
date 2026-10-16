@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/armckinney/gyrus/internal/persistence/db"
 	graphpostgres "github.com/armckinney/gyrus/internal/provider/graph/postgres"
 	indexpostgres "github.com/armckinney/gyrus/internal/provider/index/postgres"
 	searchpostgres "github.com/armckinney/gyrus/internal/provider/search/postgres_fts"
@@ -22,31 +21,11 @@ import (
 // [Assertions]: Postgres storage persists documents, tsvector generates search index, ts_rank_cd scores searches, and graph tables resolve edges.
 // -----------------------------------------------------------------------------
 func TestIntegration_PostgresLive(t *testing.T) {
-	connStrings := []string{
-		os.Getenv("POSTGRES_URL"),
-		"postgres://postgres:postgres@postgres:5432/gyrus?sslmode=disable",
-		"postgres://postgres:postgres@localhost:5432/gyrus?sslmode=disable",
-	}
-
-	var connString string
-	var poolErr error
-	ctx := context.Background()
-
-	for _, cs := range connStrings {
-		if cs == "" {
-			continue
-		}
-		pool, err := db.OpenPostgres(ctx, cs)
-		if err == nil && pool.Ping(ctx) == nil {
-			connString = cs
-			break
-		}
-		poolErr = err
-	}
-
+	connString := os.Getenv("GYRUS_TEST_POSTGRES_URL")
 	if connString == "" {
-		t.Skipf("PostgreSQL database is not reachable, skipping live postgres integration test: %v", poolErr)
+		t.Skip("set GYRUS_TEST_POSTGRES_URL to an isolated PostgreSQL test database")
 	}
+	ctx := context.Background()
 
 	// 1. Initialize Postgres Store (runs DDL migrations)
 	store, err := storagepostgres.NewStore(ctx, connString)
@@ -69,8 +48,8 @@ func TestIntegration_PostgresLive(t *testing.T) {
 	graphStore := graphpostgres.NewGraphStore(indexer.Pool())
 
 	runID := time.Now().UnixNano()
-	docAID := fmt.Sprintf("root/reference/adr-live-pg-%d", runID)
-	docBID := fmt.Sprintf("root/reference/prd-live-pg-%d", runID)
+	docAID := fmt.Sprintf("adr-live-pg-%d", runID)
+	docBID := fmt.Sprintf("prd-live-pg-%d", runID)
 	uniqueTenant := fmt.Sprintf("tenant-%d", runID)
 
 	docA := gyrus.Concept{
@@ -82,8 +61,8 @@ func TestIntegration_PostgresLive(t *testing.T) {
 		Version:  1,
 		Status:   "accepted",
 		Tags:     []string{"postgres", "relational", "sql"},
-		Content:  "High performance PostgreSQL backend with tsvector indexing and JSONB storage.", Name: "/reference/" +
-			docAID,
+		Content:  "High performance PostgreSQL backend with tsvector indexing and JSONB storage.",
+		Scope:    "reference", Name: uniqueTenant + "/reference/" + docAID,
 	}
 	docB := gyrus.Concept{
 		ID:       docBID,
@@ -94,15 +73,13 @@ func TestIntegration_PostgresLive(t *testing.T) {
 		Version:  1,
 		Status:   "active",
 		Tags:     []string{"cloud", "postgres"},
-		Content:  "Product specifications utilizing PostgreSQL storage backend.", Name: "/projects/gyrus/" +
-			docBID,
+		Content:  "Product specifications utilizing PostgreSQL storage backend.",
+		Scope:    "project", Project: "gyrus", Name: uniqueTenant + "/projects/gyrus/" + docBID,
 	}
 
 	defer func() {
-		_ = store.Delete(ctx, docAID)
-		_ = store.Delete(ctx, docBID)
-		_ = indexer.Remove(ctx, docAID)
-		_ = indexer.Remove(ctx, docBID)
+		_ = store.Delete(ctx, docA.Name)
+		_ = store.Delete(ctx, docB.Name)
 	}()
 
 	// 3. Store Create & Get
@@ -130,18 +107,32 @@ func TestIntegration_PostgresLive(t *testing.T) {
 	}
 
 	// 5. Tsvector FTS Search
-	results, err := searcher.Search(ctx, "relational tsvector", gyrus.SearchFilter{Tenant: uniqueTenant})
+	results, err := searcher.Search(ctx, gyrus.SearchQuery{Query: "relational tsvector", Filter: gyrus.SearchFilter{Tenant: uniqueTenant}})
 	if err != nil {
 		t.Fatalf("Postgres FTS search failed: %v", err)
 	}
 	if len(results) == 0 || results[0].Concept.ID != docA.ID {
 		t.Errorf("Expected top FTS match to be docA, got %v", results)
 	}
+	for _, tc := range []struct {
+		scope, project, name string
+		want                 int
+	}{
+		{"reference", "", docA.Name, 1}, {"project", "gyrus", docB.Name, 1}, {"project", "other", "", 0}, {"all", "", "", 2},
+	} {
+		matches, err := searcher.Search(ctx, gyrus.SearchQuery{Filter: gyrus.SearchFilter{Tenant: uniqueTenant, Scope: tc.scope, Project: tc.project}})
+		if err != nil || len(matches) != tc.want {
+			t.Fatalf("scope=%s project=%s: %+v %v", tc.scope, tc.project, matches, err)
+		}
+		if tc.name != "" && matches[0].Concept.Name != tc.name {
+			t.Errorf("qualified identity: got %s, want %s", matches[0].Concept.Name, tc.name)
+		}
+	}
 
 	// 6. Graph Edges & Neighbors
 	edge := gyrus.ConceptEdge{
-		FromConceptID:    docB.ID,
-		ToConceptID:      docA.ID,
+		FromConceptID:    docB.Name,
+		ToConceptID:      docA.Name,
 		RelationshipType: gyrus.RelDependsOn,
 	}
 	if err := graphStore.UpsertEdges(ctx, []gyrus.ConceptEdge{edge}); err != nil {
@@ -152,7 +143,7 @@ func TestIntegration_PostgresLive(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Postgres graph neighbors failed: %v", err)
 	}
-	if len(outgoing) != 1 || outgoing[0].ToConceptID != docA.ID {
+	if len(outgoing) != 1 || outgoing[0].ToConceptID != docA.Name {
 		t.Errorf("Expected 1 outgoing edge to docA, got %v", outgoing)
 	}
 }

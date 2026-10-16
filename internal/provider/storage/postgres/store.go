@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
+	searchpostgres "github.com/armckinney/gyrus/internal/provider/search/postgres_fts"
 	"time"
 
 	"github.com/armckinney/gyrus/internal/domain/okf"
@@ -312,12 +312,8 @@ func (s *Store) Remove(ctx context.Context, id string) error {
 	return s.Delete(ctx, id)
 }
 
-func (s *Store) Sync(ctx context.Context, storageRoot string) (gyrus.SyncReport, error) {
-	return gyrus.SyncReport{}, nil
-}
-
 func (s *Store) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
-	return s.SearchFTS(ctx, query.Query, query.Filter)
+	return searchpostgres.NewSearchProviderWithPool(s.pool).Search(ctx, query)
 }
 
 // --- GraphStore ---
@@ -491,107 +487,6 @@ func (s *Store) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.G
 }
 
 // --- SearchProvider ---
-
-// SearchFTS is the underlying implementation for SearchProvider.Search
-func (s *Store) SearchFTS(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
-	whereClauses := []string{"1=1"}
-	args := []any{}
-	argCount := 1
-
-	if filter.Category != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'category' = $%d", argCount))
-		args = append(args, string(filter.Category))
-		argCount++
-	}
-	if filter.Type != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'type' = $%d", argCount))
-		args = append(args, string(filter.Type))
-		argCount++
-	}
-	if filter.Status != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'status' = $%d", argCount))
-		args = append(args, filter.Status)
-		argCount++
-	}
-	if filter.Tenant != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'tenant' = $%d", argCount))
-		args = append(args, filter.Tenant)
-		argCount++
-	}
-	if filter.Tag != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->'tags' @> $%d", argCount))
-		args = append(args, fmt.Sprintf(`["%s"]`, filter.Tag))
-		argCount++
-	}
-
-	ftsClause := ""
-	scoreSelect := "0::float8 AS score"
-	if query != "" && okf.ValidateName(query) == nil {
-		ftsClause = fmt.Sprintf(" AND id = $%d", argCount)
-		scoreSelect = "1::float8 AS score"
-		args = append(args, query)
-		argCount++
-	} else if query != "" {
-		queryTsQuery := strings.ReplaceAll(query, " ", " | ") // basic text search conversion
-		ftsClause = fmt.Sprintf(" AND search_vector @@ to_tsquery('english', $%d)", argCount)
-		scoreSelect = fmt.Sprintf("ts_rank_cd(search_vector, to_tsquery('english', $%d)) AS score", argCount)
-		args = append(args, queryTsQuery)
-		argCount++
-	}
-
-	whereSql := strings.Join(whereClauses, " AND ") + ftsClause
-
-	sql := fmt.Sprintf(`
-		SELECT frontmatter, content, %s
-		FROM concepts
-		WHERE %s
-		ORDER BY score DESC
-		LIMIT 50
-	`, scoreSelect, whereSql)
-
-	rows, err := s.pool.Query(ctx, sql, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var results []gyrus.SearchResult
-	for rows.Next() {
-		var fm []byte
-		var content string
-		var score float64
-
-		if err := rows.Scan(&fm, &content, &score); err != nil {
-			return nil, err
-		}
-
-		var doc gyrus.Concept
-		if err := json.Unmarshal(fm, &doc); err != nil {
-			return nil, err
-		}
-		doc.Content = content
-		if err := okf.SetName(&doc, ""); err != nil {
-			return nil, err
-		}
-
-		results = append(results, gyrus.SearchResult{
-			Concept:     doc,
-			Score:       score,
-			MatchReason: "FTS Match",
-		})
-	}
-
-	return results, nil
-}
-
-func (s *Store) SearchProviderSearch(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
-	return s.SearchFTS(ctx, query, filter)
-}
-
-// Wrapper for the exact interface method
-func (s *Store) SearchConcepts(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
-	return s.SearchFTS(ctx, query, filter)
-}
 
 // --- SchemaStore ---
 

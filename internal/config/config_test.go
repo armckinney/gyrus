@@ -91,9 +91,9 @@ func TestLoadProjectOnly(t *testing.T) {
   provider: localfs
   root: .my-store
 index:
-  provider: sqlite
+  provider: okf
 search:
-  provider: sqlite
+  provider: okf
 tenant: project-team
 `
 	if err := os.WriteFile(filepath.Join(tempWork, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {

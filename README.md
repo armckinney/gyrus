@@ -87,10 +87,10 @@ graph LR
     end
 
     subgraph Services ["Core Services & Provider Drivers"]
-        IndexSvc["Concept Index Service\n\nProviders:\n- OKF\n- SQLite\n- PostgreSQL"]
-        GraphSvc["Knowledge Graph Service\n\nProviders:\n- OKF\n- SQLite\n- PostgreSQL"]
-        SearchSvc["Search Service\n\nProviders:\n- OKF keyword scan\n- SQLite FTS\n- PostgreSQL full-text search"]
-        PersistSvc["Concept Persistence Service\n\nProviders:\n- localfs\n- SQLite\n- Git Repo (GitHub, Bitbucket)\n- Blob Storage (S3, Azure SA)\n- PostgreSQL"]
+        IndexSvc["Concept Index Service\n\nProviders:\n- OKF\n- PostgreSQL"]
+        GraphSvc["Knowledge Graph Service\n\nProviders:\n- OKF\n- PostgreSQL"]
+        SearchSvc["Search Service\n\nProviders:\n- OKF keyword scan\n- PostgreSQL full-text search\n- Vector search"]
+        PersistSvc["Concept Persistence Service\n\nProviders:\n- localfs\n- Git Repo (GitHub, Bitbucket)\n- Blob Storage (S3, Azure SA)\n- PostgreSQL"]
     end
 
     subgraph Storage ["Concept Storage Format"]
@@ -172,6 +172,10 @@ search:
 ```
 
 Explicit links persist as `links: [{concept, rel}]` in source frontmatter. Targets use qualified names such as `root/reference/adr-example` or `root/projects/gyrus/ticket-003`; dependency arrays and per-link creation metadata are removed. Existing-concept operations require qualified names, while creation keeps a local frontmatter `id`. API results expose the derived `name`. Before switching an existing SQLite graph, use the packaged [gyrus-migrate-sqlite-to-okf skill](packaging/plugins/gyrus/skills/gyrus-migrate-sqlite-to-okf/SKILL.md) to back up and export database-only edges.
+
+SQLite index/graph/search providers and the CLI/MCP sync operation have been removed. OKF reads concepts and links directly from storage. The shared SQLite persistence package remains available for future cache work. The vector profile uses OKF index/graph and lexical fallback.
+
+Keyword search defaults to ten results. CLI `--max-results` and MCP `max_results` pass positive limits through to the selected provider; empty-query metadata browsing is unlimited unless a positive limit is supplied. PostgreSQL search applies the same tenant, scope, and project filters.
 
 #### Step 2b: Install Agent Plugin via Client Marketplace
 

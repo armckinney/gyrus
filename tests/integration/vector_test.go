@@ -71,7 +71,7 @@ func TestIntegration_OllamaVectorLive(t *testing.T) {
 	}
 
 	// Query: "structured relational SQL database"
-	results, err := vectorStore.Search(ctx, "structured relational SQL database", gyrus.SearchFilter{})
+	results, err := vectorStore.Search(ctx, gyrus.SearchQuery{Query: "structured relational SQL database", Filter: gyrus.SearchFilter{Scope: "all"}})
 	if err != nil {
 		t.Fatalf("Vector search failed: %v", err)
 	}
@@ -118,7 +118,7 @@ func TestIntegration_VectorHybrid(t *testing.T) {
 		t.Fatalf("Vector index doc2 failed: %v", err)
 	}
 
-	results, err := vectorStore.Search(ctx, "semantic query", gyrus.SearchFilter{})
+	results, err := vectorStore.Search(ctx, gyrus.SearchQuery{Query: "semantic query", Filter: gyrus.SearchFilter{Scope: "all"}})
 	if err != nil {
 		t.Fatalf("Hybrid search failed: %v", err)
 	}
@@ -143,6 +143,6 @@ type mockLexical struct {
 	results []gyrus.SearchResult
 }
 
-func (m *mockLexical) Search(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
+func (m *mockLexical) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
 	return m.results, nil
 }

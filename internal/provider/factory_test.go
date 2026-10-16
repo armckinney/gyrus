@@ -37,7 +37,7 @@ func TestOKFFactoryCompositionAndNoHiddenDatabase(t *testing.T) {
 	if err := graph.UpsertEdges(context.Background(), []gyrus.ConceptEdge{{FromConceptID: doc.Name, ToConceptID: "root/reference/future", RelationshipType: gyrus.RelImplements}}); err != nil {
 		t.Fatal(err)
 	}
-	results, err := search.Search(context.Background(), "", gyrus.SearchFilter{})
+	results, err := search.Search(context.Background(), gyrus.SearchQuery{})
 	if err != nil || len(results) != 1 || len(results[0].Concept.Links) != 1 {
 		t.Fatalf("shared store: %v %v", results, err)
 	}

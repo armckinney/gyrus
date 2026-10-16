@@ -33,8 +33,5 @@ func (idx *Indexer) Remove(ctx context.Context, id string) error {
 func (idx *Indexer) Search(ctx context.Context, q gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
 	return sharedokf.Search(ctx, idx.scanner, q)
 }
-func (idx *Indexer) Sync(ctx context.Context, _ string) (gyrus.SyncReport, error) {
-	return idx.scanner.Scan(ctx, func(gyrus.Concept) error { return nil })
-}
 
 var _ gyrus.IndexStore = (*Indexer)(nil)

@@ -192,13 +192,6 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 		t.Errorf("Expected unlink confirmation, got: %s", unlinkText)
 	}
 
-	// 11. gyrus_sync
-	syncResp := client.Call(t, "tools/call", map[string]any{
-		"name":      "gyrus_sync",
-		"arguments": map[string]any{},
-	})
-	parseToolContent(t, syncResp)
-
 	// 12. gyrus_archive
 	archiveResp := client.Call(t, "tools/call", map[string]any{
 		"name": "gyrus_archive",

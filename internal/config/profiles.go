@@ -193,10 +193,10 @@ storage:
   root: .gyrus
 
 index:
-  provider: sqlite
+  provider: okf
 
 graph:
-  provider: sqlite
+  provider: okf
 
 search:
   provider: vector

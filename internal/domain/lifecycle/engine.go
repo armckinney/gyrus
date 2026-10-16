@@ -145,7 +145,6 @@ type Engine struct {
 	search         gyrus.SearchProvider
 	indexer        gyrus.IndexStore
 	graph          gyrus.GraphStore
-	storageRoot    string
 	defaultProject string
 }
 
@@ -167,7 +166,6 @@ func NewEngineWithProject(store gyrus.ConceptStore, search gyrus.SearchProvider,
 		search:         search,
 		indexer:        indexer,
 		graph:          graph,
-		storageRoot:    storageRoot,
 		defaultProject: defaultProject,
 	}
 }
@@ -265,18 +263,19 @@ func (e *Engine) Archive(ctx context.Context, id string) error {
 
 // Search executes search over the configured search provider.
 func (e *Engine) Search(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
-	if filter.Project == "" && filter.Scope != "all" && filter.Scope != "reference" && e.defaultProject != "" {
-		filter.Project = e.defaultProject
+	return e.SearchQuery(ctx, gyrus.SearchQuery{Query: query, Filter: filter})
+}
+
+func (e *Engine) SearchQuery(ctx context.Context, query gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
+	if query.Filter.Project == "" && query.Filter.Scope != "all" && query.Filter.Scope != "reference" && e.defaultProject != "" {
+		query.Filter.Project = e.defaultProject
 	}
 
 	if e.search != nil {
-		return e.search.Search(ctx, query, filter)
+		return e.search.Search(ctx, query)
 	}
 	if e.indexer != nil {
-		return e.indexer.Search(ctx, gyrus.SearchQuery{
-			Query:  query,
-			Filter: filter,
-		})
+		return e.indexer.Search(ctx, query)
 	}
 	return nil, fmt.Errorf("no search or index provider configured")
 }
@@ -301,7 +300,7 @@ func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, fi
 		filter.Project = e.defaultProject
 	}
 
-	results, err := e.Search(ctx, prompt, filter)
+	results, err := e.SearchQuery(ctx, gyrus.SearchQuery{Query: prompt, Filter: filter, MaxResults: maxConcepts})
 	if err != nil {
 		return "", err
 	}
@@ -322,7 +321,14 @@ func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, fi
 	// Dependency link expansion: For project concepts, expand linked reference dependencies
 	var linkedRefDocs []gyrus.Concept
 	for _, projectDoc := range projectDocs {
-		for _, edge := range gyrus.ConceptEdges(projectDoc) {
+		edges := gyrus.ConceptEdges(projectDoc)
+		if e.graph != nil {
+			edges, err = e.Neighbors(ctx, projectDoc.Name, gyrus.EdgeFilter{Direction: "outgoing", RelationshipType: gyrus.RelDependsOn})
+			if err != nil {
+				return "", err
+			}
+		}
+		for _, edge := range edges {
 			if edge.RelationshipType != gyrus.RelDependsOn {
 				continue
 			}
@@ -480,14 +486,6 @@ func (e *Engine) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.
 		return nil, fmt.Errorf("no graph store configured")
 	}
 	return e.graph.Traverse(ctx, query)
-}
-
-// Sync scans storageRoot for Markdown files and re-indexes them.
-func (e *Engine) Sync(ctx context.Context) (gyrus.SyncReport, error) {
-	if e.indexer == nil {
-		return gyrus.SyncReport{}, fmt.Errorf("no index store configured")
-	}
-	return e.indexer.Sync(ctx, e.storageRoot)
 }
 
 // GetSchema retrieves the schema template for a concept type.

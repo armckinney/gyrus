@@ -50,7 +50,7 @@ func TestOKFSearchAndAuthoritativeEdits(t *testing.T) {
 			t.Fatalf("query=%q limit=%d: count=%d err=%v", tc.query, tc.limit, len(results), err)
 		}
 	}
-	results, err := search.Search(ctx, "root/reference/guide-60", gyrus.SearchFilter{})
+	results, err := search.Search(ctx, gyrus.SearchQuery{Query: "root/reference/guide-60"})
 	if err != nil || len(results) == 0 || results[0].Concept.ID != "guide-60" {
 		t.Fatalf("exact-ID ranking: %v %v", results, err)
 	}
@@ -63,11 +63,11 @@ func TestOKFSearchAndAuthoritativeEdits(t *testing.T) {
 	if err := os.WriteFile(doc.FilePath, data, 0644); err != nil {
 		t.Fatal(err)
 	}
-	results, err = search.Search(ctx, "manually-edited-marker", gyrus.SearchFilter{})
+	results, err = search.Search(ctx, gyrus.SearchQuery{Query: "manually-edited-marker"})
 	if err != nil || len(results) != 1 {
 		t.Fatalf("external edit: %v %v", results, err)
 	}
-	report, err := index.Sync(ctx, "intentionally-not-a-filesystem-root")
+	report, err := store.Scan(ctx, func(gyrus.Concept) error { return nil })
 	if err != nil || report.IndexedFiles != 61 || report.UnchangedFiles != 0 {
 		t.Fatalf("sync: %+v %v", report, err)
 	}
@@ -83,10 +83,10 @@ func TestOKFSearchAndAuthoritativeEdits(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(root, "concepts/root/reference/broken.md"), []byte("not an OKF concept"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := search.Search(ctx, "keyword", gyrus.SearchFilter{Tenant: "other"}); err == nil {
+	if _, err := search.Search(ctx, gyrus.SearchQuery{Query: "keyword", Filter: gyrus.SearchFilter{Tenant: "other"}}); err == nil {
 		t.Fatal("invalid collection was hidden by filter")
 	}
-	report, err = index.Sync(ctx, root)
+	report, err = store.Scan(ctx, func(gyrus.Concept) error { return nil })
 	if err != nil || report.ScannedFiles != 62 || len(report.Errors) != 1 {
 		t.Fatalf("invalid record report: %+v %v", report, err)
 	}

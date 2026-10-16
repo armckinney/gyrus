@@ -30,20 +30,18 @@ func TestSkillStaticAnalysis(t *testing.T) {
 				"gyrus_create",
 				"gyrus_update",
 				"gyrus_link",
-				"gyrus_sync",
 				"suggest-context",
 				"search",
 				"get",
 				"create",
 				"update",
 				"link",
-				"sync",
 			},
 		},
 		{
 			name:            "gyrus-migrate-sqlite-to-okf",
 			references:      []string{"sqlite-to-okf.md"},
-			expectedActions: []string{"gyrus config show", "gyrus sync"},
+			expectedActions: []string{"gyrus config show", "gyrus validate"},
 		},
 		{
 			name:            "gyrus-test-lifecycle",
@@ -52,7 +50,7 @@ func TestSkillStaticAnalysis(t *testing.T) {
 		},
 		{
 			name:            "gyrus-index",
-			expectedActions: []string{"gyrus sync"},
+			expectedActions: []string{"gyrus search"},
 		},
 	}
 

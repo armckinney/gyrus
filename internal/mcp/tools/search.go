@@ -22,6 +22,7 @@ func (h *Handler) registerSearchTools(s *server.MCPServer) {
 		mcp.WithString("tenant", mcp.Description("Filter by tenant")),
 		mcp.WithString("scope", mcp.Description("Filter by scope (project, reference, all)")),
 		mcp.WithString("project", mcp.Description("Filter by project name")),
+		mcp.WithNumber("max_results", mcp.Description("Maximum results; defaults to 10 for keywords, unlimited for empty-query browsing")),
 	)
 	s.AddTool(searchTool, h.HandleSearch)
 
@@ -57,7 +58,7 @@ func (h *Handler) HandleSearch(ctx context.Context, req mcp.CallToolRequest) (*m
 		Project:  projectStr,
 	}
 
-	results, err := h.engine.Search(ctx, queryStr, filter)
+	results, err := h.engine.SearchQuery(ctx, gyrus.SearchQuery{Query: queryStr, Filter: filter, MaxResults: getArgInt(req, "max_results")})
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("search failed: %v", err)), nil
 	}

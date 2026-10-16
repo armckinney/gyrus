@@ -10,10 +10,10 @@ Resolve the executable before changing directory. Make a private temporary direc
 gyrus --help
 gyrus config init --profile local --tenant lifecycle --project demo --json
 gyrus config show --json
-gyrus sync --json
+gyrus search --query '' --scope all --max-results 0 --json
 ```
 
-Require localfs storage inside the private workspace, OKF index/graph/search, and zero initial concepts. Save the generated configuration for a final byte comparison. Do not copy customer configuration or data. Inspect `--help` for create/update/search/schema/link/unlink/archive/validate, `mcp serve`, and `ui serve` as needed.
+Require localfs storage inside the private workspace, OKF index/graph/search, and zero initial concepts. Require that CLI help and MCP tools expose no sync command/tool. SQLite index/graph/search configuration must fail explicitly before data writes. Save the generated configuration for a final byte comparison. Do not copy customer configuration or data. Inspect `--help` for create/update/search/schema/link/unlink/archive/validate, `mcp serve`, and `ui serve` as needed.
 
 ## 2. Schema and interface interoperability
 
@@ -21,7 +21,7 @@ List embedded schemas and save `schema get guide --json`. Set a private override
 
 Start `gyrus mcp serve --config <private-config>` using an available MCP client or a terminal with persistent stdin/stdout. Initialize the session, send the initialized notification, and discover `tools/list`. For raw stdio, send newline-delimited JSON-RPC messages with unique request IDs; inspect matching responses and MCP `isError`, not just process exit status. Keep stdin open until checks finish. Do not register or reconfigure the user's MCP client.
 
-Require create/get/update/archive/search/suggest-context/link/unlink/neighbors/traverse/sync and schema get/set/list/delete tools. Use tool schemas for exact inputs. MCP must read the CLI override; MCP schema_set must be visible through CLI schema_get and listed as persisted; deleting the override must restore the original embedded template.
+Require create/get/update/archive/search/suggest-context/link/unlink/neighbors/traverse and schema get/set/list/delete tools. Use tool schemas for exact inputs. MCP must read the CLI override; MCP schema_set must be visible through CLI schema_get and listed as persisted; deleting the override must restore the original embedded template. Request the prepare-adr prompt and verify it uses the active ADR template, minimal links, canonical metadata order, and no obsolete dependencies field; repeat with a private ADR schema override.
 
 ## 3. Identity, CRUD, filters, and conflicts
 
@@ -66,11 +66,11 @@ Get the reference's returned filepath and confirm it is inside private storage. 
 - Create a fresh guide, then start two independent CLI update processes with different titles and expected version 1 before awaiting either. Require exactly one success and one conflict (4), final version 2, and the successful title. Run against private localfs only.
 - Create a draft improvement-proposal. Reject a jump to implemented, then accept draft → reviewing → approved → implemented using current versions.
 - Create an ADR as proposed, then accept it. Body change must fail (2); a metadata-only title update must succeed and preserve the accepted body.
-- Create 12 guides containing `keywordlimitmarker`. Default keyword search must return ten; `--max-results 3` must return three. Empty-query browsing with `--scope all --max-results 0` must return the complete owned inventory. MCP empty-query browsing with scope all must also be complete. Do not infer completeness from a capped keyword query.
+- Create 12 guides containing `keywordlimitmarker`. CLI and MCP default keyword search must return ten. CLI `--max-results 3` and MCP `max_results: 3` must return three; requesting 20 through each must return all twelve. Empty-query browsing with `--scope all --max-results 0` must return the complete owned inventory. MCP empty-query browsing with scope all must also be complete; a positive limit must cap it. Do not infer completeness from a capped keyword query.
 
 ## 7. Malformed input and persisted contract
 
-Create exactly one owned malformed `.md` under private `concepts/lifecycle/reference/`. CLI sync must return nonzero with the malformed file in errors; MCP sync must set isError and expose it. Search must fail explicitly rather than silently return partial results. Remove only the malformed fixture, then require sync/query recovery.
+Create exactly one owned malformed `.md` under private `concepts/lifecycle/reference/`. CLI search must return nonzero with the malformed file in its error; MCP search must set isError and expose it. Search must fail explicitly rather than silently return partial results. Remove only the malformed fixture, then require query recovery.
 
 Inspect all stored fixture frontmatter. Present fields must follow this order; unrelated extension keys follow these keys:
 
@@ -80,6 +80,6 @@ Require local frontmatter id and links with exactly `{concept, rel}` and fully q
 
 ## 8. Unlink, archive, cleanup, and report
 
-Unlink the project→reference depends_on edge through MCP. Require its absence through graph queries and a fresh read; repeating CLI unlink must be a version no-op. Archive every owned concept, alternating CLI/MCP; each subsequent get must fail with not-found (5). Require empty all-scope search, empty UI graph, and final sync with zero concepts/errors. Require no SQLite/database files and byte-identical initialized configuration.
+Unlink the project→reference depends_on edge through MCP. Require its absence through graph queries and a fresh read; repeating CLI unlink must be a version no-op. Restart the owned MCP server and ensure the removed edge stays absent. Archive every owned concept, alternating CLI/MCP; each subsequent get must fail with not-found (5). Require empty all-scope search and empty UI graph. Require no SQLite/database files and byte-identical initialized configuration.
 
 Stop/reap only owned services. Preserve the evidence report; remove private workspace/home only on complete success. Otherwise retain them and record the failed assertion, last successful phase, process cleanup outcome, and recovery paths. Mark unavailable MCP/browser/concurrency capabilities blocked and overall verification incomplete; never reuse a live service to fill the gap.

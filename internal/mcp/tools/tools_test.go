@@ -3,8 +3,10 @@ package tools_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/armckinney/gyrus/internal/app"
@@ -13,6 +15,46 @@ import (
 	mcp_sdk "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
+
+func TestSearchLimitPassThrough(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, ".gyrus.yaml"), []byte("project: demo\nstorage:\n  provider: localfs\n  root: .gyrus\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	application, err := app.NewWithProject(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	engine, err := application.Engine()
+	if err != nil {
+		t.Fatal(err)
+	}
+	const fixtureCount = 12
+	for i := 0; i < fixtureCount; i++ {
+		_, err := engine.Create(context.Background(), gyrus.Concept{ID: fmt.Sprintf("limit-%d", i), Title: "Limit fixture", Tenant: "root", Type: gyrus.TypeGuide, Category: gyrus.CategoryTechnical, Version: 1, Status: "draft", Content: "limitmarker"})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, tc := range []struct {
+		query       string
+		limit, want int
+	}{{"limitmarker", 0, 10}, {"limitmarker", 3, 3}, {"limitmarker", 20, fixtureCount}, {"", 0, fixtureCount}, {"", 3, 3}} {
+		req := mcp_sdk.CallToolRequest{}
+		req.Params.Arguments = map[string]any{"query": tc.query, "max_results": tc.limit, "scope": "all"}
+		result, err := tools.NewHandler(engine).HandleSearch(context.Background(), req)
+		if err != nil || result.IsError {
+			t.Fatalf("search: %+v %v", result, err)
+		}
+		var docs []gyrus.SearchResult
+		if err := json.Unmarshal([]byte(result.Content[0].(mcp_sdk.TextContent).Text), &docs); err != nil {
+			t.Fatal(err)
+		}
+		if len(docs) != tc.want {
+			t.Errorf("query=%q limit=%d: got %d, want %d", tc.query, tc.limit, len(docs), tc.want)
+		}
+	}
+}
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
@@ -144,14 +186,6 @@ func TestToolsExecution(t *testing.T) {
 		t.Fatalf("HandleUnlink failed: %v", err)
 	}
 
-	// 7. Sync
-	syncReq := mcp_sdk.CallToolRequest{}
-	syncReq.Params.Name = "gyrus_sync"
-	syncRes, err := handler.HandleSync(ctx, syncReq)
-	if err != nil || syncRes.IsError {
-		t.Fatalf("HandleSync failed: %v", err)
-	}
-
 	// 8. Archive
 	archiveReq := mcp_sdk.CallToolRequest{}
 	archiveReq.Params.Name = "gyrus_archive"
@@ -208,7 +242,7 @@ status: active
 	}
 }
 
-func TestOKFSyncReturnsStructuredErrorReport(t *testing.T) {
+func TestOKFSearchRejectsMalformedCollection(t *testing.T) {
 	root := t.TempDir()
 	if err := os.WriteFile(filepath.Join(root, ".gyrus.yaml"), []byte("storage:\n  provider: localfs\n  root: .gyrus\n"), 0644); err != nil {
 		t.Fatal(err)
@@ -228,7 +262,7 @@ func TestOKFSyncReturnsStructuredErrorReport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := tools.NewHandler(engine).HandleSync(context.Background(), mcp_sdk.CallToolRequest{})
+	result, err := tools.NewHandler(engine).HandleSearch(context.Background(), mcp_sdk.CallToolRequest{})
 	if err != nil || !result.IsError {
 		t.Fatalf("MCP failure status: %+v %v", result, err)
 	}
@@ -236,8 +270,7 @@ func TestOKFSyncReturnsStructuredErrorReport(t *testing.T) {
 	if !ok {
 		t.Fatal("report is not text JSON")
 	}
-	var report gyrus.SyncReport
-	if err := json.Unmarshal([]byte(text.Text), &report); err != nil || report.ScannedFiles != 1 || len(report.Errors) != 1 {
-		t.Fatalf("report: %+v %v", report, err)
+	if !strings.Contains(text.Text, "bad.md") {
+		t.Fatalf("missing malformed-file location: %s", text.Text)
 	}
 }

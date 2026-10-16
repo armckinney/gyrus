@@ -9,7 +9,6 @@ type Config struct {
 	} `yaml:"storage" json:"storage"`
 	Index struct {
 		Provider string `yaml:"provider" json:"provider"`
-		DSN      string `yaml:"dsn" json:"dsn"`
 	} `yaml:"index" json:"index"`
 	Graph struct {
 		Provider string `yaml:"provider" json:"provider"`
@@ -69,14 +68,9 @@ func (c *Config) IndexProvider() string { return c.effectiveIndex() }
 // SearchProvider returns the configured search provider.
 func (c *Config) SearchProvider() string {
 	if c != nil && c.Search.Provider != "" {
-		if c.Search.Provider == "sqlite" {
-			return "sqlite_fts5"
-		}
 		return c.Search.Provider
 	}
 	switch c.effectiveIndex() {
-	case "sqlite":
-		return "sqlite_fts5"
 	case "postgres":
 		return "postgres_fts"
 	}

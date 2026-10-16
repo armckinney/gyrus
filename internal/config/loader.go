@@ -271,12 +271,6 @@ func validate(cfg *Config, sourcePath string) error {
 		return nil
 	}
 	*cfg = *resolved
-	if cfg.Index.Provider == "sqlite" && cfg.Index.DSN != "" {
-		cfg.Index.DSN, err = expandAndAbsRelative(cfg.Index.DSN, filepath.Dir(sourcePath))
-		if err != nil {
-			return fmt.Errorf("resolve index.dsn: %w", err)
-		}
-	}
 	return nil
 }
 

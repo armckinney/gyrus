@@ -1,6 +1,9 @@
 package gyrus
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // Category represents a top-level category classification.
 type Category string
@@ -87,6 +90,19 @@ type SearchQuery struct {
 	Query      string       `json:"query"`
 	Filter     SearchFilter `json:"filter"`
 	MaxResults int          `json:"max_results"`
+}
+
+const DefaultSearchLimit = 10
+
+// Limit leaves empty-query browsing unlimited unless a positive limit is supplied.
+func (q SearchQuery) Limit() int {
+	if q.MaxResults > 0 {
+		return q.MaxResults
+	}
+	if strings.TrimSpace(q.Query) != "" {
+		return DefaultSearchLimit
+	}
+	return 0
 }
 
 // SearchResult represents a matching concept result from search execution.

@@ -22,9 +22,6 @@ func (c *Config) effectiveIndex() string {
 	if c != nil && c.Index.Provider != "" {
 		return c.Index.Provider
 	}
-	if c != nil && c.Search.Provider == "vector" {
-		return "sqlite"
-	}
 	if c != nil && storageName(c.Storage.Provider) == "postgres" {
 		return "postgres"
 	}
@@ -44,16 +41,11 @@ func ResolveProviders(input *Config) (*Config, error) {
 	}
 	if c.Search.Provider == "" {
 		switch c.Index.Provider {
-		case "sqlite":
-			c.Search.Provider = "sqlite_fts5"
 		case "postgres":
 			c.Search.Provider = "postgres_fts"
 		default:
 			c.Search.Provider = "okf"
 		}
-	}
-	if c.Search.Provider == "sqlite" {
-		c.Search.Provider = "sqlite_fts5"
 	}
 	for _, field := range []struct {
 		name, value string
@@ -68,9 +60,7 @@ func ResolveProviders(input *Config) (*Config, error) {
 	compatible := false
 	switch c.Index.Provider {
 	case "okf":
-		compatible = c.Graph.Provider == "okf" && c.Search.Provider == "okf"
-	case "sqlite":
-		compatible = (c.Graph.Provider == "sqlite" || c.Graph.Provider == "okf") && (c.Search.Provider == "sqlite_fts5" || c.Search.Provider == "vector" || c.Search.Provider == "okf")
+		compatible = c.Graph.Provider == "okf" && (c.Search.Provider == "okf" || c.Search.Provider == "vector")
 	case "postgres":
 		compatible = (c.Graph.Provider == "postgres" || c.Graph.Provider == "okf") && (c.Search.Provider == "postgres_fts" || c.Search.Provider == "okf")
 	}

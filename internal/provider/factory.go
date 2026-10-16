@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/armckinney/gyrus/internal/config"
 	graphokf "github.com/armckinney/gyrus/internal/provider/graph/okf"
 	graphpostgres "github.com/armckinney/gyrus/internal/provider/graph/postgres"
-	graphsqlite "github.com/armckinney/gyrus/internal/provider/graph/sqlite"
 	indexokf "github.com/armckinney/gyrus/internal/provider/index/okf"
 	indexpostgres "github.com/armckinney/gyrus/internal/provider/index/postgres"
-	indexsqlite "github.com/armckinney/gyrus/internal/provider/index/sqlite"
-	fts5search "github.com/armckinney/gyrus/internal/provider/search/fts5"
 	searchokf "github.com/armckinney/gyrus/internal/provider/search/okf"
 	postgresfts "github.com/armckinney/gyrus/internal/provider/search/postgres_fts"
 	vectorsearch "github.com/armckinney/gyrus/internal/provider/search/vector"
@@ -135,12 +131,6 @@ func NewIndexStore(cfg *config.Config, storageRoot string, store gyrus.ConceptSt
 			return nil, fmt.Errorf("postgres index requires postgres.connection_string")
 		}
 		return indexpostgres.NewIndexer(context.Background(), cfg.Postgres.ConnectionString)
-	case "sqlite":
-		dbPath := cfg.Index.DSN
-		if dbPath == "" {
-			dbPath = filepath.Join(storageRoot, "index.db")
-		}
-		return indexsqlite.NewIndexer(dbPath)
 	default:
 		return nil, fmt.Errorf("unknown index provider %q", cfg.IndexProvider())
 	}
@@ -161,12 +151,6 @@ func NewGraphStore(cfg *config.Config, storageRoot string, store gyrus.ConceptSt
 			return nil, fmt.Errorf("postgres graph requires postgres index")
 		}
 		return graphpostgres.NewGraphStore(idx.Pool()), nil
-	case "sqlite":
-		idx, ok := indexer.(*indexsqlite.Indexer)
-		if !ok {
-			return nil, fmt.Errorf("sqlite graph requires sqlite index")
-		}
-		return graphsqlite.NewGraphStore(idx.DB()), nil
 	default:
 		return nil, fmt.Errorf("unknown graph provider %q", cfg.GraphProvider())
 	}
@@ -181,12 +165,6 @@ func NewSearchProvider(cfg *config.Config, storageRoot string, store gyrus.Conce
 	switch cfg.SearchProvider() {
 	case "okf":
 		return searchokf.NewSearchProvider(store)
-	case "sqlite_fts5":
-		idx, ok := indexer.(*indexsqlite.Indexer)
-		if !ok {
-			return nil, fmt.Errorf("sqlite search requires sqlite index")
-		}
-		return fts5search.NewSearchProvider(idx), nil
 	case "postgres_fts":
 		idx, ok := indexer.(*indexpostgres.Indexer)
 		if !ok {
@@ -194,9 +172,9 @@ func NewSearchProvider(cfg *config.Config, storageRoot string, store gyrus.Conce
 		}
 		return postgresfts.NewSearchProviderWithPool(idx.Pool()), nil
 	case "vector":
-		idx, ok := indexer.(*indexsqlite.Indexer)
-		if !ok {
-			return nil, fmt.Errorf("vector search requires sqlite index")
+		lexical, err := searchokf.NewSearchProvider(store)
+		if err != nil {
+			return nil, err
 		}
 		var embedder vectorsearch.EmbeddingProvider
 		if cfg.Vector.EmbeddingProvider == "openai" {
@@ -215,13 +193,16 @@ func NewSearchProvider(cfg *config.Config, storageRoot string, store gyrus.Conce
 			}
 			embedder = vectorsearch.NewOllamaEmbedder(endpoint, model)
 		}
-		v := vectorsearch.NewStore(fts5search.NewSearchProvider(idx), embedder)
-		if docs, err := idx.Search(context.Background(), gyrus.SearchQuery{MaxResults: 100}); err == nil {
-			for _, res := range docs {
-				if doc, err := store.Get(context.Background(), res.Concept.Name); err == nil {
-					_ = v.AddConcept(context.Background(), doc)
-				}
-			}
+		v := vectorsearch.NewStore(lexical, embedder)
+		scanner, ok := store.(gyrus.ConceptScanner)
+		if !ok {
+			return nil, fmt.Errorf("vector search requires scanner-capable storage")
+		}
+		report, err := scanner.Scan(context.Background(), func(doc gyrus.Concept) error {
+			return v.AddConcept(context.Background(), doc)
+		})
+		if err != nil || len(report.Errors) > 0 {
+			return nil, fmt.Errorf("initialize vector search: %v; collection errors: %v", err, report.Errors)
 		}
 		return v, nil
 	default:

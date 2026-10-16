@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"sort"
+	"strings"
 
 	"github.com/armckinney/gyrus/internal/domain/okf"
 	"github.com/armckinney/gyrus/pkg/gyrus"
@@ -50,14 +51,32 @@ func (s *Store) AddConcept(ctx context.Context, doc gyrus.Concept) error {
 	return nil
 }
 
-func (s *Store) Search(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
+func (s *Store) Search(ctx context.Context, request gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
+	query, filter := request.Query, request.Filter
+	query = strings.TrimSpace(query)
+	if query == "" {
+		if s.LexicalProvider != nil {
+			return s.LexicalProvider.Search(ctx, request)
+		}
+		results := make([]gyrus.SearchResult, 0)
+		for _, doc := range s.Vectors {
+			if matchFilter(doc.Concept, filter) {
+				results = append(results, gyrus.SearchResult{Concept: doc.Concept, MatchReason: "All Concepts"})
+			}
+		}
+		if limit := request.Limit(); limit > 0 && len(results) > limit {
+			results = results[:limit]
+		}
+		return results, nil
+	}
 	// 1. Lexical search
 	var lexicalResults []gyrus.SearchResult
 	if s.LexicalProvider != nil {
-		res, err := s.LexicalProvider.Search(ctx, query, filter)
-		if err == nil {
-			lexicalResults = res
+		res, err := s.LexicalProvider.Search(ctx, request)
+		if err != nil {
+			return nil, err
 		}
+		lexicalResults = res
 	}
 
 	// 2. Vector search
@@ -87,10 +106,28 @@ func (s *Store) Search(ctx context.Context, query string, filter gyrus.SearchFil
 
 	// 3. Reciprocal Rank Fusion (RRF)
 	merged := rrf(lexicalResults, vectorResults)
+	if limit := request.Limit(); limit > 0 && len(merged) > limit {
+		merged = merged[:limit]
+	}
 	return merged, nil
 }
 
 func matchFilter(doc gyrus.Concept, filter gyrus.SearchFilter) bool {
+	switch filter.Scope {
+	case "all":
+	case "reference":
+		if doc.Scope != "reference" {
+			return false
+		}
+	case "project":
+		if doc.Scope != "project" || filter.Project != "" && doc.Project != filter.Project {
+			return false
+		}
+	default:
+		if doc.Scope != "reference" && (filter.Project == "" || doc.Project != filter.Project) {
+			return false
+		}
+	}
 	if filter.Category != "" && doc.Category != filter.Category {
 		return false
 	}

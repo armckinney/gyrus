@@ -32,25 +32,25 @@ Use this skill whenever you need to resolve architectural context, align with re
 
 ## 🛠️ Primary Interface: Model Context Protocol (MCP) Tools
 
-- **`gyrus_suggest_context`**: `{ "prompt": string, "limit"?: int, "project"?: string }`
-- **`gyrus_search`**: `{ "query": string, "limit"?: int, "project"?: string, "tenant"?: string }`
+- **`gyrus_suggest_context`**: `{ "prompt": string, "max_concepts"?: int, "scope"?: string, "project"?: string }`
+- **`gyrus_search`**: `{ "query": string, "max_results"?: int, "scope"?: string, "project"?: string, "tenant"?: string }`
 - **`gyrus_get`**: `{ "id": string }`
-- **`gyrus_create`**: `{ "id": string, "title": string, "category": string, "type": string, "tenant": string, "status": string, "content": string, "project"?: string }`
-- **`gyrus_update`**: `{ "id": string, "title"?: string, "status"?: string, "content"?: string }`
+- **`gyrus_create`**: `{ "id": string, "title": string, "category": string, "type": string, "tenant": string, "status": string, "content": string, "scope"?: string, "project"?: string }`
+- **`gyrus_update`**: `{ "id": string, "title"?: string, "status"?: string, "content"?: string, "expected_version"?: int }`
 - **`gyrus_link`**: `{ "from_id": string, "to_id": string, "rel_type": string }`
-- **`gyrus_sync`**: `{}`
 
 ---
 
 ## 💻 Fallback & Admin Interface: Gyrus CLI
 
 - `gyrus suggest-context --prompt "<task>" --json`
-- `gyrus search --query "<query>" --json`
+- `gyrus search --query "<query>" --max-results 10 --json`
 - `gyrus get <id> --json`
 - `gyrus create --id "<id>" --title "<title>" --category "<cat>" --type "<type>" --tenant "<tenant>" --content "<md>"`
 - `gyrus update <id> --status "<status>" --expected-version <v>`
 - `gyrus link <from-id> <to-id> --rel-type <type>`
-- `gyrus sync`
+
+Keyword search defaults to ten results. CLI `--max-results` and MCP `max_results` pass through to the selected provider; positive limits also cap metadata browsing. Empty-query browsing is unlimited by default. SQLite index/graph/search providers and the sync command/tool have been removed; file-backed OKF data is read directly.
 
 ---
 

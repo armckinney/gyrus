@@ -14,13 +14,12 @@ import (
 )
 
 const (
-	DefaultKeywordSearchLimit = 10
-	exactIDBoost              = 1000
-	projectBoost              = 60
-	referenceBoost            = 20
-	identityWeight            = 10
-	tagWeight                 = 5
-	bodyWeight                = 1
+	exactIDBoost   = 1000
+	projectBoost   = 60
+	referenceBoost = 20
+	identityWeight = 10
+	tagWeight      = 5
+	bodyWeight     = 1
 )
 
 func Scanner(store gyrus.ConceptStore) (gyrus.ConceptScanner, error) {
@@ -156,10 +155,8 @@ func Search(ctx context.Context, scanner gyrus.ConceptScanner, q gyrus.SearchQue
 		}
 		return results[i].Concept.Name < results[j].Concept.Name
 	})
-	limit := q.MaxResults
-	if limit <= 0 && raw != "" {
-		limit = DefaultKeywordSearchLimit
-	}
+	q.Query = raw
+	limit := q.Limit()
 	if limit > 0 && len(results) > limit {
 		results = results[:limit]
 	}

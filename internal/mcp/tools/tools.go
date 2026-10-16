@@ -22,7 +22,6 @@ func Register(s *server.MCPServer, engine *lifecycle.Engine) {
 	h.registerDocumentTools(s)
 	h.registerSearchTools(s)
 	h.registerGraphTools(s)
-	h.registerSyncTools(s)
 	h.registerSchemaTools(s)
 }
 
