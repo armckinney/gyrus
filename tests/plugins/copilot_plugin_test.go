@@ -5,56 +5,119 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/armckinney/gyrus/internal/setup"
 )
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Integration Test
-// [Purpose]: Verifies GitHub Copilot, Codex, and Claude Code client equipping and configuration generation.
-// [Execution Surface]: Filesystem Workspace Integration (.vscode/, .claude/, .codex/)
-// [Assertions]: Target MCP configuration JSON files exist, are valid JSON, and configure Gyrus stdio server.
+// [Purpose]: Verifies GitHub Copilot, Codex, and Claude Code native plugin configs in packaging/plugins/gyrus.
+// [Execution Surface]: Filesystem Canonical Plugin Bundle (packaging/plugins/gyrus/)
+// [Assertions]: Target plugin and MCP configuration JSON files exist, are valid JSON, and configure Gyrus stdio server.
 // -----------------------------------------------------------------------------
 func TestMultiAgentCopilotAndClaudeIntegration(t *testing.T) {
-	tempWorkspace := t.TempDir()
-
-	targets := []struct {
-		target   setup.ClientTarget
-		name     string
-		filePath string
-	}{
-		{setup.ClientTargetCopilot, "VSCode/Copilot", filepath.Join(tempWorkspace, ".vscode", "mcp.json")},
-		{setup.ClientTargetClaude, "Claude-WorkspaceRoot", filepath.Join(tempWorkspace, ".mcp.json")},
-		{setup.ClientTargetClaude, "Claude-LegacyWorkspace", filepath.Join(tempWorkspace, ".claude", "mcp.json")},
-		{setup.ClientTargetCodex, "Codex-MCP", filepath.Join(tempWorkspace, ".codex", "mcp.json")},
-		{setup.ClientTargetCodex, "Codex-Config", filepath.Join(tempWorkspace, ".codex", "config.json")},
+	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatalf("Failed to resolve repository root: %v", err)
 	}
 
-	for _, tc := range targets {
-		t.Run(tc.name, func(t *testing.T) {
-			_, err := setup.RunClientSetup(setup.ClientSetupOptions{
-				WorkspaceDir: tempWorkspace,
-				Target:       tc.target,
-				Mode:         setup.MCPModeLocal,
-				BinaryCmd:    "gyrus",
-			})
-			if err != nil {
-				t.Fatalf("RunClientSetup for %s failed: %v", tc.name, err)
-			}
+	pluginDir := filepath.Join(repoRoot, "packaging", "plugins", "gyrus")
 
-			data, err := os.ReadFile(tc.filePath)
-			if err != nil {
-				t.Fatalf("Failed to read %s config at %s: %v", tc.name, tc.filePath, err)
-			}
+	// 1. Claude Code plugin manifests (.claude-plugin/plugin.json and .mcp.json)
+	t.Run("ClaudePlugin", func(t *testing.T) {
+		manifestPath := filepath.Join(pluginDir, ".claude-plugin", "plugin.json")
+		data, err := os.ReadFile(manifestPath)
+		if err != nil {
+			t.Fatalf("Missing Claude plugin.json at %s: %v", manifestPath, err)
+		}
+		var manifest map[string]interface{}
+		if err := json.Unmarshal(data, &manifest); err != nil {
+			t.Fatalf("Invalid JSON in Claude plugin.json: %v", err)
+		}
+		if manifest["name"] != "gyrus" {
+			t.Errorf("Expected plugin name 'gyrus', got '%v'", manifest["name"])
+		}
 
-			var cfg setup.MCPConfigFile
-			if err := json.Unmarshal(data, &cfg); err != nil {
-				t.Fatalf("Invalid JSON in %s config: %v", tc.name, err)
-			}
+		mcpPath := filepath.Join(pluginDir, ".mcp.json")
+		mcpData, err := os.ReadFile(mcpPath)
+		if err != nil {
+			t.Fatalf("Missing Claude .mcp.json at %s: %v", mcpPath, err)
+		}
+		var mcp struct {
+			MCPServers map[string]struct {
+				Command string            `json:"command"`
+				Args    []string          `json:"args"`
+				Env     map[string]string `json:"env"`
+			} `json:"mcpServers"`
+		}
+		if err := json.Unmarshal(mcpData, &mcp); err != nil {
+			t.Fatalf("Invalid JSON in Claude .mcp.json: %v", err)
+		}
+		server, ok := mcp.MCPServers["gyrus"]
+		if !ok {
+			t.Fatalf("Claude .mcp.json missing 'gyrus' server")
+		}
+		if server.Command != "gyrus" {
+			t.Errorf("Expected command 'gyrus', got '%s'", server.Command)
+		}
+		if server.Env["GYRUS_WORKSPACE"] != "${workspaceFolder}" {
+			t.Errorf("Expected GYRUS_WORKSPACE env to be '${workspaceFolder}', got '%s'", server.Env["GYRUS_WORKSPACE"])
+		}
+	})
 
-			if _, ok := cfg.MCPServers["gyrus"]; !ok {
-				t.Errorf("%s config does not contain 'gyrus' server entry", tc.name)
-			}
-		})
-	}
+	// 2. OpenAI Codex plugin manifest (.codex-plugin/plugin.json)
+	t.Run("CodexPlugin", func(t *testing.T) {
+		manifestPath := filepath.Join(pluginDir, ".codex-plugin", "plugin.json")
+		data, err := os.ReadFile(manifestPath)
+		if err != nil {
+			t.Fatalf("Missing Codex plugin.json at %s: %v", manifestPath, err)
+		}
+		var manifest map[string]interface{}
+		if err := json.Unmarshal(data, &manifest); err != nil {
+			t.Fatalf("Invalid JSON in Codex plugin.json: %v", err)
+		}
+		if manifest["name"] != "gyrus" {
+			t.Errorf("Expected plugin name 'gyrus', got '%v'", manifest["name"])
+		}
+	})
+
+	// 3. GitHub Copilot & Standard Agent Plugin (plugin.json and mcp.json)
+	t.Run("CopilotPlugin", func(t *testing.T) {
+		manifestPath := filepath.Join(pluginDir, "plugin.json")
+		data, err := os.ReadFile(manifestPath)
+		if err != nil {
+			t.Fatalf("Missing Agent Plugins plugin.json at %s: %v", manifestPath, err)
+		}
+		var manifest map[string]interface{}
+		if err := json.Unmarshal(data, &manifest); err != nil {
+			t.Fatalf("Invalid JSON in plugin.json: %v", err)
+		}
+		if manifest["name"] != "gyrus" {
+			t.Errorf("Expected plugin name 'gyrus', got '%v'", manifest["name"])
+		}
+
+		mcpPath := filepath.Join(pluginDir, "mcp.json")
+		mcpData, err := os.ReadFile(mcpPath)
+		if err != nil {
+			t.Fatalf("Missing Agent Plugins mcp.json at %s: %v", mcpPath, err)
+		}
+		var mcp struct {
+			MCPServers map[string]struct {
+				Command string            `json:"command"`
+				Args    []string          `json:"args"`
+				Env     map[string]string `json:"env"`
+			} `json:"mcpServers"`
+		}
+		if err := json.Unmarshal(mcpData, &mcp); err != nil {
+			t.Fatalf("Invalid JSON in mcp.json: %v", err)
+		}
+		server, ok := mcp.MCPServers["gyrus"]
+		if !ok {
+			t.Fatalf("mcp.json missing 'gyrus' server")
+		}
+		if server.Command != "gyrus" {
+			t.Errorf("Expected command 'gyrus', got '%s'", server.Command)
+		}
+		if server.Env["GYRUS_WORKSPACE"] != "${workspaceFolder}" {
+			t.Errorf("Expected GYRUS_WORKSPACE env to be '${workspaceFolder}', got '%s'", server.Env["GYRUS_WORKSPACE"])
+		}
+	})
 }

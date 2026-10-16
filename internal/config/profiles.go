@@ -1,4 +1,4 @@
-package setup
+package config
 
 import (
 	"fmt"
@@ -19,6 +19,21 @@ const (
 	ProfilePostgres Profile = "postgres"
 	ProfileVector   Profile = "vector"
 )
+
+// ConfigSetupOptions defines input options for workspace config initialization.
+type ConfigSetupOptions struct {
+	WorkspaceDir string
+	Profile      Profile
+	OwnerGroup   string
+}
+
+// ConfigSetupResult contains status details from workspace configuration setup.
+type ConfigSetupResult struct {
+	ConfigFile string
+	StorageDir string
+	Profile    Profile
+	OwnerGroup string
+}
 
 // GenerateConfigYaml generates the .gyrus.yaml config file content for a given profile using the nested schema.
 func GenerateConfigYaml(profile Profile, ownerGroup string) string {
@@ -225,3 +240,29 @@ func WriteGlobalConfigFile(profile Profile, ownerGroup string, force bool) (stri
 	}
 	return WriteConfigFile(homeDir, profile, ownerGroup)
 }
+
+// RunConfigSetup generates .gyrus.yaml configuration for the target workspace.
+func RunConfigSetup(opts ConfigSetupOptions) (*ConfigSetupResult, error) {
+	if opts.WorkspaceDir == "" {
+		opts.WorkspaceDir = "."
+	}
+	if opts.Profile == "" {
+		opts.Profile = ProfileLocal
+	}
+	if opts.OwnerGroup == "" {
+		opts.OwnerGroup = "root"
+	}
+
+	cfgPath, err := WriteConfigFile(opts.WorkspaceDir, opts.Profile, opts.OwnerGroup)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ConfigSetupResult{
+		ConfigFile: cfgPath,
+		StorageDir: filepath.Join(opts.WorkspaceDir, ".gyrus"),
+		Profile:    opts.Profile,
+		OwnerGroup: opts.OwnerGroup,
+	}, nil
+}
+

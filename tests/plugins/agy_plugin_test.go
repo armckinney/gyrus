@@ -7,33 +7,21 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-
-	"github.com/armckinney/gyrus/internal/setup"
 )
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Integration Test
 // [Purpose]: Verifies Agent Plugin packaging compliance with Agent Plugins Standard 1.0.0 and Google Antigravity.
-// [Execution Surface]: Filesystem Workspace Integration (.agents/plugins/gyrus/ and .antigravity/mcp.json)
+// [Execution Surface]: Canonical packaging repository directory (packaging/plugins/gyrus/)
 // [Assertions]: plugin.json and mcp.json adhere to schemas; rules and skills are correctly populated.
 // -----------------------------------------------------------------------------
 func TestAntigravityPluginIntegration(t *testing.T) {
-	tempWorkspace := t.TempDir()
-
-	res, err := setup.RunClientSetup(setup.ClientSetupOptions{
-		WorkspaceDir: tempWorkspace,
-		Target:       setup.ClientTargetAntigravity,
-		Mode:         setup.MCPModeLocal,
-		BinaryCmd:    "gyrus",
-	})
+	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
-		t.Fatalf("RunClientSetup for Antigravity failed: %v", err)
+		t.Fatalf("Failed to resolve repository root: %v", err)
 	}
 
-	pluginDir := res.PluginDir
-	if pluginDir != filepath.Join(tempWorkspace, ".agents", "plugins", "gyrus") {
-		t.Errorf("Unexpected plugin dir: %s", pluginDir)
-	}
+	pluginDir := filepath.Join(repoRoot, "packaging", "plugins", "gyrus")
 
 	// 1. Validate plugin mcp_config.json (Antigravity discovers MCP directly from plugin bundle)
 	mcpPath := filepath.Join(pluginDir, "mcp_config.json")
@@ -42,7 +30,13 @@ func TestAntigravityPluginIntegration(t *testing.T) {
 		t.Fatalf("Failed to read plugin mcp_config.json: %v", err)
 	}
 
-	var mcpCfg setup.MCPConfigFile
+	var mcpCfg struct {
+		MCPServers map[string]struct {
+			Command string            `json:"command"`
+			Args    []string          `json:"args"`
+			Env     map[string]string `json:"env"`
+		} `json:"mcpServers"`
+	}
 	if err := json.Unmarshal(data, &mcpCfg); err != nil {
 		t.Fatalf("Failed to parse plugin mcp_config.json: %v", err)
 	}
@@ -54,11 +48,8 @@ func TestAntigravityPluginIntegration(t *testing.T) {
 	if server.Command != "gyrus" {
 		t.Errorf("Unexpected server command: %s", server.Command)
 	}
-
-	// Verify redundant .antigravity/mcp.json is not created
-	redundantMCP := filepath.Join(tempWorkspace, ".antigravity", "mcp.json")
-	if _, err := os.Stat(redundantMCP); !os.IsNotExist(err) {
-		t.Errorf("Expected redundant .antigravity/mcp.json not to be created")
+	if server.Env["GYRUS_WORKSPACE"] != "${workspaceFolder}" {
+		t.Errorf("Expected GYRUS_WORKSPACE env to be '${workspaceFolder}', got '%s'", server.Env["GYRUS_WORKSPACE"])
 	}
 
 	// 2. Validate plugin.json compliance against Agent Plugins Standard 1.0.0
@@ -95,12 +86,30 @@ func TestAntigravityPluginIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read mcp.json: %v", err)
 	}
-	var stdMCP map[string]interface{}
+	var stdMCP struct {
+		Schema     string `json:"$schema"`
+		MCPServers map[string]struct {
+			Type    string            `json:"type"`
+			Command string            `json:"command"`
+			Args    []string          `json:"args"`
+			Env     map[string]string `json:"env"`
+		} `json:"mcpServers"`
+	}
 	if err := json.Unmarshal(stdMCPBytes, &stdMCP); err != nil {
 		t.Fatalf("Failed to unmarshal mcp.json: %v", err)
 	}
-	if stdMCP["$schema"] != "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json" {
-		t.Errorf("mcp.json missing valid $schema: %v", stdMCP["$schema"])
+	if stdMCP.Schema != "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json" {
+		t.Errorf("mcp.json missing valid $schema: %v", stdMCP.Schema)
+	}
+	stdServer, exists := stdMCP.MCPServers["gyrus"]
+	if !exists {
+		t.Fatalf("mcp.json missing 'gyrus' server")
+	}
+	if stdServer.Command != "gyrus" {
+		t.Errorf("Unexpected command in mcp.json: %s", stdServer.Command)
+	}
+	if stdServer.Env["GYRUS_WORKSPACE"] != "${workspaceFolder}" {
+		t.Errorf("Expected GYRUS_WORKSPACE env to be '${workspaceFolder}', got '%s'", stdServer.Env["GYRUS_WORKSPACE"])
 	}
 
 	// 4. Validate rules/AGENTS.md
