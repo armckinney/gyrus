@@ -144,6 +144,12 @@ func TestHandlers_ScopesAndTenants(t *testing.T) {
 		t.Errorf("expected scope 'projects/gyrus', got '%s'", scope)
 	}
 
+	// Test fallback to DefaultProject when unconfigured
+	hUnconfigured := &Handlers{}
+	if scope := hUnconfigured.determineDocScope(&docProj, nil); scope != "projects/default" {
+		t.Errorf("expected scope 'projects/default', got '%s'", scope)
+	}
+
 	// Test buildScopeData
 	scopeDocs := []gyrus.SearchResult{
 		{Concept: docRef},

@@ -12,6 +12,7 @@
 - [ ] Fix Git Storage Provider
 - [ ] Fix `gyrus sync` to use set Storage Provider and not just local sync
 - [ ] Remove sqlite from index/graph/search providers
+- [ ] Update profile options to logical implementations (local, git, postgres)
 - [ ] Update docs
   - Update guides / root readme
   - Simplify value add doc
@@ -27,7 +28,7 @@
 - [ ] Codex Refactor  
   - [x] rename/remove "setup" package as appropriate
 - [ ] Remove Vector Search Provider & and config
-- [ ] Update profiles for formatting and sets (local, git, postgres)
+
 
 ### MCP Server Cache
 - [ ] Implement Cache Providers: `none` (default), `sqlite`, `redis`

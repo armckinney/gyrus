@@ -16,6 +16,9 @@ const (
 	// DefaultTenant is the default OKF concept tenant.
 	DefaultTenant = "root"
 
+	// DefaultProject is the default OKF concept project.
+	DefaultProject = "default"
+
 	// DefaultStorageRoot is the default directory relative to project or home.
 	DefaultStorageRoot = ".gyrus"
 

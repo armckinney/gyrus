@@ -431,6 +431,7 @@ func TestRunConfigSetup(t *testing.T) {
 		ProjectDir: tempDir,
 		Profile:    config.ProfileLocal,
 		Tenant:     "test-group",
+		Project:    "test-project",
 	})
 	if err != nil {
 		t.Fatalf("RunConfigSetup failed: %v", err)
@@ -447,6 +448,37 @@ func TestRunConfigSetup(t *testing.T) {
 	expectedStorageDir := filepath.Join(tempDir, ".gyrus")
 	if res.StorageDir != expectedStorageDir {
 		t.Errorf("Expected storage root path %s, got %s", expectedStorageDir, res.StorageDir)
+	}
+	if res.Tenant != "test-group" {
+		t.Errorf("Expected tenant 'test-group', got '%s'", res.Tenant)
+	}
+	if res.Project != "test-project" {
+		t.Errorf("Expected project 'test-project', got '%s'", res.Project)
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("Failed reading config: %v", err)
+	}
+	lines := strings.Split(string(data), "\n")
+	if len(lines) < 3 || lines[1] != "tenant: test-group" || lines[2] != "project: test-project" {
+		t.Errorf("Expected tenant and project at top of config, got:\n%s", string(data))
+	}
+
+	// Verify default project fallback
+	tempDir2 := t.TempDir()
+	res2, err := config.RunConfigSetup(config.ConfigSetupOptions{
+		ProjectDir: tempDir2,
+		Profile:    config.ProfileLocal,
+	})
+	if err != nil {
+		t.Fatalf("RunConfigSetup with defaults failed: %v", err)
+	}
+	if res2.Tenant != config.DefaultTenant {
+		t.Errorf("Expected default tenant '%s', got '%s'", config.DefaultTenant, res2.Tenant)
+	}
+	if res2.Project != config.DefaultProject {
+		t.Errorf("Expected default project '%s', got '%s'", config.DefaultProject, res2.Project)
 	}
 }
 
@@ -472,6 +504,7 @@ func TestWriteConfigFileProfiles(t *testing.T) {
 	for _, p := range profiles {
 		t.Run(string(p.profile), func(t *testing.T) {
 			tempDir := t.TempDir()
+			// Default project ("default")
 			cfgPath, err := config.WriteConfigFile(tempDir, p.profile, "my-team")
 			if err != nil {
 				t.Fatalf("WriteConfigFile failed for %s: %v", p.profile, err)
@@ -486,8 +519,24 @@ func TestWriteConfigFileProfiles(t *testing.T) {
 			if !strings.Contains(content, p.keyword) {
 				t.Errorf("Expected config to contain '%s', got:\n%s", p.keyword, content)
 			}
-			if !strings.Contains(content, "tenant: my-team") {
-				t.Errorf("Expected config to contain tenant 'my-team', got:\n%s", content)
+			lines := strings.Split(content, "\n")
+			if len(lines) < 3 || lines[1] != "tenant: my-team" || lines[2] != "project: default" {
+				t.Errorf("Expected tenant and default project at top of config, got:\n%s", content)
+			}
+
+			// Explicit project ("my-app")
+			tempDirCustom := t.TempDir()
+			cfgPathCustom, err := config.WriteConfigFile(tempDirCustom, p.profile, "my-team", "my-app")
+			if err != nil {
+				t.Fatalf("WriteConfigFile with explicit project failed for %s: %v", p.profile, err)
+			}
+			dataCustom, err := os.ReadFile(cfgPathCustom)
+			if err != nil {
+				t.Fatalf("Failed reading generated config: %v", err)
+			}
+			linesCustom := strings.Split(string(dataCustom), "\n")
+			if len(linesCustom) < 3 || linesCustom[1] != "tenant: my-team" || linesCustom[2] != "project: my-app" {
+				t.Errorf("Expected tenant and custom project at top of config, got:\n%s", string(dataCustom))
 			}
 		})
 	}

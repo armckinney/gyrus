@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/armckinney/gyrus/internal/app"
+	"github.com/armckinney/gyrus/internal/config"
 	"github.com/armckinney/gyrus/internal/domain/lifecycle"
 	"github.com/armckinney/gyrus/internal/ui/agent"
 	"github.com/armckinney/gyrus/internal/ui/markdown"
@@ -172,7 +173,11 @@ func (h *Handlers) determineDocScope(doc *gyrus.Concept, scopeMap map[string]str
 		}
 	}
 	if doc.Category == gyrus.CategoryBusinessLogic || doc.Category == gyrus.CategoryProduct {
-		return "projects/gyrus"
+		projectName := config.DefaultProject
+		if h.app != nil && h.app.Config() != nil && h.app.Config().ProjectName() != "" {
+			projectName = h.app.Config().ProjectName()
+		}
+		return "projects/" + projectName
 	}
 	return "reference"
 }
@@ -214,7 +219,11 @@ func (h *Handlers) buildScopeData(results []gyrus.SearchResult, scopeMap map[str
 	}
 
 	if len(projMap) == 0 {
-		projMap["gyrus"] = 0
+		projectName := config.DefaultProject
+		if h.app != nil && h.app.Config() != nil && h.app.Config().ProjectName() != "" {
+			projectName = h.app.Config().ProjectName()
+		}
+		projMap[projectName] = 0
 	}
 
 	var projList []ProjectScopeCount

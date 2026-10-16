@@ -368,4 +368,7 @@ func TestCLI_ConfigInit(t *testing.T) {
 	if !strings.Contains(content, "tenant: dev-team") {
 		t.Errorf("Expected owner group 'dev-team', got:\n%s", content)
 	}
+	if !strings.Contains(content, "project: default") {
+		t.Errorf("Expected default project 'default', got:\n%s", content)
+	}
 }
