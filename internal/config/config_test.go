@@ -480,3 +480,114 @@ automation:
 		t.Errorf("Expected IgnoredPaths() to contain 'custom/**', got %v", rc2.Config.IgnoredPaths())
 	}
 }
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that RunConfigSetup creates .gyrus.yaml with designated profile and owner group.
+// [Execution Surface]: In-Memory / Temporary Filesystem
+// [Assertions]: Creates .gyrus.yaml in workspace and returns correct status fields.
+// -----------------------------------------------------------------------------
+func TestRunConfigSetup(t *testing.T) {
+	tempDir := t.TempDir()
+
+	res, err := config.RunConfigSetup(config.ConfigSetupOptions{
+		WorkspaceDir: tempDir,
+		Profile:      config.ProfileLocal,
+		OwnerGroup:   "test-group",
+	})
+	if err != nil {
+		t.Fatalf("RunConfigSetup failed: %v", err)
+	}
+
+	configPath := filepath.Join(tempDir, ".gyrus.yaml")
+	if res.ConfigFile != configPath {
+		t.Errorf("Expected config file %s, got %s", configPath, res.ConfigFile)
+	}
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		t.Errorf("Expected .gyrus.yaml to exist at %s", configPath)
+	}
+
+	expectedStorageDir := filepath.Join(tempDir, ".gyrus")
+	if res.StorageDir != expectedStorageDir {
+		t.Errorf("Expected storage root path %s, got %s", expectedStorageDir, res.StorageDir)
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that WriteConfigFile generates correct configurations across all supported profiles.
+// -----------------------------------------------------------------------------
+func TestWriteConfigFileProfiles(t *testing.T) {
+	profiles := []struct {
+		profile config.Profile
+		keyword string
+	}{
+		{config.ProfileLocal, "provider: localfs"},
+		{config.ProfileGit, "provider: git"},
+		{config.ProfileBlob, "provider: blob"},
+		{config.ProfileS3, "provider: s3"},
+		{config.ProfileAzure, "provider: azure_blob"},
+		{config.ProfileGCS, "provider: gcs"},
+		{config.ProfilePostgres, "provider: postgres"},
+		{config.ProfileVector, "provider: vector"},
+	}
+
+	for _, p := range profiles {
+		t.Run(string(p.profile), func(t *testing.T) {
+			tempDir := t.TempDir()
+			cfgPath, err := config.WriteConfigFile(tempDir, p.profile, "my-team")
+			if err != nil {
+				t.Fatalf("WriteConfigFile failed for %s: %v", p.profile, err)
+			}
+
+			data, err := os.ReadFile(cfgPath)
+			if err != nil {
+				t.Fatalf("Failed reading generated config: %v", err)
+			}
+
+			content := string(data)
+			if !strings.Contains(content, p.keyword) {
+				t.Errorf("Expected config to contain '%s', got:\n%s", p.keyword, content)
+			}
+			if !strings.Contains(content, "default_owner_group: my-team") {
+				t.Errorf("Expected config to contain owner group 'my-team', got:\n%s", content)
+			}
+		})
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that WriteGlobalConfigFile writes ~/.gyrus.yaml and honors the force flag.
+// [Assertions]: Initial write succeeds, second write fails without force, second write succeeds with force.
+// -----------------------------------------------------------------------------
+func TestWriteGlobalConfigFile(t *testing.T) {
+	tempHome := t.TempDir()
+	t.Setenv("HOME", tempHome)
+
+	// 1. First write succeeds
+	path, err := config.WriteGlobalConfigFile(config.ProfileLocal, "global-team", false)
+	if err != nil {
+		t.Fatalf("First WriteGlobalConfigFile failed: %v", err)
+	}
+	expectedPath := filepath.Join(tempHome, ".gyrus.yaml")
+	if path != expectedPath {
+		t.Errorf("Expected path %s, got %s", expectedPath, path)
+	}
+
+	// 2. Second write without force fails
+	_, err = config.WriteGlobalConfigFile(config.ProfileLocal, "global-team", false)
+	if err == nil {
+		t.Fatalf("Expected error when overwriting without force, got nil")
+	}
+
+	// 3. Second write with force succeeds
+	_, err = config.WriteGlobalConfigFile(config.ProfilePostgres, "global-team", true)
+	if err != nil {
+		t.Fatalf("Expected force overwrite to succeed, got: %v", err)
+	}
+	data, _ := os.ReadFile(expectedPath)
+	if !strings.Contains(string(data), "provider: postgres") {
+		t.Errorf("Expected overwritten config to contain postgres, got: %s", string(data))
+	}
+}

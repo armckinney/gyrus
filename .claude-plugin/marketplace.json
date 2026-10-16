@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "gyrus",
+  "name": "armckinney",
   "description": "Gyrus Context Control Plane & Memory Engine plugin marketplace",
   "owner": {
     "name": "Andrew McKinney",

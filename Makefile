@@ -1,4 +1,4 @@
-.PHONY: all fmt lint test test-unit test-integration clean build run install
+.PHONY: all fmt lint test test-unit test-integration clean build install
 
 all: clean fmt lint test build
 
@@ -32,8 +32,7 @@ build:
 	@go build -buildvcs=false -o gyrus cmd/gyrus/main.go
 
 install: build
-	@echo "Installing gyrus binary to /usr/local/bin..."
-	@install -m 755 gyrus /usr/local/bin/gyrus
-
-run:
-	@go run cmd/gyrus/main.go
+	@echo "Symlinking gyrus binary to /usr/local/bin/gyrus..."
+	@mkdir -p /usr/local/bin
+	@ln -sf $(CURDIR)/gyrus /usr/local/bin/gyrus
+	@echo "✓ Installed gyrus: /usr/local/bin/gyrus -> $(CURDIR)/gyrus"

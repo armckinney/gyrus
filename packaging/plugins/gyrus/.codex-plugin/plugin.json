@@ -1,0 +1,9 @@
+{
+  "name": "gyrus",
+  "version": "0.1.0",
+  "description": "Unified Context Control Plane & Memory Engine for AI Agents",
+  "author": {
+    "name": "armckinney"
+  }
+}
+

@@ -46,8 +46,8 @@ Gyrus CLI commands return deterministic exit codes so shell scripts and AI agent
 
 ## 3. Subcommand Reference
 
-### 1. `gyrus config init` & `gyrus client install / uninstall`
-Initializes Gyrus workspace or global configuration, or manages client plugins and MCP servers.
+### 1. `gyrus config init` & `gyrus config show`
+Initializes Gyrus workspace or global configuration, and displays resolved active settings.
 
 ```bash
 # Initialize workspace configuration (.gyrus.yaml in current repository)
@@ -56,11 +56,8 @@ gyrus config init [-p <profile>] [-o <owner_group>] [-f]
 # Initialize global user configuration (~/.gyrus.yaml across all repositories)
 gyrus config init -g [-p <profile>] [-o <owner_group>] [-f]
 
-# Install Agent Plugin and configure MCP client
-gyrus client install -t <antigravity|claude|codex|copilot> [-m <local|container>] [-g] [--plugin-dir <dir>]
-
-# Uninstall Agent Plugin and remove MCP client configuration
-gyrus client uninstall -t <antigravity|claude|codex|copilot> [-g] [--plugin-dir <dir>]
+# Display resolved configuration and active storage root
+gyrus config show [--json]
 ```
 
 ### 2. `gyrus create`

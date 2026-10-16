@@ -8,7 +8,6 @@ import (
 
 	"github.com/armckinney/gyrus/internal/app"
 	"github.com/armckinney/gyrus/internal/config"
-	"github.com/armckinney/gyrus/internal/setup"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -78,7 +77,7 @@ func NewConfigInitCmd(application *app.App) *cobra.Command {
 		Short: "Initialize .gyrus.yaml workspace or global configuration",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if global {
-				cfgPath, err := setup.WriteGlobalConfigFile(setup.Profile(profile), ownerGroup, force)
+				cfgPath, err := config.WriteGlobalConfigFile(config.Profile(profile), ownerGroup, force)
 				if err != nil {
 					return err
 				}
@@ -103,9 +102,9 @@ func NewConfigInitCmd(application *app.App) *cobra.Command {
 				return err
 			}
 
-			res, err := setup.RunConfigSetup(setup.ConfigSetupOptions{
+			res, err := config.RunConfigSetup(config.ConfigSetupOptions{
 				WorkspaceDir: cwd,
-				Profile:      setup.Profile(profile),
+				Profile:      config.Profile(profile),
 				OwnerGroup:   ownerGroup,
 			})
 			if err != nil {

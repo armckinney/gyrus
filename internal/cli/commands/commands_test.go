@@ -47,10 +47,10 @@ func TestCommandsRegistrationAndExecution(t *testing.T) {
 		t.Fatalf("Application reset failed: %v", err)
 	}
 
-	// 1b. gyrus client install
-	rootCmd.SetArgs([]string{"client", "install", "--target", "antigravity", "--mode", "local"})
-	if err := rootCmd.Execute(); err != nil {
-		t.Fatalf("Client install command failed: %v", err)
+	// 1b. gyrus client (must error as unrecognized command)
+	rootCmd.SetArgs([]string{"client"})
+	if err := rootCmd.Execute(); err == nil {
+		t.Fatalf("Expected client command to fail as unknown, but succeeded")
 	}
 
 	// 1c. gyrus init bare (must error)

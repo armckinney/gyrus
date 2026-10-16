@@ -1,0 +1,15 @@
+{
+  "name": "armckinney",
+  "interface": {
+    "displayName": "armckinney Copilot Marketplace"
+  },
+  "plugins": [
+    {
+      "name": "gyrus",
+      "source": "./packaging/plugins/gyrus",
+      "description": "Unified Context Control Plane & Memory Engine for AI Agents",
+      "version": "0.1.0"
+    }
+  ]
+}
+

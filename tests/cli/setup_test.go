@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/armckinney/gyrus/internal/setup"
 )
 
 // -----------------------------------------------------------------------------
@@ -49,64 +47,27 @@ func TestCLI_Config_ProfileFlags(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Product E2E Test
-// [Purpose]: Verifies that 'gyrus client install' equips the Agent Plugin and registers MCP server configurations.
+// [Purpose]: Verifies that deprecated 'gyrus client' command is permanently removed.
 // [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
-// [Assertions]: Agent Plugin files are written to .agents/plugins/gyrus/ and MCP server config is verified.
+// [Assertions]: Command exits with unknown command error.
 // -----------------------------------------------------------------------------
-func TestCLI_Client_MCPAndPluginEquipping(t *testing.T) {
+func TestCLI_Client_CommandRejection(t *testing.T) {
 	tempWorkspace := t.TempDir()
 
-	cmd := exec.Command(gyrusBinPath, "client", "install",
-		"--target", "antigravity",
-		"--mode", "local",
-	)
-	cmd.Dir = tempWorkspace
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("Client install failed: %v\nOutput: %s", err, string(out))
-	}
-
-	// 1. Verify Plugin installation
-	pluginDir := filepath.Join(tempWorkspace, ".agents", "plugins", "gyrus")
-	pluginJSON := filepath.Join(pluginDir, "plugin.json")
-	if _, err := os.Stat(pluginJSON); os.IsNotExist(err) {
-		t.Errorf("Expected plugin.json at %s", pluginJSON)
-	}
-
-	mcpJSON := filepath.Join(pluginDir, "mcp.json")
-	if _, err := os.Stat(mcpJSON); os.IsNotExist(err) {
-		t.Errorf("Expected mcp.json at %s", mcpJSON)
-	}
-
-	rulesFile := filepath.Join(pluginDir, "rules", "AGENTS.md")
-	if _, err := os.Stat(rulesFile); os.IsNotExist(err) {
-		t.Errorf("Expected rules/AGENTS.md at %s", rulesFile)
-	}
-
-	gyrusSkill := filepath.Join(pluginDir, "skills", "gyrus", "SKILL.md")
-	if _, err := os.Stat(gyrusSkill); os.IsNotExist(err) {
-		t.Errorf("Expected Gyrus skill in plugin at %s", gyrusSkill)
-	}
-
-	// 2. Verify MCP auto-discovery via plugin mcp_config.json
-	mcpConfigPath := filepath.Join(pluginDir, "mcp_config.json")
-	mcpData, err := os.ReadFile(mcpConfigPath)
-	if err != nil {
-		t.Fatalf("Failed reading MCP config: %v", err)
-	}
-
-	var mcpCfg setup.MCPConfigFile
-	if err := json.Unmarshal(mcpData, &mcpCfg); err != nil {
-		t.Fatalf("Failed unmarshaling MCP JSON: %v", err)
-	}
-
-	if _, ok := mcpCfg.MCPServers["gyrus"]; !ok {
-		t.Errorf("Expected 'gyrus' server in mcpServers")
-	}
-
-	// Verify redundant .antigravity/mcp.json not created
-	redundantMCP := filepath.Join(tempWorkspace, ".antigravity", "mcp.json")
-	if _, err := os.Stat(redundantMCP); !os.IsNotExist(err) {
-		t.Errorf("Expected redundant .antigravity/mcp.json not to be created")
+	for _, args := range [][]string{
+		{"client"},
+		{"client", "install"},
+		{"client", "uninstall"},
+	} {
+		cmd := exec.Command(gyrusBinPath, args...)
+		cmd.Dir = tempWorkspace
+		out, err := cmd.CombinedOutput()
+		if err == nil {
+			t.Fatalf("Expected 'gyrus %s' to fail, but succeeded with output: %s", strings.Join(args, " "), string(out))
+		}
+		if !strings.Contains(string(out), "unknown command \"client\"") {
+			t.Errorf("Expected unknown command error for 'gyrus %s', got:\n%s", strings.Join(args, " "), string(out))
+		}
 	}
 }
 
@@ -129,28 +90,6 @@ func TestCLI_Init_BareCommandRejection(t *testing.T) {
 	outStr := string(out)
 	if !strings.Contains(outStr, "unknown command \"init\"") {
 		t.Errorf("Expected unknown command error in output, got:\n%s", outStr)
-	}
-}
-
-// -----------------------------------------------------------------------------
-// [Test Level]: Product E2E Test
-// [Purpose]: Verifies that 'gyrus client install' without --target is rejected.
-// [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
-// [Assertions]: Command exits with validation error.
-// -----------------------------------------------------------------------------
-func TestCLI_Init_ClientMissingTarget(t *testing.T) {
-	tempWorkspace := t.TempDir()
-
-	cmd := exec.Command(gyrusBinPath, "client", "install")
-	cmd.Dir = tempWorkspace
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("Expected 'gyrus client install' without target to fail, but succeeded with output: %s", string(out))
-	}
-
-	outStr := string(out)
-	if !strings.Contains(outStr, "--target is required") {
-		t.Errorf("Expected missing target message, got:\n%s", outStr)
 	}
 }
 
@@ -398,45 +337,6 @@ func TestCLI_InitConfigGlobalForce(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Product E2E Test
-// [Purpose]: Verifies that re-running 'gyrus client install' repairs missing or deleted plugin files idempotently.
-// [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
-// [Assertions]: Deleted plugin file is restored on subsequent client install invocation.
-// -----------------------------------------------------------------------------
-func TestCLI_SetupIdempotencyAndRepair(t *testing.T) {
-	tempWorkspace := t.TempDir()
-
-	// Initial setup
-	initCmd := exec.Command(gyrusBinPath, "client", "install", "--target", "antigravity", "--mode", "local")
-	initCmd.Dir = tempWorkspace
-	if out, err := initCmd.CombinedOutput(); err != nil {
-		t.Fatalf("Initial client install failed: %v\nOutput: %s", err, string(out))
-	}
-
-	pluginFile := filepath.Join(tempWorkspace, ".agents", "plugins", "gyrus", "plugin.json")
-	if _, err := os.Stat(pluginFile); os.IsNotExist(err) {
-		t.Fatalf("Expected plugin.json to exist before deletion")
-	}
-
-	// Delete plugin file to simulate corruption/loss
-	if err := os.Remove(pluginFile); err != nil {
-		t.Fatalf("Failed deleting plugin file: %v", err)
-	}
-
-	// Re-run client install (repair)
-	repairCmd := exec.Command(gyrusBinPath, "client", "install", "--target", "antigravity", "--mode", "local")
-	repairCmd.Dir = tempWorkspace
-	if out, err := repairCmd.CombinedOutput(); err != nil {
-		t.Fatalf("Repair client install failed: %v\nOutput: %s", err, string(out))
-	}
-
-	// Verify plugin file is restored
-	if _, err := os.Stat(pluginFile); os.IsNotExist(err) {
-		t.Errorf("Expected deleted plugin file to be restored after re-running client install")
-	}
-}
-
-// -----------------------------------------------------------------------------
-// [Test Level]: Product E2E Test
 // [Purpose]: Verifies that 'gyrus config init' generates .gyrus.yaml configuration.
 // [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
 // [Assertions]: Configuration file contains specified profile settings and owner group.
@@ -467,54 +367,5 @@ func TestCLI_ConfigInit(t *testing.T) {
 	}
 	if !strings.Contains(content, "default_owner_group: dev-team") {
 		t.Errorf("Expected owner group 'dev-team', got:\n%s", content)
-	}
-}
-
-// -----------------------------------------------------------------------------
-// [Test Level]: Product E2E Test
-// [Purpose]: Verifies that 'gyrus client install' and 'gyrus client uninstall' work symmetrically.
-// [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess
-// [Assertions]: 'client install' creates plugin and mcp_config.json; 'client uninstall' removes them.
-// -----------------------------------------------------------------------------
-func TestCLI_ClientInstallAndUninstall(t *testing.T) {
-	tempWorkspace := t.TempDir()
-
-	// 1. gyrus client install --target antigravity
-	installCmd := exec.Command(gyrusBinPath, "client", "install", "--target", "antigravity")
-	installCmd.Dir = tempWorkspace
-	if out, err := installCmd.CombinedOutput(); err != nil {
-		t.Fatalf("client install failed: %v\nOutput: %s", err, string(out))
-	}
-
-	pluginDir := filepath.Join(tempWorkspace, ".agents", "plugins", "gyrus")
-	if _, err := os.Stat(pluginDir); os.IsNotExist(err) {
-		t.Fatalf("Expected plugin directory to exist after install")
-	}
-
-	mcpFile := filepath.Join(pluginDir, "mcp_config.json")
-	mcpData, err := os.ReadFile(mcpFile)
-	if err != nil {
-		t.Fatalf("Expected plugin mcp_config.json to exist: %v", err)
-	}
-	if !strings.Contains(string(mcpData), "GYRUS_WORKSPACE") {
-		t.Errorf("Expected GYRUS_WORKSPACE env in mcp_config.json, got:\n%s", string(mcpData))
-	}
-
-	// Verify redundant .antigravity/mcp.json not created
-	redundantMCP := filepath.Join(tempWorkspace, ".antigravity", "mcp.json")
-	if _, err := os.Stat(redundantMCP); !os.IsNotExist(err) {
-		t.Errorf("Expected redundant .antigravity/mcp.json not to be created")
-	}
-
-	// 2. gyrus client uninstall --target antigravity
-	uninstallCmd := exec.Command(gyrusBinPath, "client", "uninstall", "--target", "antigravity")
-	uninstallCmd.Dir = tempWorkspace
-	if out, err := uninstallCmd.CombinedOutput(); err != nil {
-		t.Fatalf("client uninstall failed: %v\nOutput: %s", err, string(out))
-	}
-
-	// Plugin directory should be deleted
-	if _, err := os.Stat(pluginDir); !os.IsNotExist(err) {
-		t.Errorf("Expected plugin directory %s to be deleted after uninstall", pluginDir)
 	}
 }
