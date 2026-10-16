@@ -61,9 +61,9 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 	createRespA := client.Call(t, "tools/call", map[string]any{
 		"name": "gyrus_create",
 		"arguments": map[string]any{
-			"id":          "prd-mcp-e2e-001",
-			"title":       "MCP Interface Spec",
-			"category":    "product",
+			"id":       "prd-mcp-e2e-001",
+			"title":    "MCP Interface Spec",
+			"category": "product",
 			"type":     "prd",
 			"tenant":   "platform-eng",
 			"status":   "active",
@@ -84,8 +84,8 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 			"category": "architecture",
 			"type":     "adr",
 			"tenant":   "platform-eng",
-			"status":      "proposed",
-			"content":     "Architecture for bidirectional standard streams RPC communication.",
+			"status":   "proposed",
+			"content":  "Architecture for bidirectional standard streams RPC communication.",
 		},
 	})
 	parseToolContent(t, createRespB)

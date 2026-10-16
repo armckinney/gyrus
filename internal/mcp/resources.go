@@ -19,7 +19,6 @@ func (s *Server) registerResources() {
 	)
 	s.mcpServer.AddResourceTemplate(conceptTemplate, s.handleReadResource)
 
-
 	schemaTemplate := mcp.NewResourceTemplate(
 		"memory://schema/{concept_type}",
 		"OKF Schema Template",
