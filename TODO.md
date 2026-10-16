@@ -4,14 +4,14 @@
 - [x] Codex/claude fix install plugin
   - Just move install to client native + instructions (validate plugin install methods)
   - Remove `gyrus client` commands
-- [ ] (MVP) Add OKF backend for index/search/
+- [x] (MVP) Add OKF backend for index/search/
   - Should link/unlink persist in doc metadata always or just in OKF graphg
-- [ ] Update config defaults to okf backend
+- [x] Update config defaults to okf backend
 
 ## Remediate MVP Multi-Repo Configuration
 - [ ] Fix Git Storage Provider
-- [ ] Fix `gyrus sync` to use set Storage Provider and not just local sync
 - [ ] Remove sqlite from index/graph/search providers
+  - I think we can just remove `gyrus sync`  as well since there is no local database anymore?
 - [ ] Update profile options to logical implementations (local, git, postgres)
 - [ ] Update docs
   - Update guides / root readme

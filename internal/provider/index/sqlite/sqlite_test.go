@@ -12,6 +12,30 @@ import (
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
+func TestReindexPreservesDatabaseOwnedRelationships(t *testing.T) {
+	ctx := context.Background()
+	idx, err := sqlite.NewIndexer(filepath.Join(t.TempDir(), "index.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer idx.Close()
+	doc := gyrus.Concept{ID: "same", Tenant: "root", Scope: "reference", Title: "Source", Category: gyrus.CategoryTechnical, Type: gyrus.TypeGuide, Version: 1, Status: "active", Links: []gyrus.ConceptLink{{Concept: "root/reference/dependency", Rel: gyrus.RelDependsOn}}}
+	if err := idx.Index(ctx, doc); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := idx.DB().Exec("INSERT INTO concept_edges (from_concept_id,to_concept_id,relationship_type) VALUES (?,?,?)", "root/reference/same", "root/reference/proposal", "implements"); err != nil {
+		t.Fatal(err)
+	}
+	doc.Title = "Updated"
+	if err := idx.Index(ctx, doc); err != nil {
+		t.Fatal(err)
+	}
+	var count int
+	if err := idx.DB().QueryRow("SELECT count(*) FROM concept_edges WHERE from_concept_id = ?", "root/reference/same").Scan(&count); err != nil || count != 2 {
+		t.Fatalf("database-owned edge lost: %d %v", count, err)
+	}
+}
+
 // -----------------------------------------------------------------------------
 // [Test Level]: Provider Integration Test
 // [Purpose]: Verifies that the SQLite Indexer properly indexes, searches, updates, and removes concepts with FTS5 search.
@@ -41,8 +65,8 @@ func TestSQLiteIndexerCRUDAndSearch(t *testing.T) {
 		LastModifiedBy: "developer-alice",
 		LastUpdated:    time.Now(),
 		Tags:           []string{"storage", "sqlite", "architecture"},
-		Dependencies:   []string{"prd-core-engine"},
-		Content:        "We use SQLite FTS5 for high performance local search.",
+		Links:          []gyrus.ConceptLink{{Concept: "root/reference/prd-core-engine", Rel: gyrus.RelDependsOn}},
+		Content:        "We use SQLite FTS5 for high performance local search.", Name: "platform/reference/adr-001-storage",
 	}
 
 	// 1. Index concept
@@ -88,7 +112,7 @@ func TestSQLiteIndexerCRUDAndSearch(t *testing.T) {
 	}
 
 	// 5. Remove concept
-	if err := indexer.Remove(ctx, doc.ID); err != nil {
+	if err := indexer.Remove(ctx, doc.Name); err != nil {
 		t.Fatalf("Failed removing concept: %v", err)
 	}
 
@@ -126,18 +150,20 @@ func TestSQLiteIndexerSync(t *testing.T) {
 
 	// Write 2 markdown files
 	doc1 := &gyrus.Concept{
-		ID:           "prd-001",
-		Title:        "Core Product",
-		Category:     gyrus.CategoryProduct,
-		Type:         gyrus.TypePRD,
-		Tenant:       "product",
-		Version:      1,
-		Status:       "active",
-		Dependencies: []string{"adr-001"},
-		Content:      "Product requirements document.",
+		ID:       "prd-001",
+		Title:    "Core Product",
+		Category: gyrus.CategoryProduct,
+		Type:     gyrus.TypePRD,
+		Tenant:   "product",
+		Version:  1,
+		Status:   "active",
+		Links:    []gyrus.ConceptLink{{Concept: "root/reference/adr-001", Rel: gyrus.RelDependsOn}},
+		Content:  "Product requirements document.", Name: "product/projects/gyrus/prd-001",
 	}
+	_ = os.MkdirAll(filepath.Join(storageRoot, "concepts/product/reference"), 0755)
+	_ = os.MkdirAll(filepath.Join(storageRoot, "concepts/architecture/reference"), 0755)
 	doc1Bytes, _ := okf.SerializeMarkdown(doc1)
-	if err := os.WriteFile(filepath.Join(storageRoot, "prd-001.md"), doc1Bytes, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(storageRoot, "concepts/product/reference/prd-001.md"), doc1Bytes, 0644); err != nil {
 		t.Fatalf("Failed writing doc1: %v", err)
 	}
 
@@ -149,10 +175,10 @@ func TestSQLiteIndexerSync(t *testing.T) {
 		Tenant:   "architecture",
 		Version:  1,
 		Status:   "accepted",
-		Content:  "Architecture design record.",
+		Content:  "Architecture design record.", Name: "architecture/reference/adr-001",
 	}
 	doc2Bytes, _ := okf.SerializeMarkdown(doc2)
-	if err := os.WriteFile(filepath.Join(storageRoot, "adr-001.md"), doc2Bytes, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(storageRoot, "concepts/architecture/reference/adr-001.md"), doc2Bytes, 0644); err != nil {
 		t.Fatalf("Failed writing doc2: %v", err)
 	}
 
@@ -211,7 +237,7 @@ func TestSQLiteIndexerProjectScopingAndPrioritization(t *testing.T) {
 		Tenant:   "root",
 		Version:  1,
 		Status:   "accepted",
-		Content:  "High level database patterns across services.",
+		Content:  "High level database patterns across services.", Name: "root/reference/adr-shared-db",
 	}
 	refBytes, _ := okf.SerializeMarkdown(refDoc)
 	if err := os.WriteFile(filepath.Join(refDir, "adr-shared-db.md"), refBytes, 0644); err != nil {
@@ -227,7 +253,7 @@ func TestSQLiteIndexerProjectScopingAndPrioritization(t *testing.T) {
 		Tenant:   "root",
 		Version:  1,
 		Status:   "active",
-		Content:  "Specific database schema for gyrus.",
+		Content:  "Specific database schema for gyrus.", Name: "root/projects/gyrus/ticket-gyrus-db",
 	}
 	projBytes, _ := okf.SerializeMarkdown(projDoc)
 	if err := os.WriteFile(filepath.Join(gyrusProjDir, "ticket-gyrus-db.md"), projBytes, 0644); err != nil {
@@ -243,7 +269,7 @@ func TestSQLiteIndexerProjectScopingAndPrioritization(t *testing.T) {
 		Tenant:   "root",
 		Version:  1,
 		Status:   "active",
-		Content:  "Specific database schema for billing.",
+		Content:  "Specific database schema for billing.", Name: "root/projects/gyrus/ticket-billing-db",
 	}
 	otherBytes, _ := okf.SerializeMarkdown(otherProjDoc)
 	if err := os.WriteFile(filepath.Join(billingProjDir, "ticket-billing-db.md"), otherBytes, 0644); err != nil {
@@ -251,7 +277,7 @@ func TestSQLiteIndexerProjectScopingAndPrioritization(t *testing.T) {
 	}
 
 	// Sync
-	report, err := indexer.Sync(ctx, filepath.Join(tempDir, "concepts"))
+	report, err := indexer.Sync(ctx, tempDir)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}

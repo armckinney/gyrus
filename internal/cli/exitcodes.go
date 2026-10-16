@@ -6,6 +6,7 @@ import (
 
 	"github.com/armckinney/gyrus/internal/domain/lifecycle"
 	"github.com/armckinney/gyrus/internal/domain/okf"
+	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
 const (
@@ -21,6 +22,10 @@ const (
 func MapErrorToExitCode(err error) int {
 	if err == nil {
 		return ExitSuccess
+	}
+	var conflict *gyrus.ConflictError
+	if errors.As(err, &conflict) {
+		return ExitConcurrencyError
 	}
 
 	var valErr *okf.ValidationError

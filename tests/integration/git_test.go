@@ -2,12 +2,12 @@ package integration_test
 
 import (
 	"context"
+	"github.com/go-git/go-git/v5"
 	"path/filepath"
 	"testing"
 
 	storagegit "github.com/armckinney/gyrus/internal/provider/storage/git"
 	"github.com/armckinney/gyrus/pkg/gyrus"
-	"github.com/go-git/go-git/v5"
 )
 
 // -----------------------------------------------------------------------------
@@ -43,7 +43,7 @@ func TestIntegration_GitProfile(t *testing.T) {
 		Tenant:   "platform",
 		Version:  1,
 		Status:   "proposed",
-		Content:  "Persisted directly into remote Git commits.",
+		Content:  "Persisted directly into remote Git commits.", Name: "platform/reference/adr-git-001",
 	}
 
 	ref, err := store.Create(ctx, doc)
@@ -54,7 +54,7 @@ func TestIntegration_GitProfile(t *testing.T) {
 		t.Errorf("Expected Ref ID %s, got %s", doc.ID, ref.ID)
 	}
 
-	fetched, err := store.Get(ctx, doc.ID)
+	fetched, err := store.Get(ctx, doc.Name)
 	if err != nil {
 		t.Fatalf("Git store Get failed: %v", err)
 	}

@@ -78,7 +78,7 @@ func NewSearchCmd(application *app.App) *cobra.Command {
 						scopeTag = "project:" + doc.Project
 					}
 					fmt.Printf("  %d. [%s] %s (%s, %s, status: %s, scope: %s, score: %.1f)\n",
-						i+1, doc.ID, doc.Title, doc.Type, doc.Category, doc.Status, scopeTag, res.Score)
+						i+1, doc.Name, doc.Title, doc.Type, doc.Category, doc.Status, scopeTag, res.Score)
 				}
 			}
 

@@ -1,24 +1,26 @@
 ---
-id: guide-003-agent-skills-setup
 title: Gyrus Agent Plugin & Client Setup Guide
-category: technical
+id: guide-003-agent-skills-setup
 type: guide
 format: markdown
-tenant: root
-version: 4
+category: technical
+version: 7
 status: active
+last_updated: 2026-10-16T16:57:36Z
 last_modified_by: antigravity
-last_updated: 2026-10-16T01:25:00Z
+tenant: root
 tags:
-  - plugins
-  - agent-skills
-  - agent-plugins-standard
-  - mcp
-  - setup
-  - marketplace
-dependencies:
-  - prd-001-specification-roadmap
-  - adr-008-native-client-plugin-marketplace-distribution
+    - plugins
+    - agent-skills
+    - agent-plugins-standard
+    - mcp
+    - setup
+    - marketplace
+links:
+    - concept: root/reference/adr-008-native-client-plugin-marketplace-distribution
+      rel: depends_on
+    - concept: root/reference/prd-001-specification-roadmap
+      rel: depends_on
 ---
 
 # Gyrus Agent Plugin & Client Setup Guide
@@ -133,3 +135,7 @@ All plugin manifestations configure the native Gyrus stdio Model Context Protoco
 
 > [!NOTE]
 > Ensure the `gyrus` executable is installed and available on your system `PATH` so your AI assistant's harness can launch `gyrus mcp serve` automatically upon session initialization.
+
+## Qualified concepts and minimal links
+
+Creation retains a local id and returns its qualified name. Address existing concepts with tenant/reference/id or tenant/projects/project/id across SDK, CLI, MCP, and UI. API envelopes include name; YAML frontmatter does not persist it. Relationships use only links with concept and rel. Dependency arrays, old link keys, per-link creation metadata, and short lookup IDs are rejected. Local IDs may repeat across tenants/projects. Incoming neighbors provide backlinks; relationship types and general cycle-safe graph traversal remain unchanged. Use the migration skill for legacy concepts or SQLite graph exports; retain backups and rebuild obsolete identity databases explicitly. Restart cached MCP processes after upgrading.

@@ -5,13 +5,13 @@ const (
 	DefaultStorageProvider = "localfs"
 
 	// DefaultIndexProvider is the default metadata index driver.
-	DefaultIndexProvider = "sqlite"
+	DefaultIndexProvider = "okf"
 
 	// DefaultSearchProvider is the default search driver.
-	DefaultSearchProvider = "sqlite"
+	DefaultSearchProvider = "okf"
 
 	// DefaultGraphProvider is the default graph relation driver.
-	DefaultGraphProvider = "sqlite"
+	DefaultGraphProvider = "okf"
 
 	// DefaultTenant is the default OKF concept tenant.
 	DefaultTenant = "root"
@@ -34,15 +34,18 @@ var ValidStorageProviders = []string{
 
 // ValidSearchProviders lists all recognized search provider names.
 var ValidSearchProviders = []string{
+	"okf",
 	"sqlite", "sqlite_fts5", "postgres_fts", "vector",
 }
 
 // ValidIndexProviders lists all recognized index provider names.
 var ValidIndexProviders = []string{
+	"okf",
 	"sqlite", "postgres",
 }
 
 // ValidGraphProviders lists all recognized graph provider names.
 var ValidGraphProviders = []string{
+	"okf",
 	"sqlite", "postgres",
 }

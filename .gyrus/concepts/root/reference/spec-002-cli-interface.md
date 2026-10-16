@@ -1,14 +1,14 @@
 ---
-id: spec-002-cli-interface
 title: Cobra CLI Executable & Command Line Interface Specs
-category: technical
+id: spec-002-cli-interface
 type: specification
 format: ""
-tenant: root
+category: technical
 version: 1
 status: active
-last_modified_by: ""
 last_updated: 2026-07-22T06:38:56Z
+last_modified_by: ""
+tenant: root
 ---
 
 # Specification 02: CLI Interface & Authentication

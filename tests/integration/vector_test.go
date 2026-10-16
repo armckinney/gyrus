@@ -48,12 +48,12 @@ func TestIntegration_OllamaVectorLive(t *testing.T) {
 	doc1 := gyrus.Concept{
 		ID:      "adr-sql",
 		Title:   "Relational Database Architecture",
-		Content: "We use PostgreSQL relational database with SQL tables and ACID transactions.",
+		Content: "We use PostgreSQL relational database with SQL tables and ACID transactions.", Tenant: "root", Name: "root/reference/adr-sql",
 	}
 	doc2 := gyrus.Concept{
 		ID:      "adr-ui",
 		Title:   "Frontend React Visual Dashboard",
-		Content: "We build a Single Page Application using React, Tailwind CSS, and WebSockets.",
+		Content: "We build a Single Page Application using React, Tailwind CSS, and WebSockets.", Tenant: "root", Name: "root/reference/adr-ui",
 	}
 
 	lexicalMock := &mockLexical{
@@ -101,8 +101,8 @@ func TestIntegration_VectorHybrid(t *testing.T) {
 		},
 	}
 
-	doc1 := gyrus.Concept{ID: "doc-vector", Content: "vector document", Title: "Vector Title"}
-	doc2 := gyrus.Concept{ID: "doc-other", Content: "unrelated content", Title: "Other Title"}
+	doc1 := gyrus.Concept{ID: "doc-vector", Content: "vector document", Title: "Vector Title", Tenant: "root", Name: "root/reference/doc-vector"}
+	doc2 := gyrus.Concept{ID: "doc-other", Content: "unrelated content", Title: "Other Title", Tenant: "root", Name: "root/reference/doc-other"}
 
 	lexicalMock := &mockLexical{
 		results: []gyrus.SearchResult{

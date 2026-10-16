@@ -2,11 +2,44 @@ package git
 
 import (
 	"context"
+	"github.com/go-git/go-git/v5"
 	"testing"
 
 	"github.com/armckinney/gyrus/pkg/gyrus"
-	"github.com/go-git/go-git/v5"
 )
+
+func TestQualifiedNamesSurviveGitReload(t *testing.T) {
+	ctx := context.Background()
+	remote := setupTestRemote(t)
+	store, err := NewStore(Options{RepoURL: remote})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ tenant, project, name string }{{"root", "", "root/reference/same"}, {"root", "demo", "root/projects/demo/same"}, {"other", "", "other/reference/same"}} {
+		doc := gyrus.Concept{ID: "same", Tenant: tc.tenant, Scope: "reference", Project: tc.project, Title: tc.name, Type: gyrus.TypeGuide, Category: gyrus.CategoryTechnical, Version: 1, Status: "active"}
+		ref, err := store.Create(ctx, doc)
+		if err != nil || ref.Name != tc.name {
+			t.Fatalf("create: %+v %v", ref, err)
+		}
+	}
+	fresh, err := NewStore(Options{RepoURL: remote})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"root/reference/same", "root/projects/demo/same", "other/reference/same"} {
+		doc, err := fresh.Get(ctx, name)
+		if err != nil || doc.Name != name || doc.Title != name || doc.ID != "same" {
+			t.Fatalf("reload: %+v %v", doc, err)
+		}
+	}
+	if _, err := fresh.Get(ctx, "same"); err == nil {
+		t.Fatal("short lookup accepted")
+	}
+	report, err := fresh.Scan(ctx, func(gyrus.Concept) error { return nil })
+	if err != nil || len(report.Errors) > 0 || report.IndexedFiles != 3 {
+		t.Fatalf("scoped scan: %+v %v", report, err)
+	}
+}
 
 func setupTestRemote(t *testing.T) string {
 	dir := t.TempDir()
@@ -43,10 +76,11 @@ func TestGitStore(t *testing.T) {
 
 	// 1. Create
 	doc := gyrus.Concept{
-		ID:      "test-doc",
+		ID:     "test-doc",
+		Tenant: "root", Category: gyrus.CategoryTechnical, Type: gyrus.TypeGuide,
 		Title:   "Test Document",
 		Content: "This is a test document.",
-		Status:  "draft",
+		Status:  "draft", Name: "root/reference/test-doc",
 	}
 	ref, err := store.Create(ctx, doc)
 	if err != nil {
@@ -57,7 +91,7 @@ func TestGitStore(t *testing.T) {
 	}
 
 	// 2. Get
-	fetched, err := store.Get(ctx, "test-doc")
+	fetched, err := store.Get(ctx, "root/reference/test-doc")
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
 	}
@@ -74,7 +108,7 @@ func TestGitStore(t *testing.T) {
 		Title:  &newTitle,
 		Reason: "testing update",
 	}
-	ref, err = store.Update(ctx, "test-doc", patch, fetched.Version)
+	ref, err = store.Update(ctx, "root/reference/test-doc", patch, fetched.Version)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
@@ -82,27 +116,27 @@ func TestGitStore(t *testing.T) {
 		t.Errorf("expected version 2, got %d", ref.Version)
 	}
 
-	fetched2, _ := store.Get(ctx, "test-doc")
+	fetched2, _ := store.Get(ctx, "root/reference/test-doc")
 	if fetched2.Title != "Updated Title" {
 		t.Errorf("expected updated title")
 	}
 
 	// 4. Archive
-	err = store.Archive(ctx, "test-doc")
+	err = store.Archive(ctx, "root/reference/test-doc")
 	if err != nil {
 		t.Fatalf("Archive failed: %v", err)
 	}
-	fetched3, _ := store.Get(ctx, "test-doc")
+	fetched3, _ := store.Get(ctx, "root/reference/test-doc")
 	if fetched3.Status != "archived" {
 		t.Errorf("expected status archived, got %s", fetched3.Status)
 	}
 
 	// 5. Delete
-	err = store.Delete(ctx, "test-doc")
+	err = store.Delete(ctx, "root/reference/test-doc")
 	if err != nil {
 		t.Fatalf("Delete failed: %v", err)
 	}
-	_, err = store.Get(ctx, "test-doc")
+	_, err = store.Get(ctx, "root/reference/test-doc")
 	if err == nil {
 		t.Errorf("expected error getting deleted doc")
 	}

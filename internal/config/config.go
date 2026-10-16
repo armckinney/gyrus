@@ -58,33 +58,37 @@ type Config struct {
 // StorageProvider returns the configured storage provider.
 func (c *Config) StorageProvider() string {
 	if c == nil {
-		return ""
+		return DefaultStorageProvider
 	}
-	return c.Storage.Provider
+	return storageName(c.Storage.Provider)
 }
 
 // IndexProvider returns the configured index provider.
-func (c *Config) IndexProvider() string {
-	if c == nil {
-		return ""
-	}
-	return c.Index.Provider
-}
+func (c *Config) IndexProvider() string { return c.effectiveIndex() }
 
 // SearchProvider returns the configured search provider.
 func (c *Config) SearchProvider() string {
-	if c == nil {
-		return ""
+	if c != nil && c.Search.Provider != "" {
+		if c.Search.Provider == "sqlite" {
+			return "sqlite_fts5"
+		}
+		return c.Search.Provider
 	}
-	return c.Search.Provider
+	switch c.effectiveIndex() {
+	case "sqlite":
+		return "sqlite_fts5"
+	case "postgres":
+		return "postgres_fts"
+	}
+	return "okf"
 }
 
 // GraphProvider returns the configured graph provider.
 func (c *Config) GraphProvider() string {
-	if c == nil {
-		return ""
+	if c != nil && c.Graph.Provider != "" {
+		return c.Graph.Provider
 	}
-	return c.Graph.Provider
+	return c.effectiveIndex()
 }
 
 // StorageRoot returns the configured storage root path.

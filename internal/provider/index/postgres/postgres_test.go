@@ -3,10 +3,10 @@ package postgres
 import (
 	"context"
 	"encoding/json"
+	"github.com/pashagolub/pgxmock/v4"
 	"testing"
 
 	"github.com/armckinney/gyrus/pkg/gyrus"
-	"github.com/pashagolub/pgxmock/v4"
 )
 
 // -----------------------------------------------------------------------------
@@ -33,12 +33,12 @@ func TestPostgresIndexer_IndexSearchRemove(t *testing.T) {
 		Tenant:   "platform",
 		Version:  1,
 		Status:   "accepted",
-		Content:  "PostgreSQL backend persistence.",
+		Content:  "PostgreSQL backend persistence.", Name: "platform/reference/adr-001-pg",
 	}
 
 	// 1. Index
 	mock.ExpectExec("INSERT INTO concepts").
-		WithArgs("adr-001-pg", pgxmock.AnyArg(), "PostgreSQL backend persistence.").
+		WithArgs("platform/reference/adr-001-pg", pgxmock.AnyArg(), "PostgreSQL backend persistence.").
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	if err := indexer.Index(ctx, doc); err != nil {
@@ -51,10 +51,10 @@ func TestPostgresIndexer_IndexSearchRemove(t *testing.T) {
 		AddRow(fmBytes, "PostgreSQL backend persistence.")
 
 	mock.ExpectQuery("SELECT frontmatter, content FROM concepts WHERE id = \\$1").
-		WithArgs("adr-001-pg").
+		WithArgs("platform/reference/adr-001-pg").
 		WillReturnRows(rows)
 
-	results, err := indexer.Search(ctx, gyrus.SearchQuery{Query: "adr-001-pg"})
+	results, err := indexer.Search(ctx, gyrus.SearchQuery{Query: "platform/reference/adr-001-pg"})
 	if err != nil {
 		t.Fatalf("Search failed: %v", err)
 	}
@@ -64,10 +64,10 @@ func TestPostgresIndexer_IndexSearchRemove(t *testing.T) {
 
 	// 3. Remove
 	mock.ExpectExec("DELETE FROM concepts WHERE id = \\$1").
-		WithArgs("adr-001-pg").
+		WithArgs("platform/reference/adr-001-pg").
 		WillReturnResult(pgxmock.NewResult("DELETE", 1))
 
-	if err := indexer.Remove(ctx, "adr-001-pg"); err != nil {
+	if err := indexer.Remove(ctx, "platform/reference/adr-001-pg"); err != nil {
 		t.Fatalf("Remove failed: %v", err)
 	}
 

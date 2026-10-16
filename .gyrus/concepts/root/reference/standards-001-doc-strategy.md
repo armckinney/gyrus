@@ -1,14 +1,14 @@
 ---
-id: standards-001-doc-strategy
 title: Gyrus Documentation Architecture & Strategy
-category: technical
+id: standards-001-doc-strategy
 type: standards
-format: ""
-tenant: root
-version: 1
+format: markdown
+category: technical
+version: 2
 status: active
+last_updated: 2026-10-16T17:01:29Z
 last_modified_by: ""
-last_updated: 2026-07-22T06:38:56Z
+tenant: root
 ---
 
 ---
@@ -23,7 +23,11 @@ status: active
 last_modified_by: <author-username>
 last_updated: YYYY-MM-DD
 tags: [documentation, strategy, sdlc, gyrus]
-dependencies: [01_contract_schema, 04_core_engine]
+links:
+  - concept: root/reference/spec-001-contract-schema
+    rel: depends_on
+  - concept: root/reference/spec-004-core-engine
+    rel: depends_on
 ---
 
 # Wiki & Documentation Strategy

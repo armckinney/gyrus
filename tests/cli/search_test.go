@@ -66,7 +66,7 @@ func TestCLI_Search(t *testing.T) {
 		t.Fatalf("Search keyword failed: %v", err)
 	}
 
-	if !strings.Contains(searchOut.String(), "adr-search-001") {
+	if !strings.Contains(searchOut.String(), "platform-team/projects/default/adr-search-001") {
 		t.Errorf("Expected search results to include 'adr-search-001', got:\n%s", searchOut.String())
 	}
 
@@ -147,7 +147,7 @@ func TestCLI_SuggestContext(t *testing.T) {
 		t.Fatalf("Suggest context failed: %v", err)
 	}
 
-	if !strings.Contains(suggestOut.String(), "spec-suggest-001") && !strings.Contains(suggestOut.String(), "OAuth2") {
+	if !strings.Contains(suggestOut.String(), "security-team/projects/default/spec-suggest-001") && !strings.Contains(suggestOut.String(), "OAuth2") {
 		t.Errorf("Expected suggest-context output to contain spec-suggest-001 or OAuth2 context, got:\n%s", suggestOut.String())
 	}
 

@@ -1,24 +1,26 @@
 ---
-id: guide-005-installation-and-initialization
 title: Gyrus Installation & Initialization Guide
-category: operations
+id: guide-005-installation-and-initialization
 type: guide
 format: markdown
-tenant: root
-version: 4
+category: operations
+version: 7
 status: active
+last_updated: 2026-10-16T16:57:36Z
 last_modified_by: antigravity
-last_updated: 2026-10-16T01:25:00Z
+tenant: root
 tags:
-  - installation
-  - initialization
-  - setup
-  - quickstart
-  - marketplace
-  - plugins
-dependencies:
-  - prd-001-specification-roadmap
-  - adr-008-native-client-plugin-marketplace-distribution
+    - installation
+    - initialization
+    - setup
+    - quickstart
+    - marketplace
+    - plugins
+links:
+    - concept: root/reference/adr-008-native-client-plugin-marketplace-distribution
+      rel: depends_on
+    - concept: root/reference/prd-001-specification-roadmap
+      rel: depends_on
 ---
 
 # Gyrus Installation & Initialization Guide
@@ -172,3 +174,7 @@ To temporarily disable all hook execution without modifying configuration:
 ```bash
 export GYRUS_HOOKS_ENABLED=false
 ```
+
+## Qualified concepts and minimal links
+
+Creation retains a local id and returns its qualified name. Address existing concepts with tenant/reference/id or tenant/projects/project/id across SDK, CLI, MCP, and UI. API envelopes include name; YAML frontmatter does not persist it. Relationships use only links with concept and rel. Dependency arrays, old link keys, per-link creation metadata, and short lookup IDs are rejected. Local IDs may repeat across tenants/projects. Incoming neighbors provide backlinks; relationship types and general cycle-safe graph traversal remain unchanged. Use the migration skill for legacy concepts or SQLite graph exports; retain backups and rebuild obsolete identity databases explicitly. Restart cached MCP processes after upgrading.

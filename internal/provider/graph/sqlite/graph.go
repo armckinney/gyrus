@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"github.com/armckinney/gyrus/internal/domain/okf"
 
 	"github.com/armckinney/gyrus/pkg/gyrus"
 	_ "modernc.org/sqlite"
@@ -20,6 +21,12 @@ func NewGraphStore(db *sql.DB) *GraphStore {
 
 // UpsertEdges inserts or updates directed relationship edges in SQLite.
 func (g *GraphStore) UpsertEdges(ctx context.Context, edges []gyrus.ConceptEdge) error {
+	for _, edge := range edges {
+		if err := okf.ValidateEdge(edge); err != nil {
+			return err
+		}
+	}
+
 	if len(edges) == 0 {
 		return nil
 	}
@@ -31,15 +38,16 @@ func (g *GraphStore) UpsertEdges(ctx context.Context, edges []gyrus.ConceptEdge)
 	defer tx.Rollback()
 
 	query := `
-	INSERT INTO concept_edges (from_concept_id, to_concept_id, relationship_type, created_by, created_at)
-	VALUES (?, ?, ?, ?, ?)
-	ON CONFLICT(from_concept_id, to_concept_id, relationship_type) DO UPDATE SET
-		created_by=excluded.created_by,
-		created_at=excluded.created_at;
+	INSERT INTO concept_edges (from_concept_id, to_concept_id, relationship_type)
+	VALUES (?, ?, ?)
+	ON CONFLICT(from_concept_id, to_concept_id, relationship_type) DO NOTHING;
 	`
 
 	for _, e := range edges {
-		_, err := tx.ExecContext(ctx, query, e.FromConceptID, e.ToConceptID, string(e.RelationshipType), e.CreatedBy, e.CreatedAt)
+		if err := okf.ValidateEdge(e); err != nil {
+			return err
+		}
+		_, err := tx.ExecContext(ctx, query, e.FromConceptID, e.ToConceptID, string(e.RelationshipType))
 		if err != nil {
 			return err
 		}
@@ -50,6 +58,10 @@ func (g *GraphStore) UpsertEdges(ctx context.Context, edges []gyrus.ConceptEdge)
 
 // DeleteEdges removes a directed relationship edge between two concepts.
 func (g *GraphStore) DeleteEdges(ctx context.Context, fromID string, toID string, relType gyrus.RelationshipType) error {
+	if err := okf.ValidateEdge(gyrus.ConceptEdge{FromConceptID: fromID, ToConceptID: toID, RelationshipType: relType}); err != nil {
+		return err
+	}
+
 	query := "DELETE FROM concept_edges WHERE from_concept_id = ? AND to_concept_id = ? AND relationship_type = ?"
 	_, err := g.db.ExecContext(ctx, query, fromID, toID, string(relType))
 	return err
@@ -57,6 +69,10 @@ func (g *GraphStore) DeleteEdges(ctx context.Context, fromID string, toID string
 
 // Neighbors retrieves neighboring edges for a concept matching the edge filter.
 func (g *GraphStore) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilter) ([]gyrus.ConceptEdge, error) {
+	if err := okf.ValidateName(id); err != nil {
+		return nil, err
+	}
+
 	var query string
 	var args []any
 
@@ -67,23 +83,23 @@ func (g *GraphStore) Neighbors(ctx context.Context, id string, filter gyrus.Edge
 
 	switch filter.Direction {
 	case "outgoing":
-		query = "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE from_concept_id = ?" + relFilter
+		query = "SELECT from_concept_id, to_concept_id, relationship_type FROM concept_edges WHERE from_concept_id = ?" + relFilter
 		args = append(args, id)
 		if filter.RelationshipType != "" {
 			args = append(args, string(filter.RelationshipType))
 		}
 	case "incoming":
-		query = "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE to_concept_id = ?" + relFilter
+		query = "SELECT from_concept_id, to_concept_id, relationship_type FROM concept_edges WHERE to_concept_id = ?" + relFilter
 		args = append(args, id)
 		if filter.RelationshipType != "" {
 			args = append(args, string(filter.RelationshipType))
 		}
 	default: // "both"
 		if filter.RelationshipType != "" {
-			query = "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE (from_concept_id = ? OR to_concept_id = ?) AND relationship_type = ?"
+			query = "SELECT from_concept_id, to_concept_id, relationship_type FROM concept_edges WHERE (from_concept_id = ? OR to_concept_id = ?) AND relationship_type = ?"
 			args = append(args, id, id, string(filter.RelationshipType))
 		} else {
-			query = "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE from_concept_id = ? OR to_concept_id = ?"
+			query = "SELECT from_concept_id, to_concept_id, relationship_type FROM concept_edges WHERE from_concept_id = ? OR to_concept_id = ?"
 			args = append(args, id, id)
 		}
 	}
@@ -99,7 +115,7 @@ func (g *GraphStore) Neighbors(ctx context.Context, id string, filter gyrus.Edge
 		var e gyrus.ConceptEdge
 		var relStr string
 
-		if err := rows.Scan(&e.FromConceptID, &e.ToConceptID, &relStr, &e.CreatedBy, &e.CreatedAt); err != nil {
+		if err := rows.Scan(&e.FromConceptID, &e.ToConceptID, &relStr); err != nil {
 			return nil, err
 		}
 		e.RelationshipType = gyrus.RelationshipType(relStr)
@@ -111,6 +127,10 @@ func (g *GraphStore) Neighbors(ctx context.Context, id string, filter gyrus.Edge
 
 // Traverse executes a BFS graph traversal from a start concept up to MaxDepth.
 func (g *GraphStore) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.GraphPath, error) {
+	if err := okf.ValidateName(query.StartID); err != nil {
+		return nil, err
+	}
+
 	if query.MaxDepth <= 0 {
 		query.MaxDepth = 1
 	}

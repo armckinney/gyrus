@@ -25,7 +25,7 @@ func TestOKFFormatSerialization(t *testing.T) {
 		Version:  1,
 		Status:   "proposed",
 		Tags:     []string{"test", "architecture"},
-		Content:  "# Test Content\n\nThis is a test body.",
+		Content:  "# Test Content\n\nThis is a test body.", Name: "root/reference/adr-001-test",
 	}
 
 	data, err := fmtEngine.Serialize(concept)
@@ -72,7 +72,7 @@ func TestRelationalFormatSerialization(t *testing.T) {
 		Tenant:   "root",
 		Version:  1,
 		Status:   "active",
-		Content:  "Relational payload content.",
+		Content:  "Relational payload content.", Name: "root/reference/spec-001-test",
 	}
 
 	data, err := fmtEngine.Serialize(concept)

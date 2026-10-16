@@ -1,14 +1,14 @@
 ---
-id: ticket-gyrus-402
 title: GYRUS-402 MCP Resources, Prompts & Skill
-category: product
+id: ticket-gyrus-402
 type: freeform
 format: ""
-tenant: root
+category: product
 version: 1
 status: active
-last_modified_by: ""
 last_updated: 2026-07-22T06:43:33Z
+last_modified_by: ""
+tenant: root
 ---
 
 # [GYRUS-402] MCP Resources, Prompts & Open Skill Format Shim

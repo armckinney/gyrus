@@ -1,14 +1,14 @@
 ---
-id: prd-002-implementation-plan
 title: Gyrus Master Implementation Plan (Phases 0 through 5)
-category: product
+id: prd-002-implementation-plan
 type: prd
 format: ""
-tenant: root
+category: product
 version: 1
 status: active
-last_modified_by: ""
 last_updated: 2026-07-22T06:38:56Z
+last_modified_by: ""
+tenant: root
 ---
 
 # Gyrus Implementation Plan

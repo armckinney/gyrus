@@ -1,18 +1,19 @@
 ---
-id: prd-002-value-proposition-positioning
 title: Gyrus Value Proposition & Strategic Product Positioning
-category: technical
+id: prd-002-value-proposition-positioning
 type: prd
 format: ""
-tenant: root
-version: 3
+category: technical
+version: 4
 status: active
+last_updated: 2026-10-16T16:47:49Z
+tenant: root
 tags:
-  - product-positioning
-  - value-proposition
-  - competitive-analysis
-  - context-control-plane
-dependencies: []
+    - product-positioning
+    - value-proposition
+    - competitive-analysis
+    - context-control-plane
+links: []
 ---
 
 # Gyrus Value Proposition & Strategic Product Positioning

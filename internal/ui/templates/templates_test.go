@@ -39,7 +39,7 @@ func TestNewManager_RenderAllViews(t *testing.T) {
 				"Title":          "Doc Test",
 				"StorageBackend": "postgres",
 				"Doc": map[string]any{
-					"ID":       "adr-001",
+					"ID":       "root/reference/adr-001",
 					"Title":    "ADR Title",
 					"Category": "architecture",
 					"Type":     "adr",
@@ -62,7 +62,7 @@ func TestNewManager_RenderAllViews(t *testing.T) {
 			data: map[string]any{
 				"Title":          "Graph",
 				"StorageBackend": "localfs",
-				"FocusDocID":     "adr-001",
+				"FocusDocID":     "root/reference/adr-001",
 			},
 		},
 	}

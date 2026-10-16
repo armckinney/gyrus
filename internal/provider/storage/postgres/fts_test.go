@@ -3,10 +3,10 @@ package postgres
 import (
 	"context"
 	"encoding/json"
+	"github.com/pashagolub/pgxmock/v4"
 	"testing"
 
 	"github.com/armckinney/gyrus/pkg/gyrus"
-	"github.com/pashagolub/pgxmock/v4"
 )
 
 // -----------------------------------------------------------------------------
@@ -27,7 +27,7 @@ func TestStore_SearchFTS(t *testing.T) {
 	doc := gyrus.Concept{
 		ID:       "doc-1",
 		Title:    "Postgres FTS Search",
-		Category: gyrus.CategoryTechnical,
+		Category: gyrus.CategoryTechnical, Tenant: "root", Name: "root/reference/doc-1",
 	}
 	fmBytes, _ := json.Marshal(doc)
 

@@ -27,6 +27,13 @@ func (f *RelationalFormat) Serialize(doc *gyrus.Concept) ([]byte, error) {
 // Deserialize parses JSON relational payload bytes into a gyrus.Concept.
 func (f *RelationalFormat) Deserialize(data []byte) (*gyrus.Concept, error) {
 	var doc gyrus.Concept
+	var fields map[string]any
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return nil, err
+	}
+	if err := validateRelationships(fields); err != nil {
+		return nil, err
+	}
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return nil, fmt.Errorf("failed to parse relational JSON envelope: %w", err)
 	}

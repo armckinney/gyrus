@@ -31,14 +31,14 @@ func (h *Handler) registerDocumentTools(s *server.MCPServer) {
 	// 2. gyrus_get
 	getTool := mcp.NewTool("gyrus_get",
 		mcp.WithDescription("Get an OKF concept by ID"),
-		mcp.WithString("id", mcp.Required(), mcp.Description("Concept ID")),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Qualified name: tenant/reference/id or tenant/projects/project/id")),
 	)
 	s.AddTool(getTool, h.HandleGet)
 
 	// 3. gyrus_update
 	updateTool := mcp.NewTool("gyrus_update",
 		mcp.WithDescription("Update an existing OKF concept"),
-		mcp.WithString("id", mcp.Required(), mcp.Description("Concept ID")),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Qualified name: tenant/reference/id or tenant/projects/project/id")),
 		mcp.WithString("title", mcp.Description("Updated Title")),
 		mcp.WithString("status", mcp.Description("Updated Status")),
 		mcp.WithString("tags", mcp.Description("Comma-separated tags")),
@@ -50,7 +50,7 @@ func (h *Handler) registerDocumentTools(s *server.MCPServer) {
 	// 4. gyrus_archive
 	archiveTool := mcp.NewTool("gyrus_archive",
 		mcp.WithDescription("Archive (delete) a concept from storage and search index"),
-		mcp.WithString("id", mcp.Required(), mcp.Description("Concept ID to archive")),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Qualified concept name to archive")),
 	)
 	s.AddTool(archiveTool, h.HandleArchive)
 }

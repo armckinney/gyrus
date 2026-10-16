@@ -1,14 +1,14 @@
 ---
-id: tech-ref-004-client-lifecycle-matrix
 title: AI Agent Client Lifecycle Matrix (Install & Uninstall)
-category: technical
+id: tech-ref-004-client-lifecycle-matrix
 type: technical-reference
-format: ""
-tenant: root
-version: 2
+format: markdown
+category: technical
+version: 5
 status: active
+last_updated: 2026-10-16T16:57:36Z
 last_modified_by: antigravity
-last_updated: 2026-10-16T01:25:00Z
+tenant: root
 tags:
     - client
     - mcp
@@ -17,8 +17,9 @@ tags:
     - install
     - uninstall
     - marketplace
-dependencies:
-    - adr-008-native-client-plugin-marketplace-distribution
+links:
+    - concept: root/reference/adr-008-native-client-plugin-marketplace-distribution
+      rel: depends_on
 ---
 
 # Technical Reference: AI Agent Client Lifecycle Matrix (Install & Uninstall)
@@ -114,3 +115,7 @@ When unregistering or reinstalling Gyrus across agents, lingering background ins
 * **List running processes:** `pgrep -fl "gyrus mcp serve"`
 * **Graceful termination:** `pkill -TERM -f "gyrus mcp serve"`
 * **Force termination:** `pkill -KILL -f "gyrus mcp serve"`
+
+## Qualified concepts and minimal links
+
+Creation retains a local id and returns its qualified name. Address existing concepts with tenant/reference/id or tenant/projects/project/id across SDK, CLI, MCP, and UI. API envelopes include name; YAML frontmatter does not persist it. Relationships use only links with concept and rel. Dependency arrays, old link keys, per-link creation metadata, and short lookup IDs are rejected. Local IDs may repeat across tenants/projects. Incoming neighbors provide backlinks; relationship types and general cycle-safe graph traversal remain unchanged. Use the migration skill for legacy concepts or SQLite graph exports; retain backups and rebuild obsolete identity databases explicitly. Restart cached MCP processes after upgrading.

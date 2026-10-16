@@ -3,11 +3,11 @@ package postgres_fts_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/pashagolub/pgxmock/v4"
 	"testing"
 
 	"github.com/armckinney/gyrus/internal/provider/search/postgres_fts"
 	"github.com/armckinney/gyrus/pkg/gyrus"
-	"github.com/pashagolub/pgxmock/v4"
 )
 
 // -----------------------------------------------------------------------------
@@ -34,7 +34,7 @@ func TestPostgresFTSSearchProvider(t *testing.T) {
 		Tenant:   "platform",
 		Version:  1,
 		Status:   "active",
-		Content:  "High performance tsvector search engine.",
+		Content:  "High performance tsvector search engine.", Name: "platform/reference/adr-001-pg-fts",
 	}
 
 	fmBytes, _ := json.Marshal(doc)

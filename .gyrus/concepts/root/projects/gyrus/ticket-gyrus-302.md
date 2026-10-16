@@ -1,14 +1,14 @@
 ---
-id: ticket-gyrus-302
 title: GYRUS-302 CLI Core CRUD Commands
-category: product
+id: ticket-gyrus-302
 type: freeform
 format: ""
-tenant: root
+category: product
 version: 1
 status: active
-last_modified_by: ""
 last_updated: 2026-07-22T06:43:33Z
+last_modified_by: ""
+tenant: root
 ---
 
 # [GYRUS-302] CLI Core Mutation Commands (init, create, get, update)

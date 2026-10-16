@@ -15,7 +15,7 @@ func NewLinkCmd(application *app.App) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "link <from-id> <to-id>",
-		Short: "Create a directed relationship edge between two documents",
+		Short: "Create a directed relationship edge between two concepts addressed by qualified names",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fromID, toID := args[0], args[1]

@@ -5,13 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/armckinney/gyrus/internal/domain/okf"
 	"github.com/armckinney/gyrus/internal/provider/db"
+	"github.com/armckinney/gyrus/internal/provider/storage/localfs"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 	_ "modernc.org/sqlite"
 )
@@ -54,7 +53,7 @@ func (idx *Indexer) initSchema() error {
 		last_modified_by TEXT,
 		last_updated DATETIME,
 		tags TEXT,
-		dependencies TEXT,
+		links TEXT,
 		filepath TEXT,
 		content TEXT,
 		scope TEXT DEFAULT 'reference',
@@ -77,8 +76,6 @@ func (idx *Indexer) initSchema() error {
 		from_concept_id TEXT NOT NULL,
 		to_concept_id TEXT NOT NULL,
 		relationship_type TEXT NOT NULL,
-		created_by TEXT,
-		created_at DATETIME,
 		PRIMARY KEY (from_concept_id, to_concept_id, relationship_type)
 	);
 
@@ -104,6 +101,9 @@ func (idx *Indexer) Close() error {
 
 // Index inserts or updates a concept in the index and FTS tables.
 func (idx *Indexer) Index(ctx context.Context, doc gyrus.Concept) error {
+	if err := okf.SetName(&doc, ""); err != nil {
+		return err
+	}
 	tx, err := idx.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -111,7 +111,7 @@ func (idx *Indexer) Index(ctx context.Context, doc gyrus.Concept) error {
 	defer tx.Rollback()
 
 	tagsJSON, _ := json.Marshal(doc.Tags)
-	depsJSON, _ := json.Marshal(doc.Dependencies)
+	linksJSON, _ := json.Marshal(doc.Links)
 
 	scope := doc.Scope
 	if scope == "" {
@@ -124,7 +124,7 @@ func (idx *Indexer) Index(ctx context.Context, doc gyrus.Concept) error {
 	project := doc.Project
 
 	query := `
-	INSERT INTO concepts (id, title, category, type, tenant, version, status, last_modified_by, last_updated, tags, dependencies, filepath, content, scope, project)
+	INSERT INTO concepts (id, title, category, type, tenant, version, status, last_modified_by, last_updated, tags, links, filepath, content, scope, project)
 	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(id) DO UPDATE SET
 		title=excluded.title,
@@ -136,7 +136,7 @@ func (idx *Indexer) Index(ctx context.Context, doc gyrus.Concept) error {
 		last_modified_by=excluded.last_modified_by,
 		last_updated=excluded.last_updated,
 		tags=excluded.tags,
-		dependencies=excluded.dependencies,
+		links=excluded.links,
 		filepath=excluded.filepath,
 		content=excluded.content,
 		scope=excluded.scope,
@@ -144,33 +144,29 @@ func (idx *Indexer) Index(ctx context.Context, doc gyrus.Concept) error {
 	`
 
 	_, err = tx.ExecContext(ctx, query,
-		doc.ID, doc.Title, string(doc.Category), string(doc.Type), doc.Tenant,
+		doc.Name, doc.Title, string(doc.Category), string(doc.Type), doc.Tenant,
 		doc.Version, doc.Status, doc.LastModifiedBy, doc.LastUpdated.Format(time.RFC3339),
-		string(tagsJSON), string(depsJSON), doc.FilePath, doc.Content, scope, project,
+		string(tagsJSON), string(linksJSON), doc.FilePath, doc.Content, scope, project,
 	)
 	if err != nil {
 		return err
 	}
 
-	_, _ = tx.ExecContext(ctx, "DELETE FROM fts_concepts WHERE id = ?", doc.ID)
+	_, _ = tx.ExecContext(ctx, "DELETE FROM fts_concepts WHERE id = ?", doc.Name)
 
 	tagsStr := strings.Join(doc.Tags, " ")
 	_, err = tx.ExecContext(ctx, `
 	INSERT INTO fts_concepts (id, title, content, tags, category, type, scope, project)
 	VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-	`, doc.ID, doc.Title, doc.Content, tagsStr, string(doc.Category), string(doc.Type), scope, project)
+	`, doc.Name, doc.Title, doc.Content, tagsStr, string(doc.Category), string(doc.Type), scope, project)
 	if err != nil {
 		return err
 	}
 
-	// Auto-extract dependencies into concept_edges
-	for _, depID := range doc.Dependencies {
-		edgeQuery := `
-		INSERT INTO concept_edges (from_concept_id, to_concept_id, relationship_type, created_by, created_at)
-		VALUES (?, ?, 'depends_on', ?, ?)
-		ON CONFLICT(from_concept_id, to_concept_id, relationship_type) DO NOTHING;
-		`
-		_, _ = tx.ExecContext(ctx, edgeQuery, doc.ID, depID, doc.Tenant, time.Now().Format(time.RFC3339))
+	for _, edge := range gyrus.ConceptEdges(doc) {
+		if _, err = tx.ExecContext(ctx, "INSERT INTO concept_edges (from_concept_id,to_concept_id,relationship_type) VALUES (?,?,?) ON CONFLICT DO NOTHING", edge.FromConceptID, edge.ToConceptID, edge.RelationshipType); err != nil {
+			return err
+		}
 	}
 
 	return tx.Commit()
@@ -178,6 +174,10 @@ func (idx *Indexer) Index(ctx context.Context, doc gyrus.Concept) error {
 
 // Remove deletes a concept from the index.
 func (idx *Indexer) Remove(ctx context.Context, id string) error {
+	if err := okf.ValidateName(id); err != nil {
+		return err
+	}
+
 	tx, err := idx.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -203,100 +203,44 @@ func (idx *Indexer) Remove(ctx context.Context, id string) error {
 // Sync scans storageRoot for Markdown files, updates the SQLite index incrementally,
 // and prunes orphaned records that no longer exist in the storage root.
 func (idx *Indexer) Sync(ctx context.Context, storageRoot string) (gyrus.SyncReport, error) {
-	var report gyrus.SyncReport
-	activeIDs := make(map[string]bool)
-
-	err := filepath.Walk(storageRoot, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
-		if !strings.HasSuffix(path, ".md") {
-			return nil
-		}
-
-		report.ScannedFiles++
-
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return nil
-		}
-
-		doc, err := okf.ParseMarkdown(data)
-		if err != nil {
-			return nil
-		}
-
-		cleanPath := filepath.ToSlash(path)
-		doc.FilePath = cleanPath
-		idxConcepts := strings.Index(cleanPath, "/concepts/")
-		if idxConcepts != -1 {
-			sub := cleanPath[idxConcepts+len("/concepts/"):]
-			parts := strings.Split(sub, "/")
-			if len(parts) >= 3 && parts[1] == "reference" {
-				doc.Scope = "reference"
-				doc.Project = ""
-			} else if len(parts) >= 3 && parts[1] == "projects" && parts[2] != "" {
-				doc.Scope = "project"
-				doc.Project = parts[2]
-			} else {
-				doc.Scope = "reference"
-				doc.Project = ""
-			}
-		} else if strings.Contains(cleanPath, "/reference/") {
-			doc.Scope = "reference"
-			doc.Project = ""
-		} else if idxProj := strings.LastIndex(cleanPath, "/projects/"); idxProj != -1 {
-			rest := cleanPath[idxProj+len("/projects/"):]
-			parts := strings.Split(rest, "/")
-			if len(parts) >= 1 && parts[0] != "" {
-				doc.Scope = "project"
-				doc.Project = parts[0]
-			} else {
-				doc.Scope = "reference"
-				doc.Project = ""
-			}
-		} else {
-			doc.Scope = "reference"
-			doc.Project = ""
-		}
-
-		activeIDs[doc.ID] = true
-
-		if err := idx.Index(ctx, *doc); err != nil {
-			return nil
-		}
-
-		report.IndexedFiles++
-		return nil
-	})
+	store, err := localfs.NewStore(storageRoot)
+	if err != nil {
+		return gyrus.SyncReport{}, err
+	}
+	active := map[string]bool{}
+	report, err := store.Scan(ctx, func(doc gyrus.Concept) error { active[doc.Name] = true; return idx.Index(ctx, doc) })
 	if err != nil {
 		return report, err
 	}
-
-	// Prune orphaned records from SQLite that are not present on disk
 	rows, err := idx.db.QueryContext(ctx, "SELECT id FROM concepts")
-	if err == nil {
-		defer rows.Close()
-		var orphanedIDs []string
-		for rows.Next() {
-			var id string
-			if err := rows.Scan(&id); err == nil {
-				if !activeIDs[id] {
-					orphanedIDs = append(orphanedIDs, id)
-				}
-			}
+	if err != nil {
+		return report, err
+	}
+	var stale []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			rows.Close()
+			return report, err
 		}
-
-		for _, id := range orphanedIDs {
-			if err := idx.Remove(ctx, id); err == nil {
-				report.RemovedFiles++
-			}
+		if !active[name] {
+			stale = append(stale, name)
 		}
 	}
-
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return report, err
+	}
+	if len(report.Errors) > 0 {
+		return report, nil
+	}
+	for _, name := range stale {
+		if err := idx.Remove(ctx, name); err != nil {
+			return report, err
+		}
+		report.RemovedFiles++
+	}
 	return report, nil
 }
 
@@ -377,7 +321,7 @@ func (idx *Indexer) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyru
 		}
 
 		sqlQuery := fmt.Sprintf(`
-		SELECT id, title, category, type, tenant, version, status, last_modified_by, last_updated, tags, dependencies, content,
+		SELECT id, title, category, type, tenant, version, status, last_modified_by, last_updated, tags, links, content,
 			COALESCE(scope, 'reference') AS scope, COALESCE(project, '') AS project, COALESCE(filepath, '') AS filepath,
 			CASE
 				WHEN project != '' AND project = ? THEN 60.0
@@ -463,7 +407,7 @@ func (idx *Indexer) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyru
 		sqlQuery := fmt.Sprintf(`
 		SELECT 
 			d.id, d.title, d.category, d.type, d.tenant, d.version, d.status, 
-			d.last_modified_by, d.last_updated, d.tags, d.dependencies, d.content,
+			d.last_modified_by, d.last_updated, d.tags, d.links, d.content,
 			COALESCE(d.scope, 'reference') AS scope, COALESCE(d.project, '') AS project, COALESCE(d.filepath, '') AS filepath,
 			CASE 
 				WHEN LOWER(d.id) = ? THEN 100.0
@@ -542,7 +486,7 @@ func (idx *Indexer) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyru
 			fallbackSQL := fmt.Sprintf(`
 			SELECT 
 				id, title, category, type, tenant, version, status, 
-				last_modified_by, last_updated, tags, dependencies, content,
+				last_modified_by, last_updated, tags, links, content,
 				COALESCE(scope, 'reference') AS scope, COALESCE(project, '') AS project, COALESCE(filepath, '') AS filepath,
 				CASE 
 					WHEN LOWER(id) = ? THEN 100.0
@@ -591,14 +535,14 @@ func (idx *Indexer) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyru
 	var results []gyrus.SearchResult
 	for rows.Next() {
 		var doc gyrus.Concept
-		var catStr, typeStr, lastUpdatedStr, tagsJSON, depsJSON string
+		var catStr, typeStr, lastUpdatedStr, tagsJSON, linksJSON string
 		var score float64
 		var matchReason string
 
 		err := rows.Scan(
-			&doc.ID, &doc.Title, &catStr, &typeStr, &doc.Tenant,
+			&doc.Name, &doc.Title, &catStr, &typeStr, &doc.Tenant,
 			&doc.Version, &doc.Status, &doc.LastModifiedBy, &lastUpdatedStr,
-			&tagsJSON, &depsJSON, &doc.Content,
+			&tagsJSON, &linksJSON, &doc.Content,
 			&doc.Scope, &doc.Project, &doc.FilePath,
 			&score, &matchReason,
 		)
@@ -606,13 +550,17 @@ func (idx *Indexer) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyru
 			return nil, err
 		}
 
+		_, _, doc.ID, err = okf.ParseName(doc.Name)
+		if err != nil {
+			return nil, err
+		}
 		doc.Category = gyrus.Category(catStr)
 		doc.Type = gyrus.ConceptType(typeStr)
 		if lastUpdatedStr != "" {
 			doc.LastUpdated, _ = time.Parse(time.RFC3339, lastUpdatedStr)
 		}
 		_ = json.Unmarshal([]byte(tagsJSON), &doc.Tags)
-		_ = json.Unmarshal([]byte(depsJSON), &doc.Dependencies)
+		_ = json.Unmarshal([]byte(linksJSON), &doc.Links)
 
 		results = append(results, gyrus.SearchResult{
 			Concept:     doc,

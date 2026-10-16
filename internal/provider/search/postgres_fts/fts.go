@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/armckinney/gyrus/internal/domain/okf"
 	"strings"
 
 	"github.com/armckinney/gyrus/internal/provider/db"
@@ -79,7 +80,12 @@ func (p *SearchProvider) Search(ctx context.Context, query string, filter gyrus.
 
 	ftsClause := ""
 	scoreSelect := "0::float8 AS score"
-	if query != "" {
+	if query != "" && okf.ValidateName(query) == nil {
+		ftsClause = fmt.Sprintf(" AND id = $%d", argCount)
+		scoreSelect = "1::float8 AS score"
+		args = append(args, query)
+		argCount++
+	} else if query != "" {
 		queryTsQuery := strings.ReplaceAll(query, " ", " | ")
 		ftsClause = fmt.Sprintf(" AND search_vector @@ to_tsquery('english', $%d)", argCount)
 		scoreSelect = fmt.Sprintf("ts_rank_cd(search_vector, to_tsquery('english', $%d)) AS score", argCount)
@@ -118,6 +124,9 @@ func (p *SearchProvider) Search(ctx context.Context, query string, filter gyrus.
 			return nil, err
 		}
 		doc.Content = content
+		if err := okf.SetName(&doc, ""); err != nil {
+			return nil, err
+		}
 
 		results = append(results, gyrus.SearchResult{
 			Concept:     doc,

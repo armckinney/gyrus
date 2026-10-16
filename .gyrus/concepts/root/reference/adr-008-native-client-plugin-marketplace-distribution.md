@@ -1,14 +1,14 @@
 ---
-id: adr-008-native-client-plugin-marketplace-distribution
 title: Native Client Plugin Marketplace Distribution Architecture
-category: architecture
+id: adr-008-native-client-plugin-marketplace-distribution
 type: adr
 format: markdown
-tenant: root
-version: 1
+category: architecture
+version: 3
 status: accepted
+last_updated: 2026-10-16T16:47:49Z
 last_modified_by: antigravity
-last_updated: 2026-10-16T01:24:00Z
+tenant: root
 tags:
     - adr
     - architecture
@@ -18,9 +18,11 @@ tags:
     - antigravity
     - copilot
     - claude-code
-dependencies:
-    - adr-004-agent-plugin-packaging-distribution-and-init-revamp
-    - adr-006-native-mcp-workspace-discovery-and-lifecycle-cli-refactor
+links:
+    - concept: root/reference/adr-004-agent-plugin-packaging-distribution-and-init-revamp
+      rel: depends_on
+    - concept: root/reference/adr-006-native-mcp-workspace-discovery-and-lifecycle-cli-refactor
+      rel: depends_on
 ---
 
 # ADR 008: Native Client Plugin Marketplace Distribution Architecture
@@ -68,4 +70,3 @@ We migrate Gyrus from CLI-based client provisioning to native harness-level plug
 
 ### Negative
 - **Manual Binary Prerequisite**: Users must ensure the `gyrus` CLI binary is installed and present on `PATH` for the stdio MCP server spawned by the harness plugins.
-

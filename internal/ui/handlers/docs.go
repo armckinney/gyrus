@@ -92,7 +92,7 @@ func (h *Handlers) Docs(w http.ResponseWriter, r *http.Request) {
 	var docs []DocListItem
 	for _, res := range filteredResults {
 		docs = append(docs, DocListItem{
-			ID:       res.Concept.ID,
+			ID:       res.Concept.Name,
 			Title:    res.Concept.Title,
 			Category: string(res.Concept.Category),
 			Type:     string(res.Concept.Type),

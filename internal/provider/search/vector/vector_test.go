@@ -24,6 +24,19 @@ func (m *MockLexicalSearch) Search(ctx context.Context, query string, filter gyr
 	return m.Results, nil
 }
 
+func TestVectorIdentityIncludesTenantAndScope(t *testing.T) {
+	store := NewStore(nil, &MockEmbedder{EmbedFunc: func(string) []float32 { return []float32{1, 0} }})
+	for _, tenant := range []string{"one", "two"} {
+		if err := store.AddConcept(context.Background(), gyrus.Concept{ID: "same", Tenant: tenant, Scope: "reference"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	results, err := store.Search(context.Background(), "same", gyrus.SearchFilter{})
+	if err != nil || len(results) != 2 || results[0].Concept.Name == results[1].Concept.Name {
+		t.Fatalf("qualified vector identities collapsed: %+v %v", results, err)
+	}
+}
+
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
 // [Purpose]: Verifies that Hybrid Search fuses lexical and vector rankings using Reciprocal Rank Fusion (RRF).
@@ -36,20 +49,22 @@ func TestRRFAndHybridSearch(t *testing.T) {
 			if text == "query" {
 				return []float32{1.0, 0.0, 0.0}
 			}
-			if text == "doc1" {
+			if text == "root/reference/doc1" {
 				return []float32{0.9, 0.1, 0.0}
 			}
-			if text == "doc2" {
+			if text == "root/reference/doc2" {
 				return []float32{0.0, 1.0, 0.0}
 			}
 			return []float32{0.0, 0.0, 1.0}
 		},
 	}
 
-	doc1 := gyrus.Concept{ID: "doc1", Content: "doc1"}
-	doc2 := gyrus.Concept{ID: "doc2", Content: "doc2"}
+	doc1 := gyrus.Concept{ID: "doc1", Content: "root/reference/doc1", Tenant: "root", Name: "root/reference/doc1"}
+	doc2 := gyrus.Concept{ID: "doc2", Content: "root/reference/doc2",
 
-	// Lexical gives doc2 rank 1, doc1 rank 2
+		// Lexical gives doc2 rank 1, doc1 rank 2
+		Tenant: "root", Name: "root/reference/doc2"}
+
 	lexical := &MockLexicalSearch{
 		Results: []gyrus.SearchResult{
 			{Concept: doc2, Score: 0.9, MatchReason: "bm25"},

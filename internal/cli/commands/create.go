@@ -15,18 +15,17 @@ import (
 // NewCreateCmd constructs the 'create' Cobra command.
 func NewCreateCmd(application *app.App) *cobra.Command {
 	var (
-		id           string
-		title        string
-		category     string
-		conceptType  string
-		tenant       string
-		status       string
-		tags         string
-		dependencies string
-		content      string
-		contentFile  string
-		scope        string
-		project      string
+		id          string
+		title       string
+		category    string
+		conceptType string
+		tenant      string
+		status      string
+		tags        string
+		content     string
+		contentFile string
+		scope       string
+		project     string
 	)
 
 	cmd := &cobra.Command{
@@ -50,11 +49,6 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 			var tagsList []string
 			if tags != "" {
 				tagsList = strings.Split(tags, ",")
-			}
-
-			var depsList []string
-			if dependencies != "" {
-				depsList = strings.Split(dependencies, ",")
 			}
 
 			docStatus := status
@@ -85,18 +79,17 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 			}
 
 			doc := gyrus.Concept{
-				ID:           id,
-				Title:        title,
-				Category:     gyrus.Category(category),
-				Type:         gyrus.ConceptType(conceptType),
-				Tenant:       docTenant,
-				Version:      1,
-				Status:       docStatus,
-				Tags:         tagsList,
-				Dependencies: depsList,
-				Scope:        effectiveScope,
-				Project:      effectiveProject,
-				Content:      body,
+				ID:       id,
+				Title:    title,
+				Category: gyrus.Category(category),
+				Type:     gyrus.ConceptType(conceptType),
+				Tenant:   docTenant,
+				Version:  1,
+				Status:   docStatus,
+				Tags:     tagsList,
+				Scope:    effectiveScope,
+				Project:  effectiveProject,
+				Content:  body,
 			}
 
 			ref, err := engine.Create(context.Background(), doc)
@@ -108,7 +101,7 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 				data, _ := json.MarshalIndent(ref, "", "  ")
 				fmt.Println(string(data))
 			} else {
-				fmt.Printf("Created concept '%s' (v%d, %s)\n", ref.ID, ref.Version, ref.Status)
+				fmt.Printf("Created concept '%s' (v%d, %s)\n", ref.Name, ref.Version, ref.Status)
 			}
 
 			return nil
@@ -122,7 +115,6 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 	cmd.Flags().StringVar(&tenant, "tenant", "", "Tenant (defaults to configured tenant or root)")
 	cmd.Flags().StringVar(&status, "status", "", "Concept Status (draft|proposed|active)")
 	cmd.Flags().StringVar(&tags, "tags", "", "Comma-separated list of tags")
-	cmd.Flags().StringVar(&dependencies, "dependencies", "", "Comma-separated list of dependent concept IDs")
 	cmd.Flags().StringVar(&scope, "scope", "", "Target scope (project or reference)")
 	cmd.Flags().StringVar(&project, "project", "", "Target project name (defaults to configured project)")
 	cmd.Flags().StringVar(&content, "content", "", "Inline concept body content")

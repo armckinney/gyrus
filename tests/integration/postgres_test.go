@@ -69,8 +69,8 @@ func TestIntegration_PostgresLive(t *testing.T) {
 	graphStore := graphpostgres.NewGraphStore(indexer.Pool())
 
 	runID := time.Now().UnixNano()
-	docAID := fmt.Sprintf("adr-live-pg-%d", runID)
-	docBID := fmt.Sprintf("prd-live-pg-%d", runID)
+	docAID := fmt.Sprintf("root/reference/adr-live-pg-%d", runID)
+	docBID := fmt.Sprintf("root/reference/prd-live-pg-%d", runID)
 	uniqueTenant := fmt.Sprintf("tenant-%d", runID)
 
 	docA := gyrus.Concept{
@@ -82,7 +82,8 @@ func TestIntegration_PostgresLive(t *testing.T) {
 		Version:  1,
 		Status:   "accepted",
 		Tags:     []string{"postgres", "relational", "sql"},
-		Content:  "High performance PostgreSQL backend with tsvector indexing and JSONB storage.",
+		Content:  "High performance PostgreSQL backend with tsvector indexing and JSONB storage.", Name: "/reference/" +
+			docAID,
 	}
 	docB := gyrus.Concept{
 		ID:       docBID,
@@ -93,7 +94,8 @@ func TestIntegration_PostgresLive(t *testing.T) {
 		Version:  1,
 		Status:   "active",
 		Tags:     []string{"cloud", "postgres"},
-		Content:  "Product specifications utilizing PostgreSQL storage backend.",
+		Content:  "Product specifications utilizing PostgreSQL storage backend.", Name: "/projects/gyrus/" +
+			docBID,
 	}
 
 	defer func() {
@@ -111,7 +113,7 @@ func TestIntegration_PostgresLive(t *testing.T) {
 		t.Fatalf("Postgres store create docB failed: %v", err)
 	}
 
-	fetched, err := store.Get(ctx, docA.ID)
+	fetched, err := store.Get(ctx, docA.Name)
 	if err != nil {
 		t.Fatalf("Postgres store get failed: %v", err)
 	}
@@ -141,14 +143,12 @@ func TestIntegration_PostgresLive(t *testing.T) {
 		FromConceptID:    docB.ID,
 		ToConceptID:      docA.ID,
 		RelationshipType: gyrus.RelDependsOn,
-		CreatedBy:        "test-runner",
-		CreatedAt:        time.Now(),
 	}
 	if err := graphStore.UpsertEdges(ctx, []gyrus.ConceptEdge{edge}); err != nil {
 		t.Fatalf("Postgres graph upsert failed: %v", err)
 	}
 
-	outgoing, err := graphStore.Neighbors(ctx, docB.ID, gyrus.EdgeFilter{Direction: "outgoing"})
+	outgoing, err := graphStore.Neighbors(ctx, docB.Name, gyrus.EdgeFilter{Direction: "outgoing"})
 	if err != nil {
 		t.Fatalf("Postgres graph neighbors failed: %v", err)
 	}

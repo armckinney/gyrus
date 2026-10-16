@@ -64,7 +64,7 @@ func TestCLILinkAndSyncAndValidate(t *testing.T) {
 	// 2. gyrus link
 	rootCmd.SetArgs([]string{
 		"link",
-		"doc-1", "doc-2",
+		"team/reference/doc-1", "team/reference/doc-2",
 		"--rel-type", "depends_on",
 	})
 	if err := rootCmd.Execute(); err != nil {

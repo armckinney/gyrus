@@ -1,9 +1,16 @@
 package okf
 
 import (
+	"encoding/json"
 	"github.com/armckinney/gyrus/internal/format"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
+
+// SerializeMetadata omits derived identity from persisted JSON metadata.
+func SerializeMetadata(doc gyrus.Concept) ([]byte, error) {
+	doc.Name = ""
+	return json.Marshal(doc)
+}
 
 var okfFmt = format.NewOKFFormat()
 var jsonFmt = format.NewRelationalFormat()

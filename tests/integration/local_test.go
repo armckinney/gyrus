@@ -4,7 +4,6 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
-	"time"
 
 	graphsqlite "github.com/armckinney/gyrus/internal/provider/graph/sqlite"
 	indexsqlite "github.com/armckinney/gyrus/internal/provider/index/sqlite"
@@ -48,7 +47,7 @@ func TestIntegration_LocalProfile(t *testing.T) {
 		Tenant:   "engineering",
 		Version:  1,
 		Status:   "active",
-		Content:  "All Go code must follow standard idiomatic patterns.",
+		Content:  "All Go code must follow standard idiomatic patterns.", Name: "engineering/reference/standard-001",
 	}
 
 	// 1. Storage Create
@@ -80,20 +79,19 @@ func TestIntegration_LocalProfile(t *testing.T) {
 
 	// 4. Graph Edge Link
 	err = graphStore.UpsertEdges(ctx, []gyrus.ConceptEdge{{
-		FromConceptID:    "standard-001",
-		ToConceptID:      "adr-001",
+		FromConceptID:    "engineering/reference/standard-001",
+		ToConceptID:      "root/reference/adr-001",
 		RelationshipType: gyrus.RelDependsOn,
-		CreatedAt:        time.Now(),
 	}})
 	if err != nil {
 		t.Fatalf("UpsertEdges failed: %v", err)
 	}
 
-	neighbors, err := graphStore.Neighbors(ctx, "standard-001", gyrus.EdgeFilter{Direction: "outgoing"})
+	neighbors, err := graphStore.Neighbors(ctx, "engineering/reference/standard-001", gyrus.EdgeFilter{Direction: "outgoing"})
 	if err != nil {
 		t.Fatalf("Neighbors failed: %v", err)
 	}
-	if len(neighbors) != 1 || neighbors[0].ToConceptID != "adr-001" {
+	if len(neighbors) != 1 || neighbors[0].ToConceptID != "root/reference/adr-001" {
 		t.Errorf("Expected outgoing edge to adr-001, got %v", neighbors)
 	}
 }

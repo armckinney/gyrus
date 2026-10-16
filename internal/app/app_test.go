@@ -55,7 +55,7 @@ func TestAppContainerInstantiation(t *testing.T) {
 		Tenant:   "engineering",
 		Version:  1,
 		Status:   "draft",
-		Content:  "# Test App Concept",
+		Content:  "# Test App Concept", Name: "engineering/reference/test-app-concept",
 	}
 
 	ref, err := engine.Create(context.Background(), concept)

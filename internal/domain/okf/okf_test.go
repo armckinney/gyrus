@@ -19,8 +19,9 @@ last_modified_by: developer-joe
 tags:
   - storage
   - sqlite
-dependencies:
-  - prd-context-engine
+links:
+  - concept: platform-engineering/reference/prd-context-engine
+    rel: depends_on
 ---
 
 # SQLite Edge Graph Provider
@@ -49,8 +50,8 @@ func TestParseMarkdownValid(t *testing.T) {
 	if concept.Tenant != "platform-engineering" {
 		t.Errorf("Expected Tenant 'platform-engineering', got '%s'", concept.Tenant)
 	}
-	if len(concept.Dependencies) != 1 || concept.Dependencies[0] != "prd-context-engine" {
-		t.Errorf("Expected dependency 'prd-context-engine', got %v", concept.Dependencies)
+	if len(concept.Links) != 1 || concept.Links[0].Concept != "platform-engineering/reference/prd-context-engine" {
+		t.Errorf("Expected dependency 'prd-context-engine', got %v", concept.Links)
 	}
 
 	if err := okf.Validate(concept); err != nil {
@@ -87,7 +88,7 @@ func TestValidateSchemaConstraintsMatrix(t *testing.T) {
 			Type:     gyrus.TypeADR,
 			Tenant:   "engineering",
 			Version:  1,
-			Status:   "proposed",
+			Status:   "proposed", Name: "engineering/reference/valid-concept-id_01",
 		}
 	}
 
@@ -200,7 +201,7 @@ func TestSerializeAndReParseMarkdown(t *testing.T) {
 		Status:         "active",
 		LastModifiedBy: "architect-alice",
 		Tags:           []string{"okf", "schema"},
-		Content:        "## Summary\n\nComplete schema details.",
+		Content:        "## Summary\n\nComplete schema details.", Name: "architecture/reference/spec-01-schema",
 	}
 
 	serialized, err := okf.SerializeMarkdown(originalConcept)

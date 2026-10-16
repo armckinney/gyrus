@@ -1,26 +1,34 @@
 ---
-id: guide-004-test-phase-2-1
 title: Phase 2.1 Manual Validation & Integration Test Guide
-category: technical
+id: guide-004-test-phase-2-1
 type: guide
 format: markdown
-tenant: root
-version: 4
+category: technical
+version: 6
 status: active
+last_updated: 2026-10-16T16:47:49Z
+last_modified_by: ""
+tenant: root
 tags:
-  - testing
-  - phase-2.1
-  - storage-drivers
-  - search-providers
-  - init
-  - skills
-dependencies:
-  - prd-001-specification-roadmap
-  - spec-201-git-storage-driver
-  - spec-202-cloud-blob-storage-driver
-  - spec-203-postgres-storage-index-driver
-  - spec-204-postgres-fts-search-driver
-  - spec-205-vector-hybrid-search-driver
+    - testing
+    - phase-2.1
+    - storage-drivers
+    - search-providers
+    - init
+    - skills
+links:
+    - concept: root/reference/prd-001-specification-roadmap
+      rel: depends_on
+    - concept: root/reference/spec-201-git-storage-driver
+      rel: depends_on
+    - concept: root/reference/spec-202-cloud-blob-storage-driver
+      rel: depends_on
+    - concept: root/reference/spec-203-postgres-storage-index-driver
+      rel: depends_on
+    - concept: root/reference/spec-204-postgres-fts-search-driver
+      rel: depends_on
+    - concept: root/reference/spec-205-vector-hybrid-search-driver
+      rel: depends_on
 ---
 
 # Phase 2.1 Manual Validation & Integration Testing Guide

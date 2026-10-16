@@ -1,16 +1,16 @@
 ---
-id: <unique-dashed-id>
 title: <Clean Document Title>
-category: technical
+id: <unique-dashed-id>
 type: specification
 format: markdown
-tenant: <team-owning-document>
+category: technical
 version: 1
 status: proposed
-last_modified_by: <author-username>
 last_updated: YYYY-MM-DD
+last_modified_by: <author-username>
+tenant: <team-owning-document>
 tags: []
-dependencies: []
+links: []
 ---
 
 # Specification: [System / Component / Protocol Name]

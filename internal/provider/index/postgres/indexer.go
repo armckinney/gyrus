@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/armckinney/gyrus/internal/domain/okf"
 
 	"github.com/armckinney/gyrus/internal/provider/db"
 	"github.com/armckinney/gyrus/pkg/gyrus"
@@ -77,7 +78,11 @@ func (idx *Indexer) Close() {
 
 // Index inserts or updates a concept envelope in PostgreSQL.
 func (idx *Indexer) Index(ctx context.Context, doc gyrus.Concept) error {
-	fm, err := json.Marshal(doc)
+	if err := okf.SetName(&doc, ""); err != nil {
+		return err
+	}
+
+	fm, err := okf.SerializeMetadata(doc)
 	if err != nil {
 		return err
 	}
@@ -86,12 +91,16 @@ func (idx *Indexer) Index(ctx context.Context, doc gyrus.Concept) error {
 		INSERT INTO concepts (id, frontmatter, content)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (id) DO UPDATE SET frontmatter = EXCLUDED.frontmatter, content = EXCLUDED.content
-	`, doc.ID, fm, doc.Content)
+	`, doc.Name, fm, doc.Content)
 	return err
 }
 
 // Remove deletes a concept envelope from the index.
 func (idx *Indexer) Remove(ctx context.Context, id string) error {
+	if err := okf.ValidateName(id); err != nil {
+		return err
+	}
+
 	_, err := idx.pool.Exec(ctx, "DELETE FROM concepts WHERE id = $1", id)
 	return err
 }
@@ -122,6 +131,9 @@ func (idx *Indexer) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyru
 			return nil, err
 		}
 		doc.Content = content
+		if err := okf.SetName(&doc, ""); err != nil {
+			return nil, err
+		}
 		results = append(results, gyrus.SearchResult{Concept: doc, Score: 1.0})
 	}
 	return results, nil

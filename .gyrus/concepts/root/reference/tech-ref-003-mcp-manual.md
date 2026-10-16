@@ -1,132 +1,54 @@
 ---
-id: tech-ref-003-mcp-manual
 title: Gyrus Model Context Protocol Reference Manual
-category: technical
+id: tech-ref-003-mcp-manual
 type: technical-reference
-format: ""
-tenant: root
-version: 1
+format: markdown
+category: technical
+version: 3
 status: active
+last_updated: 2026-10-16T16:56:27Z
 last_modified_by: ""
-last_updated: 2026-07-22T06:38:56Z
+tenant: root
 ---
 
-# Gyrus MCP Server Reference Manual
+# Gyrus MCP reference
 
-This manual provides the consolidated launch configurations, tool definitions, resource URIs, and prompts for the Gyrus Model Context Protocol (MCP) server.
+Run `gyrus mcp serve` over stdio using the installed Gyrus binary. The canonical plugin configures this command and passes project discovery settings. Restart the MCP process after provider configuration changes; a running application caches its engine.
 
----
+## Tools
 
-## 1. Tool Configuration File Locations
+| Tool | Inputs |
+| --- | --- |
+| gyrus_create | Required id/title/category/type; optional content/status/tenant/project/scope |
+| gyrus_get | id |
+| gyrus_update | id; optional title/status/content/tags/expected_version |
+| gyrus_archive | id |
+| gyrus_search | Optional query/category/type/status/tag/tenant/project/scope |
+| gyrus_suggest_context | prompt; optional max_concepts/project/scope |
+| gyrus_link / gyrus_unlink | from_id, to_id; optional rel_type (defaults depends_on) |
+| gyrus_neighbors | id; optional direction/rel_type |
+| gyrus_traverse | start_id; optional max_depth (tool default 2) |
+| gyrus_sync | No arguments |
+| gyrus_schema_get / gyrus_schema_delete | type |
+| gyrus_schema_list | No arguments |
+| gyrus_schema_set | type, content |
 
-Add the standard `mcpServers.gyrus` configuration block to your tool's respective path:
+Valid relationships are depends_on, supersedes, implements, and mitigates. Neighbor directions are incoming, outgoing, and both. Scope values are project, reference, and all.
 
-| AI Tool / Client | Configuration File Path |
-| :--- | :--- |
-| **Google Antigravity CLI (AGY)** | `~/.gemini/antigravity-cli/mcp.json` or `<workspace>/mcp.json` |
-| **GitHub Copilot / VS Code** | `<workspace>/.vscode/mcp.json` |
-| **Claude Desktop** | macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`<br>Windows: `%APPDATA%\Claude\claude_desktop_config.json` |
-| **OpenAI Codex / Custom MCP Clients** | `<workspace>/.codex/mcp.json` |
+## OKF retrieval and graph behavior
 
----
+File-backed profiles default to OKF index/graph/search. Keyword queries use case-insensitive Unicode substring terms with OR semantics and return ten matches by default. Empty-query metadata browsing returns all matching concepts. OKF does not interpret FTS operators or stemming; explicit SQLite/PostgreSQL/vector search retains its provider semantics.
 
-## 2. Standard MCP Launch Configurations
+Link/unlink persist typed source frontmatter links and use qualified concept names with concept and rel only. Targets may be unresolved. Metadata-only links remain editable on immutable concepts without changing the body. Mutations reject version/Git/object-precondition conflicts, and multi-source batches report any already-applied sources.
 
-### Containerized Docker GHCR (Zero-Install)
-```json
-{
-  "mcpServers": {
-    "gyrus": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-v", "${workspaceFolder}:/workspace",
-        "-w", "/workspace",
-        "ghcr.io/armckinney/gyrus:latest",
-        "mcp", "serve"
-      ]
-    }
-  }
-}
-```
+Sync validates the provider's authoritative collection without a database in OKF mode. IndexedFiles counts validated concepts, not retained index rows. Invalid-record reports return JSON content with isError=true; fatal failures return tool errors. Invalid concepts and duplicate qualified names fail queries rather than hiding partial results.
 
-### Native Binary
-```json
-{
-  "mcpServers": {
-    "gyrus": {
-      "command": "gyrus",
-      "args": ["mcp", "serve"]
-    }
-  }
-}
-```
+Before switching an existing SQLite graph, use the packaged gyrus-migrate-okf skill to back up, export, and verify database-only edges. Change all three provider fields and restart the server afterward. Sync alone cannot export old graph edges.
 
----
+## Resources and prompts
 
-## 3. MCP Tools Reference
+Concept resources use `memory://concept/{id}` and return Markdown; existing legacy resource aliases remain available. Embedded/persisted schema templates and registered context prompts use the server's existing resource/prompt interfaces. Use tool/resource discovery for the precise schema of the installed server version.
 
-When connected, Gyrus exposes five native memory tools to AI assistants:
+## Qualified-name contract
 
-### 1. `memory_create`
-Creates a new OKF contract document.
-
-* **Parameters:**
-  * `id` (string, required): Document ID (matches regex `^[a-z0-9-_]+$`).
-  * `title` (string, required): Document title.
-  * `category` (string, required): Category (`architecture`, `business-logic`, `product`, `operations`, `technical`).
-  * `type` (string, required): Document type (`adr`, `prd`, `guide`, `specification`, etc.).
-  * `owner_group` (string, required): Owner group identifier.
-  * `status` (string, optional): Status (`draft`, `proposed`, `active`).
-  * `content` (string, optional): Markdown body content.
-
-### 2. `memory_get`
-Retrieves an OKF document by ID.
-
-* **Parameters:**
-  * `id` (string, required): Target document ID.
-
-### 3. `memory_search`
-Executes an FTS5 search query across all OKF documents.
-
-* **Parameters:**
-  * `query` (string, optional): Keyword query text.
-  * `category` (string, optional): Filter by category.
-  * `type` (string, optional): Filter by type.
-
-### 4. `memory_suggest_context`
-Linearizes top context documents matching an agent prompt description.
-
-* **Parameters:**
-  * `prompt` (string, required): Task description or context query.
-
-### 5. `memory_link`
-Creates a directed relationship edge between two documents.
-
-* **Parameters:**
-  * `from_id` (string, required): Source document ID.
-  * `to_id` (string, required): Target document ID.
-  * `rel_type` (string, optional): Relationship type (`depends_on`, `supersedes`, `implements`).
-
-### 6. `memory_archive`
-Archives (deletes) a document from storage and search index.
-
-* **Parameters:**
-  * `id` (string, required): Target document ID to archive.
-
-
----
-
-## 4. MCP Resources & Prompts
-
-### Resources
-- **URI:** `memory://concept/{id}`  
-  **MIME Type:** `text/markdown`  
-  **Description:** Reads raw Markdown content of an OKF concept.
-
-### Prompts
-- **Prompt Name:** `prepare-adr`  
-  **Arguments:** `title` (string, required)  
-  **Description:** Generates an Architecture Design Record (ADR) template.
+The id arguments of gyrus_get, gyrus_update, and gyrus_archive, from_id/to_id of gyrus_link and gyrus_unlink, id of gyrus_neighbors, and start_id of gyrus_traverse require complete names such as root/reference/adr-example or root/projects/gyrus/ticket-003. Argument names are retained; short values are rejected. gyrus_create still takes a local id with tenant/scope/project and returns name plus local id. Search concept envelopes include name. Markdown resources keep a local frontmatter id and omit derived name; use memory://concept/root/reference/adr-example to address one. rel_type remains a tool argument; persisted links contain only concept and rel. Incoming queries derive backlinks without writing inverse records.

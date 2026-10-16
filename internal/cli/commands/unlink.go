@@ -15,7 +15,7 @@ func NewUnlinkCmd(application *app.App) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "unlink <from-id> <to-id>",
-		Short: "Remove a directed relationship edge between two documents",
+		Short: "Remove a directed relationship edge between two concepts addressed by qualified names",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fromID, toID := args[0], args[1]

@@ -127,6 +127,10 @@ tenant: root
 		t.Fatalf("create reference doc failed: %v", err)
 	}
 
+	rootCmd, err = BuildRootCmd()
+	if err != nil {
+		t.Fatal(err)
+	}
 	// 2. Create project concept with dependency on reference concept
 	rootCmd.SetArgs([]string{
 		"create",
@@ -134,13 +138,16 @@ tenant: root
 		"--title", "Gyrus Core Feature Implementation",
 		"--category", "product",
 		"--type", "prd",
-		"--dependencies", "adr-shared-arch",
 		"--content", "Implementation details following architecture standards.",
 	})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("create project concept failed: %v", err)
 	}
 
+	rootCmd.SetArgs([]string{"link", "root/projects/gyrus/ticket-gyrus-core", "root/reference/adr-shared-arch"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
 	// 3. Create foreign project concept
 	rootCmd.SetArgs([]string{
 		"create",

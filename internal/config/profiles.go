@@ -58,13 +58,13 @@ storage:
   root: .gyrus
 
 index:
-  provider: sqlite
+  provider: okf
 
 graph:
-  provider: sqlite
+  provider: okf
 
 search:
-  provider: sqlite
+  provider: okf
 
 git:
   repo_url: ""
@@ -81,13 +81,13 @@ storage:
   root: .gyrus
 
 index:
-  provider: sqlite
+  provider: okf
 
 graph:
-  provider: sqlite
+  provider: okf
 
 search:
-  provider: sqlite
+  provider: okf
 
 s3:
   bucket_name: "my-gyrus-bucket"
@@ -104,13 +104,13 @@ storage:
   root: .gyrus
 
 index:
-  provider: sqlite
+  provider: okf
 
 graph:
-  provider: sqlite
+  provider: okf
 
 search:
-  provider: sqlite
+  provider: okf
 
 azure_blob:
   storage_account: "myaccountname"
@@ -127,13 +127,13 @@ storage:
   root: .gyrus
 
 index:
-  provider: sqlite
+  provider: okf
 
 graph:
-  provider: sqlite
+  provider: okf
 
 search:
-  provider: sqlite
+  provider: okf
 
 gcs:
   bucket_name: "my-gyrus-gcs-bucket"
@@ -149,13 +149,13 @@ storage:
   root: .gyrus
 
 index:
-  provider: sqlite
+  provider: okf
 
 graph:
-  provider: sqlite
+  provider: okf
 
 search:
-  provider: sqlite
+  provider: okf
 
 blob:
   bucket_url: "file:///tmp/gyrus-blob-bucket"
@@ -206,7 +206,6 @@ vector:
   model: nomic-embed-text
   ollama_endpoint: "http://localhost:11434"
 `, tenant, proj)
-
 	default: // ProfileLocal
 		return fmt.Sprintf(`# Gyrus Configuration - LocalFS Profile
 tenant: %s
@@ -217,13 +216,13 @@ storage:
   root: .gyrus
 
 index:
-  provider: sqlite
+  provider: okf
 
 graph:
-  provider: sqlite
+  provider: okf
 
 search:
-  provider: sqlite
+  provider: okf
 `, tenant, proj)
 	}
 }

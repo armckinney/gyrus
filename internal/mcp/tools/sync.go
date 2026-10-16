@@ -12,7 +12,7 @@ import (
 func (h *Handler) registerSyncTools(s *server.MCPServer) {
 	// 11. gyrus_sync
 	syncTool := mcp.NewTool("gyrus_sync",
-		mcp.WithDescription("Scan project storage and rebuild/sync the search index"),
+		mcp.WithDescription("Scan concept storage and validate or rebuild the selected index"),
 	)
 	s.AddTool(syncTool, h.HandleSync)
 }
@@ -25,5 +25,7 @@ func (h *Handler) HandleSync(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	}
 
 	data, _ := json.MarshalIndent(report, "", "  ")
-	return mcp.NewToolResultText(string(data)), nil
+	result := mcp.NewToolResultText(string(data))
+	result.IsError = len(report.Errors) > 0
+	return result, nil
 }

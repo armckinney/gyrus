@@ -3,11 +3,10 @@ package postgres
 import (
 	"context"
 	"encoding/json"
+	"github.com/pashagolub/pgxmock/v4"
 	"testing"
-	"time"
 
 	"github.com/armckinney/gyrus/pkg/gyrus"
-	"github.com/pashagolub/pgxmock/v4"
 )
 
 // -----------------------------------------------------------------------------
@@ -28,12 +27,12 @@ func TestStore_Create(t *testing.T) {
 	doc := gyrus.Concept{
 		ID:      "doc-1",
 		Title:   "Test Doc",
-		Content: "Hello World",
+		Content: "Hello World", Tenant: "root", Name: "root/reference/doc-1",
 	}
 
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO concepts").WithArgs("doc-1", pgxmock.AnyArg(), "Hello World").WillReturnResult(pgxmock.NewResult("INSERT", 1))
-	mock.ExpectExec("INSERT INTO concepts_history").WithArgs("doc-1", 1, pgxmock.AnyArg(), "Hello World", pgxmock.AnyArg(), pgxmock.AnyArg()).WillReturnResult(pgxmock.NewResult("INSERT", 1))
+	mock.ExpectExec("INSERT INTO concepts").WithArgs("root/reference/doc-1", pgxmock.AnyArg(), "Hello World").WillReturnResult(pgxmock.NewResult("INSERT", 1))
+	mock.ExpectExec("INSERT INTO concepts_history").WithArgs("root/reference/doc-1", 1, pgxmock.AnyArg(), "Hello World", pgxmock.AnyArg(), pgxmock.AnyArg()).WillReturnResult(pgxmock.NewResult("INSERT", 1))
 	mock.ExpectCommit()
 
 	ref, err := store.Create(context.Background(), doc)
@@ -67,7 +66,7 @@ func TestStore_Get(t *testing.T) {
 
 	doc := gyrus.Concept{
 		ID:    "doc-1",
-		Title: "Test Doc",
+		Title: "Test Doc", Tenant: "root", Name: "root/reference/doc-1",
 	}
 	fmBytes, _ := json.Marshal(doc)
 
@@ -75,10 +74,10 @@ func TestStore_Get(t *testing.T) {
 		AddRow(fmBytes, "Hello World")
 
 	mock.ExpectQuery("SELECT frontmatter, content FROM concepts WHERE id = \\$1").
-		WithArgs("doc-1").
+		WithArgs("root/reference/doc-1").
 		WillReturnRows(rows)
 
-	res, err := store.Get(context.Background(), "doc-1")
+	res, err := store.Get(context.Background(), "root/reference/doc-1")
 	if err != nil {
 		t.Errorf("error was not expected while getting doc: %s", err)
 	}
@@ -113,21 +112,21 @@ func TestStore_Update(t *testing.T) {
 	doc := gyrus.Concept{
 		ID:      "doc-1",
 		Version: 1,
-		Title:   "Test Doc",
+		Title:   "Test Doc", Tenant: "root", Name: "root/reference/doc-1",
 	}
 	fmBytes, _ := json.Marshal(doc)
 
 	mock.ExpectBegin()
 	mock.ExpectQuery("SELECT frontmatter, content FROM concepts WHERE id = \\$1 FOR UPDATE").
-		WithArgs("doc-1").
+		WithArgs("root/reference/doc-1").
 		WillReturnRows(pgxmock.NewRows([]string{"frontmatter", "content"}).AddRow(fmBytes, "Old content"))
 
 	mock.ExpectExec("UPDATE concepts SET frontmatter = \\$1, content = \\$2 WHERE id = \\$3").
-		WithArgs(pgxmock.AnyArg(), "New content", "doc-1").
+		WithArgs(pgxmock.AnyArg(), "New content", "root/reference/doc-1").
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	mock.ExpectExec("INSERT INTO concepts_history").
-		WithArgs("doc-1", 2, pgxmock.AnyArg(), "New content", pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs("root/reference/doc-1", 2, pgxmock.AnyArg(), "New content", pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	mock.ExpectCommit()
@@ -139,7 +138,7 @@ func TestStore_Update(t *testing.T) {
 		Content: &patchContent,
 	}
 
-	ref, err := store.Update(context.Background(), "doc-1", patch, 1)
+	ref, err := store.Update(context.Background(), "root/reference/doc-1", patch, 1)
 	if err != nil {
 		t.Errorf("error was not expected while updating doc: %s", err)
 	}
@@ -171,17 +170,15 @@ func TestStore_GraphEdges(t *testing.T) {
 	// Test UpsertEdges
 	edges := []gyrus.ConceptEdge{
 		{
-			FromConceptID:    "doc-1",
-			ToConceptID:      "doc-2",
+			FromConceptID:    "root/reference/doc-1",
+			ToConceptID:      "root/reference/doc-2",
 			RelationshipType: gyrus.RelDependsOn,
-			CreatedBy:        "user",
-			CreatedAt:        time.Now(),
 		},
 	}
 
 	mock.ExpectBegin()
 	mock.ExpectExec("INSERT INTO concept_edges").
-		WithArgs("doc-1", "doc-2", gyrus.RelDependsOn, "user", pgxmock.AnyArg()).
+		WithArgs("root/reference/doc-1", "root/reference/doc-2", gyrus.RelDependsOn).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 	mock.ExpectCommit()
 
@@ -191,15 +188,14 @@ func TestStore_GraphEdges(t *testing.T) {
 	}
 
 	// Test Neighbors
-	now := time.Now()
-	rows := pgxmock.NewRows([]string{"from_concept_id", "to_concept_id", "relationship_type", "created_by", "created_at"}).
-		AddRow("doc-1", "doc-2", string(gyrus.RelDependsOn), "user", now)
+	rows := pgxmock.NewRows([]string{"from_concept_id", "to_concept_id", "relationship_type"}).
+		AddRow("root/reference/doc-1", "root/reference/doc-2", string(gyrus.RelDependsOn))
 
-	mock.ExpectQuery("SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE from_concept_id = \\$1 OR to_concept_id = \\$1").
-		WithArgs("doc-1").
+	mock.ExpectQuery("SELECT from_concept_id, to_concept_id, relationship_type FROM concept_edges WHERE from_concept_id = \\$1 OR to_concept_id = \\$1").
+		WithArgs("root/reference/doc-1").
 		WillReturnRows(rows)
 
-	neighbors, err := store.Neighbors(context.Background(), "doc-1", gyrus.EdgeFilter{})
+	neighbors, err := store.Neighbors(context.Background(), "root/reference/doc-1", gyrus.EdgeFilter{})
 	if err != nil {
 		t.Errorf("error was not expected while getting neighbors: %s", err)
 	}

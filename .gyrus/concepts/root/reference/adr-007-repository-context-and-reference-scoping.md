@@ -1,18 +1,28 @@
 ---
-id: adr-007-repository-context-and-reference-scoping
 title: Repository-Focused Context and Reference Scoping (Phase 2.8)
-category: architecture
+id: adr-007-repository-context-and-reference-scoping
 type: adr
 format: markdown
-tenant: root
-version: 1
+category: architecture
+version: 3
 status: superseded
-superseded_by: adr-009-okf-concepts-projects-tenant-nomenclature
-immutable: true
+last_updated: 2026-10-16T16:47:49Z
 last_modified_by: antigravity
-last_updated: 2026-10-02T00:00:00Z
-tags: ["scoping", "project", "reference", "context", "phase-2.8"]
-dependencies: ["adr-002-simplified-directory-topology", "adr-005-global-configuration-and-precedence-hierarchy", "adr-006-native-mcp-workspace-discovery-and-lifecycle-cli-refactor"]
+tenant: root
+tags:
+    - scoping
+    - project
+    - reference
+    - context
+    - phase-2.8
+links:
+    - concept: root/reference/adr-002-simplified-directory-topology
+      rel: depends_on
+    - concept: root/reference/adr-005-global-configuration-and-precedence-hierarchy
+      rel: depends_on
+    - concept: root/reference/adr-006-native-mcp-workspace-discovery-and-lifecycle-cli-refactor
+      rel: depends_on
+immutable: true
 ---
 
 # ADR 007: Repository-Focused Context and Reference Scoping (Phase 2.8)

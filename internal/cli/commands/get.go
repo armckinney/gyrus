@@ -14,7 +14,7 @@ import (
 func NewGetCmd(application *app.App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get <id>",
-		Short: "Get document envelope or Markdown payload by ID",
+		Short: "Get a concept by qualified name (tenant/reference/id or tenant/projects/project/id)",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id := args[0]

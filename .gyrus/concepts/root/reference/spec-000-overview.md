@@ -1,14 +1,14 @@
 ---
-id: spec-000-overview
 title: Gyrus Core System Architecture & Specification Suite
-category: technical
+id: spec-000-overview
 type: specification
 format: ""
-tenant: root
+category: technical
 version: 1
 status: active
-last_modified_by: ""
 last_updated: 2026-07-22T06:38:56Z
+last_modified_by: ""
+tenant: root
 ---
 
 # Gyrus: Unified Context & Memory Engine

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/armckinney/gyrus/internal/domain/okf"
 	"github.com/armckinney/gyrus/pkg/gyrus"
@@ -185,6 +184,9 @@ func (e *Engine) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRe
 		doc.Scope = "project"
 	}
 
+	if err := okf.SetName(&doc, e.defaultProject); err != nil {
+		return gyrus.ConceptRef{}, err
+	}
 	if err := okf.Validate(&doc); err != nil {
 		return gyrus.ConceptRef{}, fmt.Errorf("concept validation failed: %w", err)
 	}
@@ -203,11 +205,19 @@ func (e *Engine) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRe
 
 // Get retrieves a concept by ID.
 func (e *Engine) Get(ctx context.Context, id string) (gyrus.Concept, error) {
+	if err := okf.ValidateName(id); err != nil {
+		return gyrus.Concept{}, err
+	}
+
 	return e.store.Get(ctx, id)
 }
 
 // Update mutates an existing concept.
 func (e *Engine) Update(ctx context.Context, id string, patch gyrus.ConceptPatch, expectedVersion int) (gyrus.ConceptRef, error) {
+	if err := okf.ValidateName(id); err != nil {
+		return gyrus.ConceptRef{}, err
+	}
+
 	existing, err := e.store.Get(ctx, id)
 	if err != nil {
 		return gyrus.ConceptRef{}, err
@@ -240,6 +250,10 @@ func (e *Engine) Update(ctx context.Context, id string, patch gyrus.ConceptPatch
 
 // Archive marks a concept as archived.
 func (e *Engine) Archive(ctx context.Context, id string) error {
+	if err := okf.ValidateName(id); err != nil {
+		return err
+	}
+
 	if err := e.store.Archive(ctx, id); err != nil {
 		return err
 	}
@@ -297,7 +311,7 @@ func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, fi
 	var refDocs []gyrus.Concept
 
 	for _, res := range results {
-		seenIDs[res.Concept.ID] = true
+		seenIDs[res.Concept.Name] = true
 		if res.Concept.Scope == "project" {
 			projectDocs = append(projectDocs, res.Concept)
 		} else {
@@ -308,7 +322,11 @@ func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, fi
 	// Dependency link expansion: For project concepts, expand linked reference dependencies
 	var linkedRefDocs []gyrus.Concept
 	for _, projectDoc := range projectDocs {
-		for _, depID := range projectDoc.Dependencies {
+		for _, edge := range gyrus.ConceptEdges(projectDoc) {
+			if edge.RelationshipType != gyrus.RelDependsOn {
+				continue
+			}
+			depID := edge.ToConceptID
 			if !seenIDs[depID] {
 				seenIDs[depID] = true
 				if linkedDoc, err := e.Get(ctx, depID); err == nil {
@@ -362,7 +380,7 @@ func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, fi
 			sb.WriteString("[PROJECT CONTEXT]\n\n")
 		}
 		for _, doc := range finalProject {
-			sb.WriteString(fmt.Sprintf("--- [%s] %s (%s/%s) ---\n", doc.ID, doc.Title, doc.Category, doc.Type))
+			sb.WriteString(fmt.Sprintf("--- [%s] %s (%s/%s) ---\n", doc.Name, doc.Title, doc.Category, doc.Type))
 			sb.WriteString(doc.Content)
 			sb.WriteString("\n\n")
 		}
@@ -375,7 +393,7 @@ func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, fi
 		}
 		sb.WriteString(fmt.Sprintf("[SHARED REFERENCE LAYER: %s]\n\n", tenant))
 		for _, doc := range finalRef {
-			sb.WriteString(fmt.Sprintf("--- [%s] %s (%s/%s) ---\n", doc.ID, doc.Title, doc.Category, doc.Type))
+			sb.WriteString(fmt.Sprintf("--- [%s] %s (%s/%s) ---\n", doc.Name, doc.Title, doc.Category, doc.Type))
 			sb.WriteString(doc.Content)
 			sb.WriteString("\n\n")
 		}
@@ -393,16 +411,26 @@ func (e *Engine) Link(ctx context.Context, fromID string, toID string, relType g
 	if relType == "" {
 		relType = gyrus.RelDependsOn
 	}
+	if err := okf.ValidateName(fromID); err != nil {
+		return err
+	}
+	if err := okf.ValidateName(toID); err != nil {
+		return err
+	}
+	if !gyrus.ValidRelationship(relType) {
+		return &okf.ValidationError{Field: "rel_type", Message: "invalid relationship type"}
+	}
 
 	edge := gyrus.ConceptEdge{
 		FromConceptID:    fromID,
 		ToConceptID:      toID,
 		RelationshipType: relType,
-		CreatedBy:        "engine",
-		CreatedAt:        time.Now().Truncate(time.Second),
 	}
 
-	return e.graph.UpsertEdges(ctx, []gyrus.ConceptEdge{edge})
+	if err := e.graph.UpsertEdges(ctx, []gyrus.ConceptEdge{edge}); err != nil {
+		return err
+	}
+	return e.refreshLinkedConcept(ctx, fromID)
 }
 
 // Unlink removes a directed relationship edge between two concepts.
@@ -414,12 +442,28 @@ func (e *Engine) Unlink(ctx context.Context, fromID string, toID string, relType
 	if relType == "" {
 		relType = gyrus.RelDependsOn
 	}
+	if err := okf.ValidateName(fromID); err != nil {
+		return err
+	}
+	if err := okf.ValidateName(toID); err != nil {
+		return err
+	}
+	if !gyrus.ValidRelationship(relType) {
+		return &okf.ValidationError{Field: "rel_type", Message: "invalid relationship type"}
+	}
 
-	return e.graph.DeleteEdges(ctx, fromID, toID, relType)
+	if err := e.graph.DeleteEdges(ctx, fromID, toID, relType); err != nil {
+		return err
+	}
+	return e.refreshLinkedConcept(ctx, fromID)
 }
 
 // Neighbors retrieves neighboring relationship edges for a concept.
 func (e *Engine) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilter) ([]gyrus.ConceptEdge, error) {
+	if err := okf.ValidateName(id); err != nil {
+		return nil, err
+	}
+
 	if e.graph == nil {
 		return nil, fmt.Errorf("no graph store configured")
 	}
@@ -428,6 +472,10 @@ func (e *Engine) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilt
 
 // Traverse executes a graph path search from a start concept.
 func (e *Engine) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.GraphPath, error) {
+	if err := okf.ValidateName(query.StartID); err != nil {
+		return nil, err
+	}
+
 	if e.graph == nil {
 		return nil, fmt.Errorf("no graph store configured")
 	}
@@ -505,4 +553,19 @@ func (e *Engine) DeleteSchema(ctx context.Context, conceptType string) error {
 		return fmt.Errorf("active storage provider does not support schema persistence")
 	}
 	return e.schemaStore.DeleteSchema(ctx, conceptType)
+}
+
+func (e *Engine) refreshLinkedConcept(ctx context.Context, id string) error {
+	owned, ok := e.graph.(interface{ StoresLinksInConcepts() bool })
+	if !ok || !owned.StoresLinksInConcepts() || e.indexer == nil {
+		return nil
+	}
+	doc, err := e.store.Get(ctx, id)
+	if err == nil {
+		err = e.indexer.Index(ctx, doc)
+	}
+	if err != nil {
+		return fmt.Errorf("source concept %q was persisted but its secondary index needs repair: %w", id, err)
+	}
+	return nil
 }

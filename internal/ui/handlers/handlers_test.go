@@ -28,11 +28,10 @@ version: 1
 project: gyrus
 storage:
   provider: localfs
-  localfs:
-    path: .gyrus/concepts
+  root: .gyrus
 tenant: test-core
 search:
-  provider: sqlite_fts5
+  provider: okf
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, ".gyrus.yaml"), []byte(cfgContent), 0644); err != nil {
 		t.Fatalf("failed writing config: %v", err)
@@ -88,9 +87,9 @@ func TestHandlers_LifecycleAndHelpers(t *testing.T) {
 
 	// Test buildTaxonomyCounts helper
 	docs := []gyrus.SearchResult{
-		{Concept: gyrus.Concept{Category: "architecture", Type: gyrus.TypeADR}},
-		{Concept: gyrus.Concept{Category: "architecture", Type: gyrus.TypeSpecification}},
-		{Concept: gyrus.Concept{Category: "product", Type: gyrus.TypePRD}},
+		{Concept: gyrus.Concept{Category: "architecture", Type: gyrus.TypeADR, Tenant: "root"}},
+		{Concept: gyrus.Concept{Category: "architecture", Type: gyrus.TypeSpecification, Tenant: "root"}},
+		{Concept: gyrus.Concept{Category: "product", Type: gyrus.TypePRD, Tenant: "root"}},
 	}
 	catCounts, typeCounts := h.buildTaxonomyCounts(docs)
 	if len(catCounts) != 2 {
@@ -134,12 +133,12 @@ func TestHandlers_ScopesAndTenants(t *testing.T) {
 	}
 
 	// Test determineDocScope
-	docRef := gyrus.Concept{ID: "spec-001", Category: gyrus.CategoryTechnical, Type: gyrus.TypeSpecification}
+	docRef := gyrus.Concept{ID: "spec-001", Category: gyrus.CategoryTechnical, Type: gyrus.TypeSpecification, Tenant: "root", Name: "root/reference/spec-001"}
 	if scope := h.determineDocScope(&docRef, nil); scope != "reference" {
 		t.Errorf("expected scope 'reference', got '%s'", scope)
 	}
 
-	docProj := gyrus.Concept{ID: "prd-001", Category: gyrus.CategoryProduct, Type: gyrus.TypePRD}
+	docProj := gyrus.Concept{ID: "prd-001", Category: gyrus.CategoryProduct, Type: gyrus.TypePRD, Tenant: "root", Name: "root/projects/gyrus/prd-001"}
 	if scope := h.determineDocScope(&docProj, nil); scope != "projects/gyrus" {
 		t.Errorf("expected scope 'projects/gyrus', got '%s'", scope)
 	}
@@ -193,7 +192,7 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 		Scope:    "reference",
 		Version:  1,
 		Status:   "accepted",
-		Content:  "# Storage Spec\n\nDetailed storage specification.",
+		Content:  "# Storage Spec\n\nDetailed storage specification.", Name: "test-core/reference/spec-101",
 	})
 	if err != nil {
 		t.Fatalf("failed creating reference doc: %v", err)
@@ -208,7 +207,7 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 		Tenant:   "test-core",
 		Version:  1,
 		Status:   "draft",
-		Content:  "# Feature PRD\n\nDetailed feature requirement.",
+		Content:  "# Feature PRD\n\nDetailed feature requirement.", Name: "test-core/projects/gyrus/prd-101",
 	})
 	if err != nil {
 		t.Fatalf("failed creating project doc: %v", err)
@@ -261,10 +260,10 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 	if !strings.Contains(refBody, "Scope: Reference") {
 		t.Errorf("expected page title 'Scope: Reference'")
 	}
-	if !strings.Contains(refBody, "spec-101") {
+	if !strings.Contains(refBody, "test-core/reference/spec-101") {
 		t.Errorf("expected reference document 'spec-101' to be listed")
 	}
-	if strings.Contains(refBody, "prd-101") {
+	if strings.Contains(refBody, "test-core/projects/gyrus/prd-101") {
 		t.Errorf("did not expect project document 'prd-101' in scope=reference filter")
 	}
 
@@ -280,10 +279,10 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 	if !strings.Contains(wsBody, "Project: gyrus") {
 		t.Errorf("expected page title 'Project: gyrus'")
 	}
-	if !strings.Contains(wsBody, "prd-101") {
+	if !strings.Contains(wsBody, "test-core/projects/gyrus/prd-101") {
 		t.Errorf("expected project document 'prd-101' to be listed")
 	}
-	if strings.Contains(wsBody, "spec-101") {
+	if strings.Contains(wsBody, "test-core/reference/spec-101") {
 		t.Errorf("did not expect reference document 'spec-101' in project filter")
 	}
 
@@ -299,10 +298,10 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 	if !strings.Contains(scopeTypeBody, "Scope: Reference · specification") {
 		t.Errorf("expected page title 'Scope: Reference · specification'")
 	}
-	if !strings.Contains(scopeTypeBody, "spec-101") {
+	if !strings.Contains(scopeTypeBody, "test-core/reference/spec-101") {
 		t.Errorf("expected 'spec-101' in scope=reference&type=specification results")
 	}
-	if strings.Contains(scopeTypeBody, "prd-101") {
+	if strings.Contains(scopeTypeBody, "test-core/projects/gyrus/prd-101") {
 		t.Errorf("did not expect 'prd-101' in scope=reference&type=specification results")
 	}
 
@@ -314,7 +313,7 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 	if rrGraph.Code != http.StatusOK {
 		t.Fatalf("expected 200 OK for /api/graph, got %d", rrGraph.Code)
 	}
-	if !strings.Contains(rrGraph.Body.String(), "spec-101") {
+	if !strings.Contains(rrGraph.Body.String(), "test-core/reference/spec-101") {
 		t.Errorf("expected /api/graph to contain 'spec-101'")
 	}
 }

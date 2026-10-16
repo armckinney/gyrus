@@ -13,7 +13,7 @@ import (
 func (h *Handler) registerSearchTools(s *server.MCPServer) {
 	// 5. gyrus_search
 	searchTool := mcp.NewTool("gyrus_search",
-		mcp.WithDescription("Search OKF concepts using FTS5 lexical keyword matching and metadata filters"),
+		mcp.WithDescription("Search concepts using the configured provider; OKF returns the top 10 keyword matches or all empty-query metadata matches"),
 		mcp.WithString("query", mcp.Description("Search query text")),
 		mcp.WithString("category", mcp.Description("Filter by category")),
 		mcp.WithString("type", mcp.Description("Filter by type")),

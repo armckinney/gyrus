@@ -116,24 +116,30 @@ func (a *App) Engine() (*lifecycle.Engine, error) {
 		return a.engine, nil
 	}
 
+	resolved, err := config.ResolveProviders(a.resolved.Config)
+	if err != nil {
+		return nil, err
+	}
+	a.resolved.Config = resolved
+
 	store, err := provider.NewConceptStore(a.resolved.Config, a.resolved.StorageRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed initializing storage provider: %w", err)
 	}
 
-	search, err := provider.NewSearchProvider(a.resolved.Config, a.resolved.StorageRoot)
-	if err != nil {
-		return nil, fmt.Errorf("failed initializing search provider: %w", err)
-	}
-
-	indexer, err := provider.NewIndexStore(a.resolved.Config, a.resolved.StorageRoot)
+	indexer, err := provider.NewIndexStore(a.resolved.Config, a.resolved.StorageRoot, store)
 	if err != nil {
 		return nil, fmt.Errorf("failed initializing index provider: %w", err)
 	}
 
-	graph, err := provider.NewGraphStore(a.resolved.Config, a.resolved.StorageRoot)
+	graph, err := provider.NewGraphStore(a.resolved.Config, a.resolved.StorageRoot, store, indexer)
 	if err != nil {
 		return nil, fmt.Errorf("failed initializing graph provider: %w", err)
+	}
+
+	search, err := provider.NewSearchProvider(a.resolved.Config, a.resolved.StorageRoot, store, indexer)
+	if err != nil {
+		return nil, fmt.Errorf("failed initializing search provider: %w", err)
 	}
 
 	projectName := ""

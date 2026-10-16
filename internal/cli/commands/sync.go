@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/armckinney/gyrus/internal/app"
+	"github.com/armckinney/gyrus/internal/domain/okf"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +15,7 @@ import (
 func NewSyncCmd(application *app.App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "sync",
-		Short: "Re-index filesystem documents and extract dependency edges",
+		Short: "Scan concept storage and validate or rebuild its index",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			engine, err := application.Engine()
 			if err != nil {
@@ -33,6 +35,14 @@ func NewSyncCmd(application *app.App) *cobra.Command {
 					report.ScannedFiles, report.IndexedFiles, report.UnchangedFiles, report.RemovedFiles)
 			}
 
+			if len(report.Errors) > 0 {
+				if !GlobalJSONOutput {
+					for _, problem := range report.Errors {
+						fmt.Fprintln(cmd.ErrOrStderr(), problem)
+					}
+				}
+				return &okf.ValidationError{Field: "collection", Message: strings.Join(report.Errors, "; ")}
+			}
 			return nil
 		},
 	}

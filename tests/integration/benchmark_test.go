@@ -42,7 +42,8 @@ func BenchmarkDocumentIndexing(b *testing.B) {
 			Version:     1,
 			Status:      "active",
 			LastUpdated: time.Now(),
-			Content:     "High performance benchmark document body content with indexing terms.",
+			Content:     "High performance benchmark document body content with indexing terms.", Name: "benchmarks/reference/" +
+				fmt.Sprintf("bench-doc-%d", i),
 		}
 		if err := indexer.Index(ctx, doc); err != nil {
 			b.Fatalf("Index failed at iteration %d: %v", i, err)
@@ -79,7 +80,8 @@ func BenchmarkFTS5Search(b *testing.B) {
 			Version:     1,
 			Status:      "accepted",
 			LastUpdated: time.Now(),
-			Content:     "PostgreSQL and SQLite storage engine with FTS5 lexical ranking.",
+			Content:     "PostgreSQL and SQLite storage engine with FTS5 lexical ranking.", Name: "platform/reference/" +
+				fmt.Sprintf("seed-doc-%d", i),
 		}
 		_ = indexer.Index(ctx, doc)
 	}
@@ -124,7 +126,6 @@ func BenchmarkGraphTraversal(b *testing.B) {
 			FromConceptID:    fmt.Sprintf("node-%d", i),
 			ToConceptID:      fmt.Sprintf("node-%d", i+1),
 			RelationshipType: gyrus.RelDependsOn,
-			CreatedAt:        time.Now(),
 		})
 	}
 	_ = graphStore.UpsertEdges(ctx, edges)

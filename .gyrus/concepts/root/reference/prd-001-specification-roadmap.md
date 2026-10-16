@@ -1,20 +1,21 @@
 ---
-id: prd-001-specification-roadmap
 title: Gyrus Specification Implementation Roadmap
-category: technical
+id: prd-001-specification-roadmap
 type: prd
 format: ""
-tenant: root
-version: 16
+category: technical
+version: 17
 status: active
+last_updated: 2026-10-16T16:47:49Z
+tenant: root
 tags:
-  - roadmap
-  - release-phases
-  - specification
-  - terraform
-  - iac
-  - infrastructure
-dependencies: []
+    - roadmap
+    - release-phases
+    - specification
+    - terraform
+    - iac
+    - infrastructure
+links: []
 ---
 
 # Gyrus Specification Implementation Roadmap

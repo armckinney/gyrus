@@ -2,6 +2,8 @@ package cli_test
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -155,5 +157,40 @@ func TestCLI_Schema(t *testing.T) {
 	output := schemaOut.String()
 	if !strings.Contains(output, "type: adr") || !strings.Contains(output, "status:") {
 		t.Errorf("Expected schema output to contain ADR template frontmatter, got:\n%s", output)
+	}
+}
+
+func TestCLI_OKFSyncReturnsReportAndValidationExit(t *testing.T) {
+	root := t.TempDir()
+	init := exec.Command(gyrusBinPath, "config", "init")
+	init.Dir = root
+	if out, err := init.CombinedOutput(); err != nil {
+		t.Fatalf("init: %v %s", err, out)
+	}
+	dir := filepath.Join(root, ".gyrus/concepts/root/reference")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "broken.md"), []byte("not OKF"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(gyrusBinPath, "sync", "--json")
+	cmd.Dir = root
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	err := cmd.Run()
+	var exit *exec.ExitError
+	if !errors.As(err, &exit) || exit.ExitCode() != 1 {
+		t.Fatalf("sync failure: %v %s", err, stderr.String())
+	}
+	var report struct {
+		Scanned int      `json:"scanned_files"`
+		Errors  []string `json:"errors"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil || report.Scanned != 1 || len(report.Errors) != 1 {
+		t.Fatalf("report: %s %v", stdout.String(), err)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".gyrus/index.db")); !os.IsNotExist(err) {
+		t.Fatal("OKF sync created database")
 	}
 }

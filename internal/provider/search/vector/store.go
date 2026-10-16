@@ -5,6 +5,7 @@ import (
 	"math"
 	"sort"
 
+	"github.com/armckinney/gyrus/internal/domain/okf"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
@@ -35,6 +36,9 @@ func NewStore(lexical gyrus.SearchProvider, embedder EmbeddingProvider) *Store {
 
 // AddConcept is used to index a concept in the vector store
 func (s *Store) AddConcept(ctx context.Context, doc gyrus.Concept) error {
+	if err := okf.SetName(&doc, ""); err != nil {
+		return err
+	}
 	vec, err := s.Embedder.Embed(ctx, doc.Content)
 	if err != nil {
 		return err
@@ -136,19 +140,19 @@ func rrf(lexical, vector []gyrus.SearchResult) []gyrus.SearchResult {
 
 	for i, res := range lexical {
 		rank := i + 1
-		scores[res.Concept.ID] += 1.0 / float64(k+rank)
-		docs[res.Concept.ID] = res.Concept
-		reasons[res.Concept.ID] = "lexical"
+		scores[res.Concept.Name] += 1.0 / float64(k+rank)
+		docs[res.Concept.Name] = res.Concept
+		reasons[res.Concept.Name] = "lexical"
 	}
 
 	for i, res := range vector {
 		rank := i + 1
-		scores[res.Concept.ID] += 1.0 / float64(k+rank)
-		docs[res.Concept.ID] = res.Concept
-		if existing, ok := reasons[res.Concept.ID]; ok {
-			reasons[res.Concept.ID] = existing + ", semantic"
+		scores[res.Concept.Name] += 1.0 / float64(k+rank)
+		docs[res.Concept.Name] = res.Concept
+		if existing, ok := reasons[res.Concept.Name]; ok {
+			reasons[res.Concept.Name] = existing + ", semantic"
 		} else {
-			reasons[res.Concept.ID] = "semantic"
+			reasons[res.Concept.Name] = "semantic"
 		}
 	}
 

@@ -84,3 +84,7 @@ coverage.out
 **/.gyrus/cache/**
 *stop_hook_state.json
 **/*stop_hook_state.json
+
+# OKF mutation locks and migration rollback artifacts
+**/.gyrus-write.lock
+.gyrus/backups/

@@ -1,14 +1,14 @@
 ---
-id: adr-004-agent-plugin-packaging-distribution-and-init-revamp
 title: Agent Plugin Packaging, Distribution & Init Revamp
-category: architecture
+id: adr-004-agent-plugin-packaging-distribution-and-init-revamp
 type: adr
 format: markdown
-tenant: root
-version: 2
+category: architecture
+version: 4
 status: superseded
+last_updated: 2026-10-16T16:47:49Z
 last_modified_by: antigravity
-last_updated: 2026-09-30T21:41:53Z
+tenant: root
 tags:
     - adr
     - architecture
@@ -17,10 +17,13 @@ tags:
     - mcp
     - cli
     - phase-2-6
-dependencies:
-    - adr-001-oop-core-refactoring-and-package-reorganization
-    - adr-002-simplified-directory-topology
-    - adr-003-persistence-layer-schema-storage-and-remote-linkage
+links:
+    - concept: root/reference/adr-001-oop-core-refactoring-and-package-reorganization
+      rel: depends_on
+    - concept: root/reference/adr-002-simplified-directory-topology
+      rel: depends_on
+    - concept: root/reference/adr-003-persistence-layer-schema-storage-and-remote-linkage
+      rel: depends_on
 ---
 
 # ADR 004: Agent Plugin Packaging, Distribution & Init Revamp

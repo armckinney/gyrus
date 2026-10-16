@@ -40,7 +40,7 @@ func setupDocsTestEnvironment(t *testing.T) (*Handlers, func()) {
 		Version:  1,
 		Tenant:   "test-core",
 		Tags:     []string{"storage", "sqlite"},
-		Content:  "# Decision\nWe choose SQLite and PostgreSQL for unified persistence.\n\n| Engine | Score |\n|---|---|\n| SQLite | 9.5 |",
+		Scope:    "reference", Content: "# Decision\nWe choose SQLite and PostgreSQL for unified persistence.\n\n| Engine | Score |\n|---|---|\n| SQLite | 9.5 |", Name: "test-core/reference/adr-001-architecture",
 	}
 	if _, err := engine.Create(ctx, doc1); err != nil {
 		t.Fatalf("failed creating doc1: %v", err)
@@ -55,13 +55,13 @@ func setupDocsTestEnvironment(t *testing.T) (*Handlers, func()) {
 		Version:  1,
 		Tenant:   "test-core",
 		Tags:     []string{"roadmap"},
-		Content:  "# Roadmap\nPhase 2.9 includes Web UI development.",
+		Scope:    "reference", Content: "# Roadmap\nPhase 2.9 includes Web UI development.", Name: "test-core/reference/prd-001-roadmap",
 	}
 	if _, err := engine.Create(ctx, doc2); err != nil {
 		t.Fatalf("failed creating doc2: %v", err)
 	}
 
-	if err := engine.Link(ctx, "prd-001-roadmap", "adr-001-architecture", gyrus.RelDependsOn); err != nil {
+	if err := engine.Link(ctx, "test-core/reference/prd-001-roadmap", "test-core/reference/adr-001-architecture", gyrus.RelDependsOn); err != nil {
 		t.Fatalf("failed linking docs: %v", err)
 	}
 
@@ -149,7 +149,7 @@ func TestDocs_DocView(t *testing.T) {
 	defer cleanup()
 
 	t.Run("Doc view success", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/concepts/adr-001-architecture", nil)
+		req := httptest.NewRequest(http.MethodGet, "/concepts/test-core/reference/adr-001-architecture", nil)
 		rec := httptest.NewRecorder()
 
 		h.Doc(rec, req)
@@ -164,7 +164,7 @@ func TestDocs_DocView(t *testing.T) {
 		if !strings.Contains(body, "<table>") {
 			t.Errorf("expected markdown table rendering")
 		}
-		if !strings.Contains(body, "prd-001-roadmap") {
+		if !strings.Contains(body, "test-core/reference/prd-001-roadmap") {
 			t.Errorf("expected incoming relationship to be rendered")
 		}
 	})

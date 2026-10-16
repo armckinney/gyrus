@@ -1,11 +1,32 @@
 package db_test
 
 import (
+	"database/sql"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/armckinney/gyrus/internal/provider/db"
 )
+
+func TestObsoleteSQLiteIdentitySchemaRejected(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "legacy.db")
+	legacy, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer legacy.Close()
+	if _, err := legacy.Exec("CREATE TABLE concepts(id TEXT PRIMARY KEY); INSERT INTO concepts VALUES ('legacy')"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.OpenSQLite(path); err == nil || !strings.Contains(err.Error(), "obsolete") {
+		t.Fatalf("legacy schema reused: %v", err)
+	}
+	var id string
+	if err := legacy.QueryRow("SELECT id FROM concepts").Scan(&id); err != nil || id != "legacy" {
+		t.Fatalf("legacy data changed: %s %v", id, err)
+	}
+}
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test

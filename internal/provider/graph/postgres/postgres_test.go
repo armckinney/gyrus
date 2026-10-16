@@ -2,12 +2,11 @@ package postgres_test
 
 import (
 	"context"
+	"github.com/pashagolub/pgxmock/v4"
 	"testing"
-	"time"
 
 	graphpg "github.com/armckinney/gyrus/internal/provider/graph/postgres"
 	"github.com/armckinney/gyrus/pkg/gyrus"
-	"github.com/pashagolub/pgxmock/v4"
 )
 
 // -----------------------------------------------------------------------------
@@ -26,21 +25,18 @@ func TestPostgresGraphStore_EdgesAndNeighbors(t *testing.T) {
 	graphStore := graphpg.NewGraphStore(mock)
 	ctx := context.Background()
 
-	now := time.Now()
 	edges := []gyrus.ConceptEdge{
 		{
-			FromConceptID:    "prd-001",
-			ToConceptID:      "adr-001",
+			FromConceptID:    "root/reference/prd-001",
+			ToConceptID:      "root/reference/adr-001",
 			RelationshipType: gyrus.RelDependsOn,
-			CreatedBy:        "dev-1",
-			CreatedAt:        now,
 		},
 	}
 
 	// 1. Upsert Edges
 	mock.ExpectBegin()
 	mock.ExpectExec("INSERT INTO concept_edges").
-		WithArgs("prd-001", "adr-001", "depends_on", "dev-1", now).
+		WithArgs("root/reference/prd-001", "root/reference/adr-001", "depends_on").
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 	mock.ExpectCommit()
 
@@ -49,27 +45,27 @@ func TestPostgresGraphStore_EdgesAndNeighbors(t *testing.T) {
 	}
 
 	// 2. Neighbors Outgoing
-	rows := pgxmock.NewRows([]string{"from_concept_id", "to_concept_id", "relationship_type", "created_by", "created_at"}).
-		AddRow("prd-001", "adr-001", "depends_on", "dev-1", now)
+	rows := pgxmock.NewRows([]string{"from_concept_id", "to_concept_id", "relationship_type"}).
+		AddRow("root/reference/prd-001", "root/reference/adr-001", "depends_on")
 
-	mock.ExpectQuery("SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE from_concept_id = \\$1").
-		WithArgs("prd-001").
+	mock.ExpectQuery("SELECT from_concept_id, to_concept_id, relationship_type FROM concept_edges WHERE from_concept_id = \\$1").
+		WithArgs("root/reference/prd-001").
 		WillReturnRows(rows)
 
-	outgoing, err := graphStore.Neighbors(ctx, "prd-001", gyrus.EdgeFilter{Direction: "outgoing"})
+	outgoing, err := graphStore.Neighbors(ctx, "root/reference/prd-001", gyrus.EdgeFilter{Direction: "outgoing"})
 	if err != nil {
 		t.Fatalf("Neighbors failed: %v", err)
 	}
-	if len(outgoing) != 1 || outgoing[0].ToConceptID != "adr-001" {
+	if len(outgoing) != 1 || outgoing[0].ToConceptID != "root/reference/adr-001" {
 		t.Errorf("Expected outgoing edge to adr-001, got %v", outgoing)
 	}
 
 	// 3. Delete Edges
 	mock.ExpectExec("DELETE FROM concept_edges WHERE from_concept_id = \\$1 AND to_concept_id = \\$2 AND relationship_type = \\$3").
-		WithArgs("prd-001", "adr-001", "depends_on").
+		WithArgs("root/reference/prd-001", "root/reference/adr-001", "depends_on").
 		WillReturnResult(pgxmock.NewResult("DELETE", 1))
 
-	if err := graphStore.DeleteEdges(ctx, "prd-001", "adr-001", gyrus.RelDependsOn); err != nil {
+	if err := graphStore.DeleteEdges(ctx, "root/reference/prd-001", "root/reference/adr-001", gyrus.RelDependsOn); err != nil {
 		t.Fatalf("DeleteEdges failed: %v", err)
 	}
 

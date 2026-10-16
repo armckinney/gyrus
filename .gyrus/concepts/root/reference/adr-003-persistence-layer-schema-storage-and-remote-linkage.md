@@ -1,23 +1,25 @@
 ---
-id: adr-003-persistence-layer-schema-storage-and-remote-linkage
 title: Persistence Layer Schema Storage & Remote Linkage
-category: architecture
+id: adr-003-persistence-layer-schema-storage-and-remote-linkage
 type: adr
 format: markdown
-tenant: root
-version: 1
+category: architecture
+version: 3
 status: accepted
+last_updated: 2026-10-16T16:47:49Z
 last_modified_by: antigravity
-last_updated: 2026-09-09T00:27:00Z
+tenant: root
 tags:
-  - adr
-  - architecture
-  - persistence
-  - schemas
-  - phase-2-5
-dependencies:
-  - adr-001-oop-core-refactoring-and-package-reorganization
-  - adr-002-simplified-directory-topology
+    - adr
+    - architecture
+    - persistence
+    - schemas
+    - phase-2-5
+links:
+    - concept: root/reference/adr-001-oop-core-refactoring-and-package-reorganization
+      rel: depends_on
+    - concept: root/reference/adr-002-simplified-directory-topology
+      rel: depends_on
 ---
 
 # ADR 003: Persistence Layer Schema Storage & Remote Linkage

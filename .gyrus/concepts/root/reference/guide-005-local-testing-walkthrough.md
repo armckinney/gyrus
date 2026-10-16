@@ -1,14 +1,14 @@
 ---
-id: guide-005-local-testing-walkthrough
 title: Gyrus Local Testing Commands Walkthrough
-category: technical
+id: guide-005-local-testing-walkthrough
 type: guide
 format: ""
-tenant: root
+category: technical
 version: 2
 status: active
-last_modified_by: ""
 last_updated: 2026-07-22T07:10:43Z
+last_modified_by: ""
+tenant: root
 tags:
     - testing
     - manual-testing

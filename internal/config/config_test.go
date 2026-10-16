@@ -30,8 +30,8 @@ func TestLoadDefaultsOnly(t *testing.T) {
 	if rc.StorageRoot != expectedRoot {
 		t.Errorf("Expected storage root '%s', got '%s'", expectedRoot, rc.StorageRoot)
 	}
-	if rc.Config.StorageProvider() != "" {
-		t.Errorf("Expected empty default storage provider, got '%s'", rc.Config.StorageProvider())
+	if rc.Config.StorageProvider() != "localfs" {
+		t.Errorf("Expected localfs default storage provider, got '%s'", rc.Config.StorageProvider())
 	}
 	if rc.Config.TenantName() != "root" {
 		t.Errorf("Expected default tenant 'root', got '%s'", rc.Config.TenantName())

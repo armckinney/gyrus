@@ -1,14 +1,14 @@
 ---
-id: ticket-gyrus-102
 title: GYRUS-102 OKF Envelope Parser
-category: product
+id: ticket-gyrus-102
 type: freeform
 format: ""
-tenant: root
+category: product
 version: 1
 status: active
-last_modified_by: ""
 last_updated: 2026-07-22T06:43:33Z
+last_modified_by: ""
+tenant: root
 ---
 
 # [GYRUS-102] OKF Envelope Parser & Schema Validator

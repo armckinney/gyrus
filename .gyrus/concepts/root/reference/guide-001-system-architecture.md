@@ -1,14 +1,14 @@
 ---
-id: guide-001-system-architecture
 title: Gyrus Architecture Blueprint & Domain Topology
-category: architecture
+id: guide-001-system-architecture
 type: guide
 format: ""
-tenant: root
+category: architecture
 version: 1
 status: active
-last_modified_by: ""
 last_updated: 2026-07-22T06:38:56Z
+last_modified_by: ""
+tenant: root
 ---
 
 # Gyrus System Architecture

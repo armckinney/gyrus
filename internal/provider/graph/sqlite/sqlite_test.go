@@ -4,7 +4,6 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
-	"time"
 
 	graphsqlite "github.com/armckinney/gyrus/internal/provider/graph/sqlite"
 	indexsqlite "github.com/armckinney/gyrus/internal/provider/index/sqlite"
@@ -30,28 +29,21 @@ func TestSQLiteGraphStore_EdgesAndNeighbors(t *testing.T) {
 	graphStore := graphsqlite.NewGraphStore(indexer.DB())
 	ctx := context.Background()
 
-	now := time.Now()
 	edges := []gyrus.ConceptEdge{
 		{
-			FromConceptID:    "prd-001",
-			ToConceptID:      "adr-001",
+			FromConceptID:    "root/reference/prd-001",
+			ToConceptID:      "root/reference/adr-001",
 			RelationshipType: gyrus.RelDependsOn,
-			CreatedBy:        "dev-1",
-			CreatedAt:        now,
 		},
 		{
-			FromConceptID:    "prd-001",
-			ToConceptID:      "adr-002",
+			FromConceptID:    "root/reference/prd-001",
+			ToConceptID:      "root/reference/adr-002",
 			RelationshipType: gyrus.RelImplements,
-			CreatedBy:        "dev-1",
-			CreatedAt:        now,
 		},
 		{
-			FromConceptID:    "adr-002",
-			ToConceptID:      "adr-003",
+			FromConceptID:    "root/reference/adr-002",
+			ToConceptID:      "root/reference/adr-003",
 			RelationshipType: gyrus.RelSupersedes,
-			CreatedBy:        "dev-2",
-			CreatedAt:        now,
 		},
 	}
 
@@ -61,7 +53,7 @@ func TestSQLiteGraphStore_EdgesAndNeighbors(t *testing.T) {
 	}
 
 	// 2. Outgoing Neighbors for prd-001
-	outgoing, err := graphStore.Neighbors(ctx, "prd-001", gyrus.EdgeFilter{Direction: "outgoing"})
+	outgoing, err := graphStore.Neighbors(ctx, "root/reference/prd-001", gyrus.EdgeFilter{Direction: "outgoing"})
 	if err != nil {
 		t.Fatalf("Neighbors outgoing failed: %v", err)
 	}
@@ -70,36 +62,36 @@ func TestSQLiteGraphStore_EdgesAndNeighbors(t *testing.T) {
 	}
 
 	// 3. Incoming Neighbors for adr-001
-	incoming, err := graphStore.Neighbors(ctx, "adr-001", gyrus.EdgeFilter{Direction: "incoming"})
+	incoming, err := graphStore.Neighbors(ctx, "root/reference/adr-001", gyrus.EdgeFilter{Direction: "incoming"})
 	if err != nil {
 		t.Fatalf("Neighbors incoming failed: %v", err)
 	}
-	if len(incoming) != 1 || incoming[0].FromConceptID != "prd-001" {
+	if len(incoming) != 1 || incoming[0].FromConceptID != "root/reference/prd-001" {
 		t.Errorf("Expected incoming edge from prd-001 to adr-001, got %v", incoming)
 	}
 
 	// 4. Filter by RelationshipType
-	dependsOnEdges, err := graphStore.Neighbors(ctx, "prd-001", gyrus.EdgeFilter{
+	dependsOnEdges, err := graphStore.Neighbors(ctx, "root/reference/prd-001", gyrus.EdgeFilter{
 		Direction:        "outgoing",
 		RelationshipType: gyrus.RelDependsOn,
 	})
 	if err != nil {
 		t.Fatalf("Neighbors with rel filter failed: %v", err)
 	}
-	if len(dependsOnEdges) != 1 || dependsOnEdges[0].ToConceptID != "adr-001" {
+	if len(dependsOnEdges) != 1 || dependsOnEdges[0].ToConceptID != "root/reference/adr-001" {
 		t.Errorf("Expected 1 depends_on edge to adr-001, got %v", dependsOnEdges)
 	}
 
 	// 5. Delete Edge
-	if err := graphStore.DeleteEdges(ctx, "prd-001", "adr-001", gyrus.RelDependsOn); err != nil {
+	if err := graphStore.DeleteEdges(ctx, "root/reference/prd-001", "root/reference/adr-001", gyrus.RelDependsOn); err != nil {
 		t.Fatalf("DeleteEdges failed: %v", err)
 	}
 
-	afterDelete, err := graphStore.Neighbors(ctx, "prd-001", gyrus.EdgeFilter{Direction: "outgoing"})
+	afterDelete, err := graphStore.Neighbors(ctx, "root/reference/prd-001", gyrus.EdgeFilter{Direction: "outgoing"})
 	if err != nil {
 		t.Fatalf("Neighbors after delete failed: %v", err)
 	}
-	if len(afterDelete) != 1 || afterDelete[0].ToConceptID != "adr-002" {
+	if len(afterDelete) != 1 || afterDelete[0].ToConceptID != "root/reference/adr-002" {
 		t.Errorf("Expected only 1 edge remaining to adr-002, got %v", afterDelete)
 	}
 }
@@ -123,20 +115,17 @@ func TestSQLiteGraphStore_Traverse(t *testing.T) {
 	graphStore := graphsqlite.NewGraphStore(indexer.DB())
 	ctx := context.Background()
 
-	now := time.Now()
-	// Chain: doc-A -> doc-B -> doc-C
+	// Chain: doc-a -> doc-b -> doc-c
 	edges := []gyrus.ConceptEdge{
 		{
-			FromConceptID:    "doc-A",
-			ToConceptID:      "doc-B",
+			FromConceptID:    "root/reference/doc-a",
+			ToConceptID:      "root/reference/doc-b",
 			RelationshipType: gyrus.RelDependsOn,
-			CreatedAt:        now,
 		},
 		{
-			FromConceptID:    "doc-B",
-			ToConceptID:      "doc-C",
+			FromConceptID:    "root/reference/doc-b",
+			ToConceptID:      "root/reference/doc-c",
 			RelationshipType: gyrus.RelDependsOn,
-			CreatedAt:        now,
 		},
 	}
 
@@ -145,7 +134,7 @@ func TestSQLiteGraphStore_Traverse(t *testing.T) {
 	}
 
 	paths, err := graphStore.Traverse(ctx, gyrus.GraphQuery{
-		StartID:  "doc-A",
+		StartID:  "root/reference/doc-a",
 		MaxDepth: 3,
 	})
 	if err != nil {
@@ -161,7 +150,7 @@ func TestSQLiteGraphStore_Traverse(t *testing.T) {
 		foundNodes[node] = true
 	}
 
-	if !foundNodes["doc-A"] || !foundNodes["doc-B"] || !foundNodes["doc-C"] {
-		t.Errorf("Expected nodes doc-A, doc-B, doc-C in traversal path, got %v", paths[0].Nodes)
+	if !foundNodes["root/reference/doc-a"] || !foundNodes["root/reference/doc-b"] || !foundNodes["root/reference/doc-c"] {
+		t.Errorf("Expected nodes doc-a, doc-b, doc-c in traversal path, got %v", paths[0].Nodes)
 	}
 }

@@ -57,7 +57,7 @@ func TestGraph_APIGraph_JSONContract(t *testing.T) {
 	}
 
 	edge := payload.Edges[0]
-	if edge.Source != "prd-001-roadmap" || edge.Target != "adr-001-architecture" || edge.RelationshipType != string(gyrus.RelDependsOn) {
+	if edge.Source != "test-core/reference/prd-001-roadmap" || edge.Target != "test-core/reference/adr-001-architecture" || edge.RelationshipType != string(gyrus.RelDependsOn) {
 		t.Errorf("unexpected edge structure: %+v", edge)
 	}
 }

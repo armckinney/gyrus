@@ -1,6 +1,7 @@
 package skills_test
 
 import (
+	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,6 +45,7 @@ func TestSkillStaticAnalysis(t *testing.T) {
 				"sync",
 			},
 		},
+		{name: "gyrus-migrate-okf", references: []string{"sqlite-to-okf.md"}, expectedActions: []string{"gyrus config show", "gyrus sync"}},
 		{
 			name:       "gyrus-index",
 			references: []string{},
@@ -89,5 +91,31 @@ func TestSkillStaticAnalysis(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestMigrationSkillFrontmatterAndReference(t *testing.T) {
+	root := filepath.Join("..", "..", "packaging", "plugins", "gyrus", "skills", "gyrus-migrate-okf")
+	data, err := os.ReadFile(filepath.Join(root, "SKILL.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parts := strings.SplitN(string(data), "---", 3)
+	if len(parts) != 3 {
+		t.Fatal("missing frontmatter")
+	}
+	var meta struct {
+		Name        string   `yaml:"name"`
+		Description string   `yaml:"description"`
+		ApplyTo     []string `yaml:"applyTo"`
+	}
+	if err := yaml.Unmarshal([]byte(parts[1]), &meta); err != nil {
+		t.Fatal(err)
+	}
+	if meta.Name != "gyrus-migrate-okf" || meta.Description == "" || len(meta.ApplyTo) == 0 {
+		t.Fatalf("invalid skill metadata: %+v", meta)
+	}
+	if _, err := os.Stat(filepath.Join(root, "references", "sqlite-to-okf.md")); err != nil {
+		t.Fatal(err)
 	}
 }

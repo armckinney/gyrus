@@ -98,10 +98,10 @@ func (h *Handlers) APIGraph(w http.ResponseWriter, r *http.Request) {
 	nodeMap := make(map[string]bool)
 	for _, res := range results {
 		doc := res.Concept
-		nodeMap[doc.ID] = true
+		nodeMap[doc.Name] = true
 
 		payload.Nodes = append(payload.Nodes, GraphNodeJSON{
-			ID:       doc.ID,
+			ID:       doc.Name,
 			Title:    doc.Title,
 			Category: string(doc.Category),
 			Type:     string(doc.Type),

@@ -1,14 +1,14 @@
 ---
-id: spec-203-postgres-storage-index-driver
 title: 'GYRUS-203: PostgreSQL Enterprise Index & Storage Driver'
-category: technical
+id: spec-203-postgres-storage-index-driver
 type: specification
 format: ""
-tenant: root
+category: technical
 version: 1
 status: completed
-last_modified_by: ""
 last_updated: 2026-07-23T21:23:12Z
+last_modified_by: ""
+tenant: root
 tags:
     - phase-2.1
     - storage-driver

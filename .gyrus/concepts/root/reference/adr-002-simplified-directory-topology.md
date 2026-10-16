@@ -1,16 +1,16 @@
 ---
-id: adr-002-simplified-directory-topology
 title: Simplified Directory Topology (.gyrus/ Root & .gyrus/docs/ Layout)
-category: architecture
+id: adr-002-simplified-directory-topology
 type: adr
 format: markdown
-tenant: root
+category: architecture
 version: 1
 status: superseded
-superseded_by: adr-009-okf-concepts-projects-tenant-nomenclature
-last_modified_by: antigravity
 last_updated: 2026-08-12T05:40:00Z
+last_modified_by: antigravity
+tenant: root
 tags: [architecture, storage, topology, gyrus]
+superseded_by: adr-009-okf-concepts-projects-tenant-nomenclature
 ---
 
 # ADR 002: Simplified Directory Topology (.gyrus/ Root & .gyrus/docs/ Layout)

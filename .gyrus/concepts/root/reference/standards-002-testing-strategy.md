@@ -1,28 +1,36 @@
 ---
-id: standards-002-testing-strategy
 title: Gyrus Testing Strategy & QA Standards
-category: technical
+id: standards-002-testing-strategy
 type: standards
 format: markdown
-tenant: root
-version: 5
+category: technical
+version: 7
 status: active
+last_updated: 2026-10-16T16:47:49Z
+last_modified_by: ""
+tenant: root
 tags:
-  - testing
-  - qa
-  - standards
-  - integration
-  - mcp
-  - cli
-  - agents
-  - phase-2.4
-dependencies:
-  - prd-001-specification-roadmap
-  - standards-001-doc-strategy
-  - spec-001-contract-schema
-  - spec-002-cli-interface
-  - spec-003-mcp-interface
-  - spec-004-core-engine
+    - testing
+    - qa
+    - standards
+    - integration
+    - mcp
+    - cli
+    - agents
+    - phase-2.4
+links:
+    - concept: root/reference/prd-001-specification-roadmap
+      rel: depends_on
+    - concept: root/reference/spec-001-contract-schema
+      rel: depends_on
+    - concept: root/reference/spec-002-cli-interface
+      rel: depends_on
+    - concept: root/reference/spec-003-mcp-interface
+      rel: depends_on
+    - concept: root/reference/spec-004-core-engine
+      rel: depends_on
+    - concept: root/reference/standards-001-doc-strategy
+      rel: depends_on
 ---
 
 # Gyrus Testing Strategy & QA Standards

@@ -4,7 +4,7 @@
         <div class="doc-header">
             <h1 class="doc-title">{{.Concept.Title}}</h1>
             <div class="meta-badges">
-                <span class="badge badge-id">ID: {{.Concept.ID}}</span>
+                <span class="badge badge-id">ID: {{.Concept.Name}}</span>
                 <span class="badge badge-category">{{.Concept.Category}}</span>
                 <span class="badge badge-type">{{.Concept.Type}}</span>
                 <span class="badge badge-{{.Concept.Status}}">{{.Concept.Status}}</span>
@@ -32,7 +32,7 @@
         <div class="relationships-panel">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <h3 style="font-size: 1.1rem; font-weight: 600;">Concept Relationships & Lineage</h3>
-                <a href="/graph?focus={{.Concept.ID}}" class="btn btn-outline btn-sm" hx-get="/graph?focus={{.Concept.ID}}" hx-target="#main-content" hx-push-url="true">
+                <a href="/graph?focus={{.Concept.Name}}" class="btn btn-outline btn-sm" hx-get="/graph?focus={{.Concept.Name}}" hx-target="#main-content" hx-push-url="true">
                     Explore in Graph Visualizer →
                 </a>
             </div>

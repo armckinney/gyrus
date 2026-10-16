@@ -1,108 +1,49 @@
 ---
-id: guide-002-setup-onboarding
 title: Team Onboarding & Context Setup Guide
-category: technical
+id: guide-002-setup-onboarding
 type: guide
-format: ""
-tenant: root
-version: 1
+format: markdown
+category: technical
+version: 2
 status: active
+last_updated: 2026-10-16T06:40:16Z
 last_modified_by: ""
-last_updated: 2026-07-22T06:38:56Z
+tenant: root
 ---
 
-# Gyrus Setup & Onboarding Guide
+# Gyrus setup and OKF onboarding
 
-This guide walks human developers and team leads through initializing Gyrus, organizing team context documents, and enabling AI assistants to read and maintain codebase memory.
-
-## 1. Quick Installation
-
-Install the pre-compiled `gyrus` executable automatically:
+Install the Gyrus binary, then initialize the repository:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/packaging/install.sh | bash
+gyrus config init --profile local --tenant root --project my-project
+gyrus config show
 ```
 
----
+The local profile uses localfs storage and OKF index/graph/search. There is no index database to initialize. Git, blob, s3, azure, and gcs profiles also default to OKF. PostgreSQL and vector profiles keep their database-backed compositions. Set the corresponding remote connection settings and use the existing credential discovery for remote storage.
 
-## 2. Setting Up Workspace Configuration
-
-To configure Gyrus for your code repository, create a `.gyrus.yaml` file in the root of your project:
-
-
-```yaml
-version: 1
-profile: small # test | local_full | small | medium | large
-
-storage:
-  provider: localfs
-  root: ./.gyrus/docs
-
-index:
-  provider: sqlite
-  dsn: ./.gyrus/index.db
-
-graph:
-  provider: sqlite
-
-search:
-  provider: sqlite_fts5
-```
-
-Gyrus automatically searches for `.gyrus.yaml` starting from your current working directory and walking up parent repository directories, or falls back to global user-wide configuration at `~/.gyrus.yaml`.
-
-
-Add `.gyrus/index.db` to your `.gitignore` so local SQLite databases are not committed to version control:
-
-```text
-# .gitignore
-.gyrus/index.db
-```
-
----
-
-## 2. Bootstrapping Contract Documents
-
-Gyrus uses 11 standardized document types under the **Open Knowledge Format (OKF)**:
-
-| Document Type | Recommended Use Case |
-| :--- | :--- |
-| **`adr`** | Architecture Design Records documenting key decisions. |
-| **`prd`** | Product Requirement Documents defining features and goals. |
-| **`guide`** | Developer guides and onboarding walkthroughs. |
-| **`improvement-proposal`** | System enhancement proposals. |
-| **`release-note`** | Version release summaries and changelogs. |
-| **`specification`** | Detailed technical specifications. |
-| **`standards`** | Team coding standards and conventions. |
-| **`technical-reference`** | Module API and data model references. |
-| **`product`** | High-level product overview documents. |
-| **`glossary`** | Domain taxonomy and definitions. |
-| **`freeform`** | Notes and unformatted engineering docs. |
-
-To create a new ADR from a template:
+## Create and connect concepts
 
 ```bash
-gyrus schema adr > adr-001-my-feature.md
-# Edit frontmatter and content, then register in Gyrus:
-gyrus sync
+gyrus create --id guide-onboarding --title "Onboarding" --type guide --category technical --tenant root --status active --content "Project setup instructions."
+gyrus link guide-onboarding adr-storage --rel-type implements
+gyrus search --query onboarding --json
+gyrus search --query "" --scope all --json
+gyrus sync --json
 ```
 
----
+Targets may be unresolved. OKF links persist in source frontmatter, survive restarts, and are merged with legacy dependencies. Keyword search defaults to ten results; empty-query browsing returns all matching metadata. Sync validates source concepts; its indexed count means validated concepts, not database rows.
 
-## 3. Configuring Terminal CLI Agents (Claude Code, Aider)
+Concepts live under concepts/<tenant>/reference/ or concepts/<tenant>/projects/<project>/ below the storage root. Scope/project derive from paths. Schema templates live outside the collection. Do not put repository README files or schema templates inside the concept collection.
 
-For terminal-based agents, copy the Open Skill Format definition from `skills/gyrus/SKILL.md` into your agent skills folder (`.agents/skills/gyrus/SKILL.md`).
+## Existing SQLite installations
 
-Agents will automatically run `gyrus suggest-context --prompt "<task>"` to retrieve precise documentation context before modifying code.
+Use the packaged gyrus-migrate-okf skill before changing secondary providers. Pause writers; inventory the complete SQLite graph and concept collection; make consistent database, concept, and config backups; export source-owned typed links; compare edge tuples and audit metadata; switch all three providers together; restart MCP processes. Keep the original database and backups. This first migration workflow does not export PostgreSQL or convert legacy blob layouts.
 
----
+## Agent integrations
 
-## 4. Re-indexing and Maintaining Memory
+Install the canonical gyrus plugin through the client's supported plugin mechanism. It includes SDLC context guidance, OKF schema references, repository indexing guidance, and the SQLite-to-OKF migration skill. CLI/MCP tool names remain stable.
 
-Whenever team members create or edit Markdown documents by hand:
+## Failures
 
-```bash
-gyrus sync
-```
-
-`gyrus sync` scans your storage directory, calculates SHA-256 file checksums, updates SQLite FTS5 indexes, and extracts document linkage edges automatically.
+Resolve invalid concepts or duplicate IDs before querying. Conflicting local versions, Git pushes, or cloud object preconditions must be reconciled before retrying. An unsupported conditional-write driver is an explicit error. Multi-source graph mutations report already-applied sources; do not assume a collection-wide transaction or blindly restore backups over later edits.
