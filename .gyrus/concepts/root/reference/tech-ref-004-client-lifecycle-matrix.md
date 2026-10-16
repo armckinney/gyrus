@@ -37,10 +37,10 @@ This technical reference defines the standard lifecycle operations—including p
 
 | Client Platform | Native Marketplace / Installation Command | Repository Marketplace Manifest | Canonical Plugin Bundle | Injected Variables & Args |
 | :--- | :--- | :--- | :--- | :--- |
-| **OpenAI Codex** | `codex plugin marketplace add armckinney/gyrus`<br>`codex plugin add gyrus@armckinney` | `.agents/plugins/marketplace.json` | `packaging/plugins/gyrus/` | `args`: `["mcp", "serve"]`<br>`env`: `GYRUS_WORKSPACE="${workspaceFolder}"` |
-| **Google Antigravity** | `agy plugin install https://github.com/armckinney/gyrus/tree/main/packaging/plugins/gyrus`<br>*(Local repo: `.agents/plugins.json`)* | `.agents/plugins.json` *(local repository)* | `packaging/plugins/gyrus/` | `args`: `["mcp", "serve"]`<br>`env`: `GYRUS_WORKSPACE="${workspaceFolder}"` |
-| **GitHub Copilot** | `copilot plugin marketplace add armckinney/gyrus`<br>`copilot plugin install gyrus@armckinney` | `.github/plugin/marketplace.json` | `packaging/plugins/gyrus/` | `args`: `["mcp", "serve"]`<br>`env`: `GYRUS_WORKSPACE="${workspaceFolder}"` |
-| **Claude Code** | `claude plugin marketplace add armckinney/gyrus`<br>`claude plugin install gyrus@armckinney` | `.claude-plugin/marketplace.json` | `packaging/plugins/gyrus/` | `args`: `["mcp", "serve"]`<br>`env`: `GYRUS_WORKSPACE="${workspaceFolder}"` |
+| **OpenAI Codex** | `codex plugin marketplace add armckinney/gyrus`<br>`codex plugin add gyrus@armckinney` | `.agents/plugins/marketplace.json` | `packaging/plugins/gyrus/` | `args`: `["mcp", "serve"]`<br>`env`: `GYRUS_PROJECT="${workspaceFolder}"` |
+| **Google Antigravity** | `agy plugin install https://github.com/armckinney/gyrus/tree/main/packaging/plugins/gyrus`<br>*(Local repo: `.agents/plugins.json`)* | `.agents/plugins.json` *(local repository)* | `packaging/plugins/gyrus/` | `args`: `["mcp", "serve"]`<br>`env`: `GYRUS_PROJECT="${workspaceFolder}"` |
+| **GitHub Copilot** | `copilot plugin marketplace add armckinney/gyrus`<br>`copilot plugin install gyrus@armckinney` | `.github/plugin/marketplace.json` | `packaging/plugins/gyrus/` | `args`: `["mcp", "serve"]`<br>`env`: `GYRUS_PROJECT="${workspaceFolder}"` |
+| **Claude Code** | `claude plugin marketplace add armckinney/gyrus`<br>`claude plugin install gyrus@armckinney` | `.claude-plugin/marketplace.json` | `packaging/plugins/gyrus/` | `args`: `["mcp", "serve"]`<br>`env`: `GYRUS_PROJECT="${workspaceFolder}"` |
 
 ---
 
@@ -78,7 +78,7 @@ This technical reference defines the standard lifecycle operations—including p
       "command": "gyrus",
       "args": ["mcp", "serve"],
       "env": {
-        "GYRUS_WORKSPACE": "${workspaceFolder}"
+        "GYRUS_PROJECT": "${workspaceFolder}"
       }
     }
   }
@@ -98,7 +98,7 @@ This technical reference defines the standard lifecycle operations—including p
         "serve"
       ],
       "env": {
-        "GYRUS_WORKSPACE": "${workspaceFolder}"
+        "GYRUS_PROJECT": "${workspaceFolder}"
       }
     }
   }

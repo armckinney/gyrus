@@ -35,7 +35,7 @@ We adopt `.gyrus/` as the primary storage root and simplify the document bundle 
 ## Consequences
 
 ### Positive
-- **Simpler, Intuitive Paths**: Document paths become `.gyrus/docs/<owner_group>/reference/` and `.gyrus/docs/<owner_group>/workspaces/`.
+- **Simpler, Intuitive Paths**: Document paths become `.gyrus/docs/<owner_group>/reference/` and `.gyrus/docs/<owner_group>/projects/`.
 - **Clean System File Isolation**: Database files (`index.db`) are separated from human/agent-readable Markdown files.
 - **Unified Across Providers**: Default storage key prefix across local disk, Git, and Cloud Blob drivers becomes `docs/` instead of `okf/`.
 

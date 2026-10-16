@@ -11,7 +11,7 @@ superseded_by: adr-009-okf-concepts-projects-tenant-nomenclature
 immutable: true
 last_modified_by: antigravity
 last_updated: 2026-10-02T00:00:00Z
-tags: ["scoping", "workspace", "reference", "context", "phase-2.8"]
+tags: ["scoping", "project", "reference", "context", "phase-2.8"]
 dependencies: ["adr-002-simplified-directory-topology", "adr-005-global-configuration-and-precedence-hierarchy", "adr-006-native-mcp-workspace-discovery-and-lifecycle-cli-refactor"]
 ---
 

@@ -34,7 +34,7 @@ We retire the containerized local stdio MCP execution mode. For all local and De
 ### 2. Implement Multi-Tier Workspace & Configuration Discovery
 Configuration resolution in `internal/config/loader.go` now prioritizes an explicit hierarchy:
 1. **Explicit Config Override**: `GYRUS_CONFIG` environment variable or `--config` CLI flag.
-2. **Explicit Workspace Override**: `GYRUS_WORKSPACE` environment variable or `--workspace` CLI flag (searches upward for `.gyrus.yaml`).
+2. **Explicit Project Override**: `GYRUS_PROJECT` environment variable or `--project` CLI flag (searches upward for `.gyrus.yaml`).
 3. **Current Working Directory**: `os.Getwd()` upward directory traversal.
 4. **DevContainer Auto-Detection**: If running inside containerized environments (`/.dockerenv`), inspect active container workspaces (`/workspaces/*`).
 5. **Global Fallback**: `~/.gyrus.yaml` in user home directory.
@@ -50,7 +50,7 @@ When configuring agent clients, `mcp.json` and `mcp_config.json` automatically i
       "command": "gyrus",
       "args": ["mcp", "serve"],
       "env": {
-        "GYRUS_WORKSPACE": "${workspaceFolder}"
+        "GYRUS_PROJECT": "${workspaceFolder}"
       }
     }
   }

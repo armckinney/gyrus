@@ -30,7 +30,7 @@ Implement the `localfs` storage provider in `internal/provider/localfs`. Handle 
 ## 2. Acceptance Criteria
 - [ ] Implement `gyrus.DocumentStore` for `localfs`.
 - [ ] Implement storage path resolution hierarchy (`CLI flag` ➔ `ENV` ➔ `Local Config` ➔ `User Config` ➔ `Default`).
-- [ ] Persist documents into the OKF bundle directory structure (`okf/<team>/reference/` and `okf/<team>/workspaces/<repo-x>/`).
+- [ ] Persist documents into the OKF bundle directory structure (`okf/<team>/reference/` and `okf/<team>/project/<repo-x>/`).
 - [ ] Support atomic file writes and file reads.
 
 ---

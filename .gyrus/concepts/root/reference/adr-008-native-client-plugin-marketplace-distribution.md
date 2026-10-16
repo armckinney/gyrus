@@ -52,7 +52,7 @@ We migrate Gyrus from CLI-based client provisioning to native harness-level plug
      - Standard Agent Plugins 1.0 manifest: `plugin.json`
      - Claude Code manifests: `.claude-plugin/plugin.json`, `.mcp.json`
      - Codex manifest: `.codex-plugin/plugin.json`
-     - MCP server configuration: `mcp.json` and `mcp_config.json` with `"env": {"GYRUS_WORKSPACE": "${workspaceFolder}"}`
+     - MCP server configuration: `mcp.json` and `mcp_config.json` with `"env": {"GYRUS_PROJECT": "${workspaceFolder}"}`
      - System rules (`rules/AGENTS.md`) and skills (`skills/gyrus/SKILL.md`, `skills/gyrus-index/SKILL.md`).
 4. **Antigravity Repository Discovery**:
    - Define `.agents/plugins.json` referencing `{"entries": [{"path": "packaging/plugins"}]}` to enable local Antigravity plugin resolution without duplicating asset directories.

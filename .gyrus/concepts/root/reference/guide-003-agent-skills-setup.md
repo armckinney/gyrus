@@ -124,7 +124,7 @@ All plugin manifestations configure the native Gyrus stdio Model Context Protoco
       "command": "gyrus",
       "args": ["mcp", "serve"],
       "env": {
-        "GYRUS_WORKSPACE": "${workspaceFolder}"
+        "GYRUS_PROJECT": "${workspaceFolder}"
       }
     }
   }
