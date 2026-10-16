@@ -1,4 +1,4 @@
-.PHONY: all fmt lint test test-unit test-integration clean build install
+.PHONY: all fmt lint test test-integration clean build install
 
 all: clean fmt lint test build
 
@@ -15,13 +15,9 @@ test:
 	@echo "Running all Gyrus tests..."
 	@GYRUS_WORKSPACE="" GYRUS_CONFIG="" go test ./...
 
-test-unit:
-	@echo "Running Unit Tests (internal/...)..."
-	@GYRUS_WORKSPACE="" GYRUS_CONFIG="" go test ./internal/... -v
-
 test-integration: build
 	@echo "Running Integration Tests (tests/...)..."
-	@GYRUS_WORKSPACE="" GYRUS_CONFIG="" RUN_INTEGRATION_TESTS=1 RUN_DOCKER_TESTS=1 go test ./tests/... -v
+	@GYRUS_WORKSPACE="" GYRUS_CONFIG="" RUN_INTEGRATION_TESTS=1 RUN_DOCKER_TESTS=1 go test ./tests/...
 
 clean:
 	@echo "Cleaning build artifacts..."

@@ -120,8 +120,8 @@ Gyrus provides automated test commands via `make` and standard `go test` flags:
 # 1. Run entire test suite + clean build verification (Local Default)
 make all
 
-# 2. Run fast unit tests only (internal/...)
-make test-unit
+# 2. Run standard tests (internal/... and unit tests)
+make test
 
 # 3. Run integration & CLI/MCP subprocess E2E tests (tests/...)
 make test-integration

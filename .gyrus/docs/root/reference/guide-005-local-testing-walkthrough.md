@@ -235,8 +235,8 @@ Gyrus includes automated Go test suites that can run locally against embedded mo
 # Run entire lifecycle (clean -> fmt -> lint -> test -> build)
 make all
 
-# Run fast in-memory unit tests
-make test-unit
+# Run standard unit and core tests
+make test
 
 # Run black-box CLI/MCP integration tests
 make test-integration
