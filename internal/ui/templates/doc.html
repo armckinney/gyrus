@@ -48,7 +48,7 @@
                         <div class="edge-item">
                             <span class="badge badge-type">{{.RelationshipType}}</span>
                             <span style="color: var(--text-muted);">→</span>
-                            <a href="/docs/{{.ToConceptID}}" style="color: var(--color-primary); font-weight: 600; text-decoration: none;" hx-get="/docs/{{.ToConceptID}}" hx-target="#main-content" hx-push-url="true">
+                            <a href="/concepts/{{.ToConceptID}}" style="color: var(--color-primary); font-weight: 600; text-decoration: none;" hx-get="/concepts/{{.ToConceptID}}" hx-target="#main-content" hx-push-url="true">
                                 {{.ToConceptID}}
                             </a>
                         </div>
@@ -63,7 +63,7 @@
                     <div class="edge-list">
                         {{range .IncomingEdges}}
                         <div class="edge-item">
-                            <a href="/docs/{{.FromConceptID}}" style="color: var(--color-primary); font-weight: 600; text-decoration: none;" hx-get="/docs/{{.FromConceptID}}" hx-target="#main-content" hx-push-url="true">
+                            <a href="/concepts/{{.FromConceptID}}" style="color: var(--color-primary); font-weight: 600; text-decoration: none;" hx-get="/concepts/{{.FromConceptID}}" hx-target="#main-content" hx-push-url="true">
                                 {{.FromConceptID}}
                             </a>
                             <span style="color: var(--text-muted);">→</span>

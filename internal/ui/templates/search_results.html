@@ -16,13 +16,13 @@
 
     {{if not .Results}}
     <div class="card text-center" style="padding: 3rem 1rem;">
-        <h3 class="font-bold text-base mb-2">No matching documentation found</h3>
+        <h3 class="font-bold text-base mb-2">No matching concepts found</h3>
         <p class="text-muted text-sm">Try broadening your search terms or clearing filters.</p>
     </div>
     {{else}}
     <div class="search-results-list">
         {{range .Results}}
-        <a href="/docs/{{.Document.ID}}" class="search-card" hx-get="/docs/{{.Document.ID}}" hx-target="#main-content" hx-push-url="true">
+        <a href="/concepts/{{.Document.ID}}" class="search-card" hx-get="/concepts/{{.Document.ID}}" hx-target="#main-content" hx-push-url="true">
             <div class="search-card-header">
                 <span class="search-card-title">{{.Document.Title}}</span>
                 <span class="badge badge-{{.Document.Status}}">{{.Document.Status}}</span>

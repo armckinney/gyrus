@@ -103,8 +103,8 @@ func TestChat_HomeDelegation(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
-	if !strings.Contains(rec.Body.String(), "All Documents") {
-		t.Errorf("expected 'All Documents' on default home page without runner")
+	if !strings.Contains(rec.Body.String(), "All Concepts") {
+		t.Errorf("expected 'All Concepts' on default home page without runner")
 	}
 
 	// When runner is set, Home delegates to Chat

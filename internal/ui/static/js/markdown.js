@@ -30,9 +30,9 @@
     window.handleChatDocLink = function(evt, docId) {
         evt.preventDefault();
         if (window.htmx) {
-            window.htmx.ajax('GET', '/docs/' + encodeURIComponent(docId), { target: '#main-content', pushUrl: true });
+            window.htmx.ajax('GET', '/concepts/' + encodeURIComponent(docId), { target: '#main-content', pushUrl: true });
         } else {
-            window.location.href = '/docs/' + encodeURIComponent(docId);
+            window.location.href = '/concepts/' + encodeURIComponent(docId);
         }
     };
 
@@ -43,16 +43,16 @@
         const escape = window.escapeHtml || function(s) { return s || ''; };
         const rawHref = href.replace(/&amp;/g, '&');
 
-        // Check if link points to an internal Gyrus document
-        const gyrusDocMatch = rawHref.match(/(?:\.gyrus|docs)\/([a-z0-9-_]+)(?:\.md)?(?:#.*)?$/i);
+        // Check if link points to an internal Gyrus concept
+        const gyrusDocMatch = rawHref.match(/(?:\.gyrus|concepts)\/([a-z0-9-_]+)(?:\.md)?(?:#.*)?$/i);
         if (gyrusDocMatch) {
             const docId = gyrusDocMatch[1];
-            return `<a href="/docs/${escape(docId)}" class="chat-link chat-doc-link" onclick="window.handleChatDocLink(event, '${escape(docId)}')" title="View document ${escape(docId)}"><span style="margin-right: 2px;">📄</span>${linkText}</a>`;
+            return `<a href="/concepts/${escape(docId)}" class="chat-link chat-doc-link" onclick="window.handleChatDocLink(event, '${escape(docId)}')" title="View concept ${escape(docId)}"><span style="margin-right: 2px;">📄</span>${linkText}</a>`;
         }
 
-        if (rawHref.startsWith('/docs/')) {
-            const docId = rawHref.replace('/docs/', '').split('#')[0].split('?')[0];
-            return `<a href="${escape(rawHref)}" class="chat-link chat-doc-link" onclick="window.handleChatDocLink(event, '${escape(docId)}')" title="View document ${escape(docId)}"><span style="margin-right: 2px;">📄</span>${linkText}</a>`;
+        if (rawHref.startsWith('/concepts/')) {
+            const docId = rawHref.replace('/concepts/', '').split('#')[0].split('?')[0];
+            return `<a href="/concepts/${escape(docId)}" class="chat-link chat-doc-link" onclick="window.handleChatDocLink(event, '${escape(docId)}')" title="View concept ${escape(docId)}"><span style="margin-right: 2px;">📄</span>${linkText}</a>`;
         }
 
         // Check if file:/// URL

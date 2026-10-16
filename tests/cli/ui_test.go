@@ -106,7 +106,7 @@ func TestUI_CLI_ServeE2E(t *testing.T) {
 	var ready bool
 	for range 30 {
 		time.Sleep(100 * time.Millisecond)
-		resp, err := client.Get(baseURL + "/docs")
+		resp, err := client.Get(baseURL + "/concepts")
 		if err == nil && resp.StatusCode == http.StatusOK {
 			resp.Body.Close()
 			ready = true
@@ -121,10 +121,10 @@ func TestUI_CLI_ServeE2E(t *testing.T) {
 		t.Fatalf("server on %s did not become ready in time", baseURL)
 	}
 
-	// 1. Verify /docs contains created documents
-	resp, err := client.Get(baseURL + "/docs")
+	// 1. Verify /concepts contains created documents
+	resp, err := client.Get(baseURL + "/concepts")
 	if err != nil {
-		t.Fatalf("failed fetching /docs: %v", err)
+		t.Fatalf("failed fetching /concepts: %v", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
@@ -254,15 +254,15 @@ func TestUI_CLI_ServeChatLandingPage(t *testing.T) {
 		t.Errorf("expected root / to contain 'Agent Chat', got: %s", string(homeBytes))
 	}
 
-	// 2. Verify /docs renders document explorer
-	respDocs, err := client.Get(baseURL + "/docs")
+	// 2. Verify /concepts renders concept explorer
+	respDocs, err := client.Get(baseURL + "/concepts")
 	if err != nil {
-		t.Fatalf("failed fetching /docs: %v", err)
+		t.Fatalf("failed fetching /concepts: %v", err)
 	}
 	defer respDocs.Body.Close()
 	docsBytes, _ := io.ReadAll(respDocs.Body)
-	if !strings.Contains(string(docsBytes), "All Documents") {
-		t.Errorf("expected /docs to contain 'All Documents', got: %s", string(docsBytes))
+	if !strings.Contains(string(docsBytes), "All Concepts") {
+		t.Errorf("expected /concepts to contain 'All Concepts', got: %s", string(docsBytes))
 	}
 
 	// 3. Verify /api/chat/stream SSE endpoint handles empty prompt

@@ -59,7 +59,7 @@
         const params = new URLSearchParams(search);
         const currentScope = params.get('scope');
         const currentType = params.get('type');
-        const isAllDocs = (path === '/docs' || path === '/') && !currentScope && !currentType;
+        const isAllDocs = (path === '/concepts' || path === '/') && !currentScope && !currentType;
 
         // Clean and update sidebar links
         document.querySelectorAll('.app-sidebar .nav-list a').forEach(a => {

@@ -111,9 +111,9 @@ func TestDocs_HomeAndDocsList(t *testing.T) {
 		}
 	})
 
-	// 3. Category Filter GET /docs?category=architecture
+	// 3. Category Filter GET /concepts?category=architecture
 	t.Run("Docs category filter", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/docs?category=architecture", nil)
+		req := httptest.NewRequest(http.MethodGet, "/concepts?category=architecture", nil)
 		rec := httptest.NewRecorder()
 
 		h.Docs(rec, req)
@@ -127,9 +127,9 @@ func TestDocs_HomeAndDocsList(t *testing.T) {
 		}
 	})
 
-	// 4. Type Filter GET /docs?type=prd
+	// 4. Type Filter GET /concepts?type=prd
 	t.Run("Docs type filter", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/docs?type=prd", nil)
+		req := httptest.NewRequest(http.MethodGet, "/concepts?type=prd", nil)
 		rec := httptest.NewRecorder()
 
 		h.Docs(rec, req)
@@ -149,7 +149,7 @@ func TestDocs_DocView(t *testing.T) {
 	defer cleanup()
 
 	t.Run("Doc view success", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/docs/adr-001-architecture", nil)
+		req := httptest.NewRequest(http.MethodGet, "/concepts/adr-001-architecture", nil)
 		rec := httptest.NewRecorder()
 
 		h.Doc(rec, req)
@@ -170,7 +170,7 @@ func TestDocs_DocView(t *testing.T) {
 	})
 
 	t.Run("Doc view 404 for missing document", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/docs/non-existent-doc", nil)
+		req := httptest.NewRequest(http.MethodGet, "/concepts/non-existent-doc", nil)
 		rec := httptest.NewRecorder()
 
 		h.Doc(rec, req)

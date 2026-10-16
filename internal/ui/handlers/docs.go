@@ -19,7 +19,7 @@ func (h *Handlers) Home(w http.ResponseWriter, r *http.Request) {
 	h.Docs(w, r)
 }
 
-// Docs handles `/docs` and `/concepts`, rendering the concepts list with taxonomy sidebar.
+// Docs handles `/concepts`, rendering the concepts list with taxonomy sidebar.
 func (h *Handlers) Docs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenantFilter := strings.TrimSpace(r.URL.Query().Get("tenant"))
@@ -133,7 +133,7 @@ func (h *Handlers) Docs(w http.ResponseWriter, r *http.Request) {
 		BasePageData: BasePageData{
 			Title:            "Concepts",
 			StorageBackend:   h.storageBackend(),
-			ActiveNav:        "docs",
+			ActiveNav:        "concepts",
 			UIClient:         h.uiClientName(),
 			ActiveScope:      scopeFilter,
 			ActiveCategory:   categoryFilter,
@@ -156,15 +156,12 @@ func (h *Handlers) Docs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Doc handles `GET /docs/{id}` or `GET /concepts/{id}`, rendering markdown with frontmatter badges and edge relationships.
+// Doc handles `GET /concepts/{id}`, rendering markdown with frontmatter badges and edge relationships.
 func (h *Handlers) Doc(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenantFilter := strings.TrimSpace(r.URL.Query().Get("tenant"))
 
 	id := strings.TrimPrefix(r.URL.Path, "/concepts/")
-	if strings.HasPrefix(r.URL.Path, "/docs/") {
-		id = strings.TrimPrefix(r.URL.Path, "/docs/")
-	}
 	id = strings.TrimSpace(id)
 	if id == "" {
 		http.Redirect(w, r, "/concepts", http.StatusFound)
@@ -205,7 +202,7 @@ func (h *Handlers) Doc(w http.ResponseWriter, r *http.Request) {
 		BasePageData: BasePageData{
 			Title:            doc.Title,
 			StorageBackend:   h.storageBackend(),
-			ActiveNav:        "docs",
+			ActiveNav:        "concepts",
 			UIClient:         h.uiClientName(),
 			SelectedTenant:   tenantFilter,
 			AvailableTenants: availableTenants,

@@ -208,8 +208,8 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 		t.Fatalf("failed creating project doc: %v", err)
 	}
 
-	// 1. Test GET /docs renders Scopes and tenant selector, and does NOT render Categories nav group
-	req := httptest.NewRequest(http.MethodGet, "/docs", nil)
+	// 1. Test GET /concepts renders Scopes and tenant selector, and does NOT render Categories nav group
+	req := httptest.NewRequest(http.MethodGet, "/concepts", nil)
 	rr := httptest.NewRecorder()
 	h.Docs(rr, req)
 
@@ -243,8 +243,8 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 		t.Errorf("expected type filter pills to be present in the main content area")
 	}
 
-	// 2. Test GET /docs?scope=reference
-	reqRef := httptest.NewRequest(http.MethodGet, "/docs?scope=reference", nil)
+	// 2. Test GET /concepts?scope=reference
+	reqRef := httptest.NewRequest(http.MethodGet, "/concepts?scope=reference", nil)
 	rrRef := httptest.NewRecorder()
 	h.Docs(rrRef, reqRef)
 
@@ -262,8 +262,8 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 		t.Errorf("did not expect project document 'prd-101' in scope=reference filter")
 	}
 
-	// 3. Test GET /docs?scope=projects/gyrus
-	reqWS := httptest.NewRequest(http.MethodGet, "/docs?scope=projects/gyrus", nil)
+	// 3. Test GET /concepts?scope=projects/gyrus
+	reqWS := httptest.NewRequest(http.MethodGet, "/concepts?scope=projects/gyrus", nil)
 	rrWS := httptest.NewRecorder()
 	h.Docs(rrWS, reqWS)
 
@@ -281,8 +281,8 @@ func TestHandlers_DocsPage_ScopesAndTenants_HTTP(t *testing.T) {
 		t.Errorf("did not expect reference document 'spec-101' in project filter")
 	}
 
-	// 4. Test GET /docs?scope=reference&type=specification (combined scope + type filter)
-	reqScopeType := httptest.NewRequest(http.MethodGet, "/docs?scope=reference&type=specification", nil)
+	// 4. Test GET /concepts?scope=reference&type=specification (combined scope + type filter)
+	reqScopeType := httptest.NewRequest(http.MethodGet, "/concepts?scope=reference&type=specification", nil)
 	rrScopeType := httptest.NewRecorder()
 	h.Docs(rrScopeType, reqScopeType)
 

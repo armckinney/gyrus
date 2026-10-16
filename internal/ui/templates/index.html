@@ -3,28 +3,28 @@
     <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: flex-end;">
         <div>
             <h1 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem;">
-                {{if .FilterTitle}}{{.FilterTitle}}{{else}}All Documents{{end}}
+                {{if .FilterTitle}}{{.FilterTitle}}{{else}}All Concepts{{end}}
             </h1>
             <p class="text-muted">
                 {{if .FilterSubtitle}}{{.FilterSubtitle}}{{else}}Explore ADRs, specifications, and governance contracts managed by Gyrus.{{end}}
             </p>
         </div>
         <div class="text-sm text-muted">
-            {{if .Documents}}{{len .Documents}}{{else}}0{{end}} document{{if and .Documents (eq (len .Documents) 1)}}{{else}}s{{end}}
+            {{if .Documents}}{{len .Documents}}{{else}}0{{end}} concept{{if and .Documents (eq (len .Documents) 1)}}{{else}}s{{end}}
         </div>
     </div>
 
     {{if .TypeCounts}}
     <div class="type-filter-bar">
-        <a href="{{if .ActiveScope}}/docs?scope={{.ActiveScope}}{{if .SelectedTenant}}&tenant={{.SelectedTenant}}{{end}}{{else}}/docs{{if .SelectedTenant}}?tenant={{.SelectedTenant}}{{end}}{{end}}"
+        <a href="{{if .ActiveScope}}/concepts?scope={{.ActiveScope}}{{if .SelectedTenant}}&tenant={{.SelectedTenant}}{{end}}{{else}}/concepts{{if .SelectedTenant}}?tenant={{.SelectedTenant}}{{end}}{{end}}"
            class="type-filter-pill {{if eq .ActiveType ""}}active{{end}}"
-           hx-get="{{if .ActiveScope}}/docs?scope={{.ActiveScope}}{{if .SelectedTenant}}&tenant={{.SelectedTenant}}{{end}}{{else}}/docs{{if .SelectedTenant}}?tenant={{.SelectedTenant}}{{end}}{{end}}"
+           hx-get="{{if .ActiveScope}}/concepts?scope={{.ActiveScope}}{{if .SelectedTenant}}&tenant={{.SelectedTenant}}{{end}}{{else}}/concepts{{if .SelectedTenant}}?tenant={{.SelectedTenant}}{{end}}{{end}}"
            hx-target="#main-content"
            hx-push-url="true">All Types</a>
         {{range .TypeCounts}}
-        <a href="/docs?type={{.Name}}{{if $.ActiveScope}}&scope={{$.ActiveScope}}{{end}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}"
+        <a href="/concepts?type={{.Name}}{{if $.ActiveScope}}&scope={{$.ActiveScope}}{{end}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}"
            class="type-filter-pill {{if eq $.ActiveType .Name}}active{{end}}"
-           hx-get="/docs?type={{.Name}}{{if $.ActiveScope}}&scope={{$.ActiveScope}}{{end}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}"
+           hx-get="/concepts?type={{.Name}}{{if $.ActiveScope}}&scope={{$.ActiveScope}}{{end}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}"
            hx-target="#main-content"
            hx-push-url="true">{{.Name}} <span class="type-filter-count">{{.Count}}</span></a>
         {{end}}
@@ -33,13 +33,13 @@
 
     {{if not .Documents}}
     <div class="card text-center" style="padding: 3rem 1rem;">
-        <h3 class="font-bold text-base mb-2">No documents found</h3>
-        <p class="text-muted text-sm">No documentation records match the selected criteria.</p>
+        <h3 class="font-bold text-base mb-2">No concepts found</h3>
+        <p class="text-muted text-sm">No concept records match the selected criteria.</p>
     </div>
     {{else}}
     <div class="search-results-list">
         {{range .Documents}}
-        <a href="/docs/{{.ID}}" class="search-card" hx-get="/docs/{{.ID}}" hx-target="#main-content" hx-push-url="true">
+        <a href="/concepts/{{.ID}}" class="search-card" hx-get="/concepts/{{.ID}}" hx-target="#main-content" hx-push-url="true">
             <div class="search-card-header">
                 <span class="search-card-title">{{.Title}}</span>
                 <span class="badge badge-{{.Status}}">{{.Status}}</span>
