@@ -116,7 +116,13 @@ func TestMarketplaceManifests(t *testing.T) {
 		}
 
 		var mp struct {
-			Name    string `json:"name"`
+			Name  string `json:"name"`
+			Owner struct {
+				Name string `json:"name"`
+			} `json:"owner"`
+			Interface struct {
+				DisplayName string `json:"displayName"`
+			} `json:"interface"`
 			Plugins []struct {
 				Name   string `json:"name"`
 				Source string `json:"source"`
@@ -128,6 +134,12 @@ func TestMarketplaceManifests(t *testing.T) {
 
 		if mp.Name != "armckinney" {
 			t.Errorf("Expected Copilot marketplace name 'armckinney', got '%s'", mp.Name)
+		}
+		if mp.Owner.Name != "Andrew McKinney" {
+			t.Errorf("Expected Copilot marketplace owner name 'Andrew McKinney', got '%s'", mp.Owner.Name)
+		}
+		if mp.Interface.DisplayName != "armckinney-gyrus" {
+			t.Errorf("Expected displayName 'armckinney-gyrus', got '%s'", mp.Interface.DisplayName)
 		}
 
 		found := false

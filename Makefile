@@ -13,7 +13,7 @@ lint:
 
 test:
 	@echo "Running all Gyrus tests..."
-	@GYRUS_WORKSPACE="" GYRUS_CONFIG="" go test ./... -v
+	@GYRUS_WORKSPACE="" GYRUS_CONFIG="" go test ./...
 
 test-unit:
 	@echo "Running Unit Tests (internal/...)..."

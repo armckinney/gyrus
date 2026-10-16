@@ -1,7 +1,7 @@
 {
   "name": "armckinney",
   "interface": {
-    "displayName": "armckinney Codex Marketplace"
+    "displayName": "armckinney-gyrus"
   },
   "plugins": [
     {

@@ -1,15 +1,21 @@
 {
   "name": "armckinney",
+  "owner": {
+    "name": "Andrew McKinney"
+  },
   "interface": {
-    "displayName": "armckinney Copilot Marketplace"
+    "displayName": "armckinney-gyrus"
+  },
+  "metadata": {
+    "description": "Gyrus Context Control Plane & Memory Engine plugin marketplace",
+    "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "gyrus",
       "source": "./packaging/plugins/gyrus",
       "description": "Unified Context Control Plane & Memory Engine for AI Agents",
-      "version": "0.1.0"
+      "version": "1.0.0"
     }
   ]
 }
-
