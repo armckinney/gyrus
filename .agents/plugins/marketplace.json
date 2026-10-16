@@ -11,11 +11,9 @@
         "path": "./packaging/plugins/gyrus"
       },
       "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "NONE"
+        "installation": "AVAILABLE"
       },
       "category": "Productivity"
     }
   ]
 }
-

@@ -68,9 +68,6 @@ coverage.out
 /gyrus
 /bin/gyrus
 
-# Gyrus runtime caches
-.gyrus/cache/
-
 # Explicitly preserve codebase packages, plugin and skill paths
 !/pkg/gyrus/**
 !/packaging/plugins/**
@@ -80,3 +77,10 @@ coverage.out
 !/docs/agents/skills/gyrus/**
 !/.agents/skills/gyrus/**
 !*/.gyrus/**
+
+# Gyrus runtime caches and hook state (must come AFTER preservation rules)
+.gyrus/cache/
+**/.gyrus/cache/
+**/.gyrus/cache/**
+*stop_hook_state.json
+**/*stop_hook_state.json
