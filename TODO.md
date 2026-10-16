@@ -25,9 +25,10 @@
 - [x] Rename "documents" / "docs" to concepts for OKF standard
 - [x] Rename "workspaces" to "projects" to match similar agentic terminology
 - [x] Update `owner_group` to `tenant` and config rename
+- [ ] Remove Vector Search Provider & and config
 - [ ] Codex Refactor  
   - [x] rename/remove "setup" package as appropriate
-- [ ] Remove Vector Search Provider & and config
+
 
 
 ### MCP Server Cache
