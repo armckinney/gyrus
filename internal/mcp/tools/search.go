@@ -71,15 +71,9 @@ func (h *Handler) HandleSuggest(ctx context.Context, req mcp.CallToolRequest) (*
 	prompt := getArgString(req, "prompt")
 	scopeStr := getArgString(req, "scope")
 	projectStr := getArgString(req, "project")
-	if projectStr == "" {
-		projectStr = getArgString(req, "workspace")
-	}
 	maxConcepts := getArgInt(req, "max_concepts")
 	if maxConcepts <= 0 {
-		maxConcepts = getArgInt(req, "max_docs")
-		if maxConcepts <= 0 {
-			maxConcepts = 5
-		}
+		maxConcepts = 5
 	}
 
 	filter := gyrus.SearchFilter{
