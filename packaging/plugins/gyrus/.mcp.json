@@ -7,7 +7,7 @@
         "serve"
       ],
       "env": {
-        "GYRUS_WORKSPACE": "${workspaceFolder}"
+        "GYRUS_PROJECT": "${workspaceFolder}"
       }
     }
   }

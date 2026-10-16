@@ -97,9 +97,9 @@ func TestImprovementProposalTransitions(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies the valid and invalid lifecycle state transition rules for general living documents (PRD, Specs, Standards).
+// [Purpose]: Verifies the valid and invalid lifecycle state transition rules for general living concepts (PRD, Specs, Standards).
 // [Execution Surface]: In-Memory Package (internal/domain/lifecycle)
-// [Assertions]: Permitted general document transitions succeed; illegal transitions return a TransitionError.
+// [Assertions]: Permitted general concept transitions succeed; illegal transitions return a TransitionError.
 // -----------------------------------------------------------------------------
 func TestGeneralTransitions(t *testing.T) {
 	validCases := []struct {
@@ -137,9 +137,9 @@ func TestGeneralTransitions(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies document immutability enforcement for accepted ADRs and documents marked with `immutable: true`.
+// [Purpose]: Verifies concept immutability enforcement for accepted ADRs and concepts marked with `immutable: true`.
 // [Execution Surface]: In-Memory Package (internal/domain/lifecycle)
-// [Assertions]: Mutating accepted ADRs or immutable-flagged documents returns an ImmutabilityError; mutable documents succeed.
+// [Assertions]: Mutating accepted ADRs or immutable-flagged concepts returns an ImmutabilityError; mutable concepts succeed.
 // -----------------------------------------------------------------------------
 func TestValidateMutation(t *testing.T) {
 	// Mutating accepted ADR content should fail (built-in immutable type)
@@ -159,7 +159,7 @@ func TestValidateMutation(t *testing.T) {
 
 	// Mutating active custom doc with immutable: true flag in frontmatter should fail!
 	if err := lifecycle.ValidateMutation(gyrus.TypeFreeform, "active", true, true); err == nil {
-		t.Error("Expected immutability error for custom document with immutable: true flag, got nil")
+		t.Error("Expected immutability error for custom concept with immutable: true flag, got nil")
 	}
 }
 
@@ -167,14 +167,14 @@ type mockSchemaStore struct {
 	schemas map[string]string
 }
 
-func (m *mockSchemaStore) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentRef, error) {
-	return gyrus.DocumentRef{}, nil
+func (m *mockSchemaStore) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRef, error) {
+	return gyrus.ConceptRef{}, nil
 }
-func (m *mockSchemaStore) Get(ctx context.Context, id string) (gyrus.Document, error) {
-	return gyrus.Document{}, nil
+func (m *mockSchemaStore) Get(ctx context.Context, id string) (gyrus.Concept, error) {
+	return gyrus.Concept{}, nil
 }
-func (m *mockSchemaStore) Update(ctx context.Context, id string, patch gyrus.DocumentPatch, expectedVersion int) (gyrus.DocumentRef, error) {
-	return gyrus.DocumentRef{}, nil
+func (m *mockSchemaStore) Update(ctx context.Context, id string, patch gyrus.ConceptPatch, expectedVersion int) (gyrus.ConceptRef, error) {
+	return gyrus.ConceptRef{}, nil
 }
 func (m *mockSchemaStore) Delete(ctx context.Context, id string) error {
 	return nil
@@ -183,14 +183,14 @@ func (m *mockSchemaStore) Archive(ctx context.Context, id string) error {
 	return nil
 }
 
-func (m *mockSchemaStore) GetSchema(ctx context.Context, docType string) (string, error) {
-	if content, ok := m.schemas[docType]; ok {
+func (m *mockSchemaStore) GetSchema(ctx context.Context, conceptType string) (string, error) {
+	if content, ok := m.schemas[conceptType]; ok {
 		return content, nil
 	}
 	return "", os.ErrNotExist
 }
-func (m *mockSchemaStore) SaveSchema(ctx context.Context, docType string, content string) error {
-	m.schemas[docType] = content
+func (m *mockSchemaStore) SaveSchema(ctx context.Context, conceptType string, content string) error {
+	m.schemas[conceptType] = content
 	return nil
 }
 func (m *mockSchemaStore) ListSchemas(ctx context.Context) ([]string, error) {
@@ -201,11 +201,11 @@ func (m *mockSchemaStore) ListSchemas(ctx context.Context) ([]string, error) {
 	sort.Strings(list)
 	return list, nil
 }
-func (m *mockSchemaStore) DeleteSchema(ctx context.Context, docType string) error {
-	if _, ok := m.schemas[docType]; !ok {
-		return fmt.Errorf("schema '%s' not found", docType)
+func (m *mockSchemaStore) DeleteSchema(ctx context.Context, conceptType string) error {
+	if _, ok := m.schemas[conceptType]; !ok {
+		return fmt.Errorf("schema '%s' not found", conceptType)
 	}
-	delete(m.schemas, docType)
+	delete(m.schemas, conceptType)
 	return nil
 }
 
@@ -238,7 +238,7 @@ id: <unique-id>
 title: <Custom ADR>
 category: architecture
 type: adr
-owner_group: architecture-board
+tenant: architecture-board
 version: 1
 status: proposed
 ---
@@ -293,26 +293,26 @@ status: proposed
 
 	// 7. GetSchema returns error for non-existent schema
 	if _, err := engine.GetSchema(ctx, "nonexistent-doc-type"); err == nil {
-		t.Errorf("Expected error for non-existent docType, got nil")
+		t.Errorf("Expected error for non-existent conceptType, got nil")
 	}
 }
 
 type mockStoreWithSearch struct {
-	docs map[string]gyrus.Document
+	docs map[string]gyrus.Concept
 }
 
-func (m *mockStoreWithSearch) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentRef, error) {
+func (m *mockStoreWithSearch) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRef, error) {
 	m.docs[doc.ID] = doc
-	return gyrus.DocumentRef{ID: doc.ID}, nil
+	return gyrus.ConceptRef{ID: doc.ID}, nil
 }
-func (m *mockStoreWithSearch) Get(ctx context.Context, id string) (gyrus.Document, error) {
+func (m *mockStoreWithSearch) Get(ctx context.Context, id string) (gyrus.Concept, error) {
 	if doc, ok := m.docs[id]; ok {
 		return doc, nil
 	}
-	return gyrus.Document{}, fmt.Errorf("document not found: %s", id)
+	return gyrus.Concept{}, fmt.Errorf("concept not found: %s", id)
 }
-func (m *mockStoreWithSearch) Update(ctx context.Context, id string, patch gyrus.DocumentPatch, expectedVersion int) (gyrus.DocumentRef, error) {
-	return gyrus.DocumentRef{ID: id}, nil
+func (m *mockStoreWithSearch) Update(ctx context.Context, id string, patch gyrus.ConceptPatch, expectedVersion int) (gyrus.ConceptRef, error) {
+	return gyrus.ConceptRef{ID: id}, nil
 }
 func (m *mockStoreWithSearch) Delete(ctx context.Context, id string) error {
 	delete(m.docs, id)
@@ -327,16 +327,16 @@ func (m *mockStoreWithSearch) Search(ctx context.Context, query string, filter g
 		if filter.Scope == "reference" && doc.Scope != "reference" {
 			continue
 		}
-		if filter.Scope != "all" && filter.Workspace != "" && doc.Scope == "workspace" && doc.Workspace != filter.Workspace {
+		if filter.Scope != "all" && filter.Project != "" && doc.Scope == "project" && doc.Project != filter.Project {
 			continue
 		}
 		score := 20.0
-		if doc.Workspace == filter.Workspace && doc.Scope == "workspace" {
+		if doc.Project == filter.Project && doc.Scope == "project" {
 			score = 60.0
 		}
 		results = append(results, gyrus.SearchResult{
-			Document: doc,
-			Score:    score,
+			Concept: doc,
+			Score:   score,
 		})
 	}
 	sort.Slice(results, func(i, j int) bool {
@@ -347,61 +347,61 @@ func (m *mockStoreWithSearch) Search(ctx context.Context, query string, filter g
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies that SuggestContextWithFilter prioritizes workspace documents, traverses OKF dependencies to include referenced documents, and groups output into clean banners.
-// [Assertions]: Output contains [WORKSPACE CONTEXT: gyrus] and [SHARED REFERENCE LAYER: root], with linked reference ADRs included.
+// [Purpose]: Verifies that SuggestContextWithFilter prioritizes project concepts, traverses OKF dependencies to include referenced concepts, and groups output into clean banners.
+// [Assertions]: Output contains [PROJECT CONTEXT: gyrus] and [SHARED REFERENCE LAYER: root], with linked reference ADRs included.
 // -----------------------------------------------------------------------------
-func TestEngineSuggestContextWithWorkspaceScopingAndDependencyExpansion(t *testing.T) {
+func TestEngineSuggestContextWithProjectScopingAndDependencyExpansion(t *testing.T) {
 	ctx := context.Background()
 
 	mockStore := &mockStoreWithSearch{
-		docs: make(map[string]gyrus.Document),
+		docs: make(map[string]gyrus.Concept),
 	}
 
-	wsDoc := gyrus.Document{
+	wsDoc := gyrus.Concept{
 		ID:           "ticket-gyrus-202",
-		Title:        "Implement Workspace Scoping",
+		Title:        "Implement Project Scoping",
 		Category:     gyrus.CategoryProduct,
 		Type:         gyrus.TypePRD,
-		OwnerGroup:   "root",
-		Scope:        "workspace",
-		Workspace:    "gyrus",
+		Tenant:       "root",
+		Scope:        "project",
+		Project:      "gyrus",
 		Dependencies: []string{"adr-002-simplified-directory-topology"},
 		Content:      "Implementation details for scoping.",
 	}
-	refDoc := gyrus.Document{
-		ID:         "adr-002-simplified-directory-topology",
-		Title:      "Simplified Directory Topology",
-		Category:   gyrus.CategoryArchitecture,
-		Type:       gyrus.TypeADR,
-		OwnerGroup: "root",
-		Scope:      "reference",
-		Content:    "Architecture for .gyrus/docs layout.",
+	refDoc := gyrus.Concept{
+		ID:       "adr-002-simplified-directory-topology",
+		Title:    "Simplified Directory Topology",
+		Category: gyrus.CategoryArchitecture,
+		Type:     gyrus.TypeADR,
+		Tenant:   "root",
+		Scope:    "reference",
+		Content:  "Architecture for .gyrus/concepts layout.",
 	}
-	foreignWsDoc := gyrus.Document{
-		ID:         "ticket-billing-001",
-		Title:      "Billing Tasks",
-		Category:   gyrus.CategoryProduct,
-		Type:       gyrus.TypePRD,
-		OwnerGroup: "root",
-		Scope:      "workspace",
-		Workspace:  "billing",
-		Content:    "Secret billing tasks.",
+	foreignWsDoc := gyrus.Concept{
+		ID:       "ticket-billing-001",
+		Title:    "Billing Tasks",
+		Category: gyrus.CategoryProduct,
+		Type:     gyrus.TypePRD,
+		Tenant:   "root",
+		Scope:    "project",
+		Project:  "billing",
+		Content:  "Secret billing tasks.",
 	}
 
 	mockStore.docs[wsDoc.ID] = wsDoc
 	mockStore.docs[refDoc.ID] = refDoc
 	mockStore.docs[foreignWsDoc.ID] = foreignWsDoc
 
-	engine := lifecycle.NewEngineWithWorkspace(mockStore, mockStore, nil, nil, "", "gyrus")
+	engine := lifecycle.NewEngineWithProject(mockStore, mockStore, nil, nil, "", "gyrus")
 
 	output, err := engine.SuggestContext(ctx, "scoping", "", 5)
 	if err != nil {
 		t.Fatalf("SuggestContext failed: %v", err)
 	}
 
-	// 1. Verify workspace banner and workspace document
-	if !strings.Contains(output, "[WORKSPACE CONTEXT: gyrus]") {
-		t.Errorf("Expected [WORKSPACE CONTEXT: gyrus] in output, got: %s", output)
+	// 1. Verify project banner and project concept
+	if !strings.Contains(output, "[PROJECT CONTEXT: gyrus]") {
+		t.Errorf("Expected [PROJECT CONTEXT: gyrus] in output, got: %s", output)
 	}
 	if !strings.Contains(output, "ticket-gyrus-202") {
 		t.Errorf("Expected ticket-gyrus-202 in output, got: %s", output)
@@ -415,8 +415,8 @@ func TestEngineSuggestContextWithWorkspaceScopingAndDependencyExpansion(t *testi
 		t.Errorf("Expected adr-002-simplified-directory-topology in output, got: %s", output)
 	}
 
-	// 3. Verify foreign workspace document is excluded
+	// 3. Verify foreign project concept is excluded
 	if strings.Contains(output, "ticket-billing-001") {
-		t.Errorf("Did not expect foreign workspace document ticket-billing-001 in output, got: %s", output)
+		t.Errorf("Did not expect foreign project concept ticket-billing-001 in output, got: %s", output)
 	}
 }

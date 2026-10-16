@@ -13,26 +13,26 @@ import (
 func (h *Handler) registerGraphTools(s *server.MCPServer) {
 	// 7. gyrus_link
 	linkTool := mcp.NewTool("gyrus_link",
-		mcp.WithDescription("Create a directed relationship edge between two documents"),
-		mcp.WithString("from_id", mcp.Required(), mcp.Description("Source document ID")),
-		mcp.WithString("to_id", mcp.Required(), mcp.Description("Target document ID")),
+		mcp.WithDescription("Create a directed relationship edge between two concepts"),
+		mcp.WithString("from_id", mcp.Required(), mcp.Description("Source concept ID")),
+		mcp.WithString("to_id", mcp.Required(), mcp.Description("Target concept ID")),
 		mcp.WithString("rel_type", mcp.Description("Relationship type (depends_on|supersedes|implements|mitigates)")),
 	)
 	s.AddTool(linkTool, h.HandleLink)
 
 	// 8. gyrus_unlink
 	unlinkTool := mcp.NewTool("gyrus_unlink",
-		mcp.WithDescription("Remove a directed relationship edge between two documents"),
-		mcp.WithString("from_id", mcp.Required(), mcp.Description("Source document ID")),
-		mcp.WithString("to_id", mcp.Required(), mcp.Description("Target document ID")),
+		mcp.WithDescription("Remove a directed relationship edge between two concepts"),
+		mcp.WithString("from_id", mcp.Required(), mcp.Description("Source concept ID")),
+		mcp.WithString("to_id", mcp.Required(), mcp.Description("Target concept ID")),
 		mcp.WithString("rel_type", mcp.Description("Relationship type (depends_on|supersedes|implements|mitigates)")),
 	)
 	s.AddTool(unlinkTool, h.HandleUnlink)
 
 	// 9. gyrus_neighbors
 	neighborsTool := mcp.NewTool("gyrus_neighbors",
-		mcp.WithDescription("Retrieve neighboring relationship edges for a document"),
-		mcp.WithString("id", mcp.Required(), mcp.Description("Document ID")),
+		mcp.WithDescription("Retrieve neighboring relationship edges for a concept"),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Concept ID")),
 		mcp.WithString("direction", mcp.Description("Direction (outgoing|incoming|both)")),
 		mcp.WithString("rel_type", mcp.Description("Filter by relationship type")),
 	)
@@ -40,8 +40,8 @@ func (h *Handler) registerGraphTools(s *server.MCPServer) {
 
 	// 10. gyrus_traverse
 	traverseTool := mcp.NewTool("gyrus_traverse",
-		mcp.WithDescription("Execute graph path traversal from a starting document"),
-		mcp.WithString("start_id", mcp.Required(), mcp.Description("Start Document ID")),
+		mcp.WithDescription("Execute graph path traversal from a starting concept"),
+		mcp.WithString("start_id", mcp.Required(), mcp.Description("Start Concept ID")),
 		mcp.WithNumber("max_depth", mcp.Description("Maximum traversal depth (default: 2)")),
 	)
 	s.AddTool(traverseTool, h.HandleTraverse)

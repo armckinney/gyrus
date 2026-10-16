@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// OKFFormat implements StorageFormat for Markdown documents with YAML frontmatter.
+// OKFFormat implements StorageFormat for Markdown concepts with YAML frontmatter.
 type OKFFormat struct{}
 
 // NewOKFFormat returns a new OKFFormat serializer instance.
@@ -17,8 +17,8 @@ func NewOKFFormat() *OKFFormat {
 	return &OKFFormat{}
 }
 
-// Serialize converts a gyrus.Document into YAML frontmatter + Markdown bytes.
-func (f *OKFFormat) Serialize(doc *gyrus.Document) ([]byte, error) {
+// Serialize converts a gyrus.Concept into YAML frontmatter + Markdown bytes.
+func (f *OKFFormat) Serialize(doc *gyrus.Concept) ([]byte, error) {
 	yamlData, err := yaml.Marshal(doc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal frontmatter to YAML: %w", err)
@@ -34,8 +34,8 @@ func (f *OKFFormat) Serialize(doc *gyrus.Document) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Deserialize parses a YAML frontmatter + Markdown payload into a gyrus.Document.
-func (f *OKFFormat) Deserialize(data []byte) (*gyrus.Document, error) {
+// Deserialize parses a YAML frontmatter + Markdown payload into a gyrus.Concept.
+func (f *OKFFormat) Deserialize(data []byte) (*gyrus.Concept, error) {
 	str := string(data)
 	trimmed := strings.TrimSpace(str)
 
@@ -52,7 +52,7 @@ func (f *OKFFormat) Deserialize(data []byte) (*gyrus.Document, error) {
 	frontmatterYAML := rest[:closeIdx]
 	bodyContent := strings.TrimPrefix(rest[closeIdx+4:], "\n")
 
-	var doc gyrus.Document
+	var doc gyrus.Concept
 	if err := yaml.Unmarshal([]byte(frontmatterYAML), &doc); err != nil {
 		return nil, fmt.Errorf("failed to parse YAML frontmatter: %w", err)
 	}

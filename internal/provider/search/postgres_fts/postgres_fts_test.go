@@ -26,15 +26,15 @@ func TestPostgresFTSSearchProvider(t *testing.T) {
 	searcher := postgres_fts.NewSearchProviderWithPool(mock)
 	ctx := context.Background()
 
-	doc := gyrus.Document{
-		ID:         "adr-001-pg-fts",
-		Title:      "Postgres FTS Search Engine",
-		Category:   gyrus.CategoryTechnical,
-		Type:       gyrus.TypeSpecification,
-		OwnerGroup: "platform",
-		Version:    1,
-		Status:     "active",
-		Content:    "High performance tsvector search engine.",
+	doc := gyrus.Concept{
+		ID:       "adr-001-pg-fts",
+		Title:    "Postgres FTS Search Engine",
+		Category: gyrus.CategoryTechnical,
+		Type:     gyrus.TypeSpecification,
+		Tenant:   "platform",
+		Version:  1,
+		Status:   "active",
+		Content:  "High performance tsvector search engine.",
 	}
 
 	fmBytes, _ := json.Marshal(doc)
@@ -51,7 +51,7 @@ func TestPostgresFTSSearchProvider(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Search failed: %v", err)
 	}
-	if len(results) != 1 || results[0].Document.ID != doc.ID {
+	if len(results) != 1 || results[0].Concept.ID != doc.ID {
 		t.Errorf("Expected result for %s, got %v", doc.ID, results)
 	}
 	if results[0].Score != 0.85 {

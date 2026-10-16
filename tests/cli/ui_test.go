@@ -85,7 +85,7 @@ func TestUI_CLI_ServeE2E(t *testing.T) {
 	defer cancel()
 
 	serveCmd := exec.CommandContext(ctx, gyrusBinPath, "ui", "serve",
-		"--workspace", tempWorkspace,
+		"--project", tempWorkspace,
 		"--port", fmt.Sprintf("%d", testPort),
 		"--host", "127.0.0.1",
 	)
@@ -216,7 +216,7 @@ func TestUI_CLI_ServeChatLandingPage(t *testing.T) {
 
 	cmd := exec.CommandContext(ctx, gyrusBinPath, "ui", "serve",
 		"--port", fmt.Sprintf("%d", port),
-		"--workspace", tempWorkspace,
+		"--project", tempWorkspace,
 	)
 	cmd.Dir = tempWorkspace
 

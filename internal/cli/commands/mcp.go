@@ -12,8 +12,8 @@ import (
 // NewMCPCmd constructs the 'mcp' parent Cobra command and its subcommands.
 func NewMCPCmd(application *app.App) *cobra.Command {
 	var (
-		workspace string
-		cfgPath   string
+		project string
+		cfgPath string
 	)
 
 	mcpCmd := &cobra.Command{
@@ -31,8 +31,8 @@ func NewMCPCmd(application *app.App) *cobra.Command {
 			)
 			if cfgPath != "" {
 				srv, err = mcp.NewServerWithConfig(cfgPath)
-			} else if workspace != "" {
-				srv, err = mcp.NewServerWithWorkspace(workspace)
+			} else if project != "" {
+				srv, err = mcp.NewServerWithProject(project)
 			} else {
 				srv, err = mcp.NewServer()
 			}
@@ -43,7 +43,8 @@ func NewMCPCmd(application *app.App) *cobra.Command {
 		},
 	}
 
-	mcpServeCmd.Flags().StringVarP(&workspace, "workspace", "w", "", "Workspace root directory for context resolution")
+	mcpServeCmd.Flags().StringVar(&project, "project", "", "Project root directory for context resolution")
+	mcpServeCmd.Flags().StringVarP(&project, "workspace", "w", "", "Project root directory for context resolution (legacy alias)")
 	mcpServeCmd.Flags().StringVarP(&cfgPath, "config", "c", "", "Explicit path to .gyrus.yaml configuration file")
 
 	mcpCmd.AddCommand(mcpServeCmd)

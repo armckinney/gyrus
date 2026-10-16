@@ -17,10 +17,10 @@ type Config struct {
 	Search struct {
 		Provider string `yaml:"provider" json:"provider"`
 	} `yaml:"search" json:"search"`
-	Workspace         string `yaml:"workspace" json:"workspace"`
-	DefaultOwnerGroup string `yaml:"default_owner_group" json:"default_owner_group"`
-	SchemasPath       string `yaml:"schemas_path" json:"schemas_path"`
-	Git               struct {
+	Project     string `yaml:"project" json:"project"`
+	Tenant      string `yaml:"tenant" json:"tenant"`
+	SchemasPath string `yaml:"schemas_path" json:"schemas_path"`
+	Git         struct {
 		RepoURL string `yaml:"repo_url" json:"repo_url"`
 		Branch  string `yaml:"branch" json:"branch"`
 	} `yaml:"git" json:"git"`
@@ -53,12 +53,6 @@ type Config struct {
 		Client  string `yaml:"client" json:"client"`
 		Command string `yaml:"command" json:"command"`
 	} `yaml:"ui" json:"ui"`
-	Automation struct {
-		HooksEnabled       *bool    `yaml:"hooks_enabled,omitempty" json:"hooks_enabled,omitempty"`
-		AutoContext        *bool    `yaml:"auto_context,omitempty" json:"auto_context,omitempty"`
-		ArchitecturalCheck *bool    `yaml:"architectural_check,omitempty" json:"architectural_check,omitempty"`
-		IgnoredPaths       []string `yaml:"ignored_paths,omitempty" json:"ignored_paths,omitempty"`
-	} `yaml:"automation,omitempty" json:"automation,omitempty"`
 }
 
 // StorageProvider returns the configured storage provider.
@@ -101,20 +95,20 @@ func (c *Config) StorageRoot() string {
 	return c.Storage.Root
 }
 
-// WorkspaceName returns the explicitly configured workspace name, if any.
-func (c *Config) WorkspaceName() string {
+// ProjectName returns the explicitly configured project name, if any.
+func (c *Config) ProjectName() string {
 	if c == nil {
 		return ""
 	}
-	return c.Workspace
+	return c.Project
 }
 
-// OwnerGroup returns the configured default owner group, falling back to DefaultOwnerGroup.
-func (c *Config) OwnerGroup() string {
-	if c == nil || c.DefaultOwnerGroup == "" {
-		return DefaultOwnerGroup
+// TenantName returns the configured default tenant, falling back to DefaultTenant.
+func (c *Config) TenantName() string {
+	if c == nil || c.Tenant == "" {
+		return DefaultTenant
 	}
-	return c.DefaultOwnerGroup
+	return c.Tenant
 }
 
 // UIClient returns the configured UI client harness (e.g. "antigravity", "claude").
@@ -133,53 +127,20 @@ func (c *Config) UICommand() string {
 	return c.UI.Command
 }
 
-// HooksEnabled returns true unless explicitly disabled in config.
-func (c *Config) HooksEnabled() bool {
-	if c == nil || c.Automation.HooksEnabled == nil {
-		return true
-	}
-	return *c.Automation.HooksEnabled
-}
-
-// AutoContext returns true unless explicitly disabled in config.
-func (c *Config) AutoContext() bool {
-	if c == nil || c.Automation.AutoContext == nil {
-		return true
-	}
-	return *c.Automation.AutoContext
-}
-
-// ArchitecturalCheck returns true unless explicitly disabled in config.
-func (c *Config) ArchitecturalCheck() bool {
-	if c == nil || c.Automation.ArchitecturalCheck == nil {
-		return true
-	}
-	return *c.Automation.ArchitecturalCheck
-}
-
-// IgnoredPaths returns configured paths to ignore during architectural check,
-// falling back to DefaultIgnoredPaths if none specified.
-func (c *Config) IgnoredPaths() []string {
-	if c == nil || len(c.Automation.IgnoredPaths) == 0 {
-		return DefaultIgnoredPaths
-	}
-	return c.Automation.IgnoredPaths
-}
-
 // ConfigSource indicates which configuration tier provided the resolved config.
 type ConfigSource string
 
 const (
-	SourceDefault   ConfigSource = "default"
-	SourceGlobal    ConfigSource = "global"    // ~/.gyrus.yaml
-	SourceWorkspace ConfigSource = "workspace" // .gyrus.yaml in workspace
+	SourceDefault ConfigSource = "default"
+	SourceGlobal  ConfigSource = "global"  // ~/.gyrus.yaml
+	SourceProject ConfigSource = "project" // .gyrus.yaml in project
 )
 
 // ScopeType represents the retrieval and storage context boundary.
 type ScopeType string
 
 const (
-	ScopeWorkspace ScopeType = "workspace"
+	ScopeProject   ScopeType = "project"
 	ScopeReference ScopeType = "reference"
 	ScopeAll       ScopeType = "all"
 )

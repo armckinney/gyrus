@@ -81,7 +81,7 @@ The Gyrus MCP Server is launched locally via `gyrus mcp serve` and exposes stand
 
 Agents can fetch documents or indexes directly via resource URIs:
 
-* **`memory://doc/{id}`:** Reads the complete document content and frontmatter envelope.
+* **`memory://concept/{id}`:** Reads the complete concept content and frontmatter envelope.
 * **`memory://schema/{document_type}`:** Retrieves the JSON Schema validation contract and template for a document type.
 * **`memory://repo/context`:** Fetches the active repository context summary.
 * **`memory://adr`:** Lists all active Architecture Decision Records.

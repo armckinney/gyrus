@@ -42,7 +42,7 @@ func TestGitStore(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Create
-	doc := gyrus.Document{
+	doc := gyrus.Concept{
 		ID:      "test-doc",
 		Title:   "Test Document",
 		Content: "This is a test document.",
@@ -70,7 +70,7 @@ func TestGitStore(t *testing.T) {
 
 	// 3. Update
 	newTitle := "Updated Title"
-	patch := gyrus.DocumentPatch{
+	patch := gyrus.ConceptPatch{
 		Title:  &newTitle,
 		Reason: "testing update",
 	}
@@ -145,7 +145,7 @@ id: <unique-id>
 title: <Title>
 category: technical
 type: guide
-owner_group: dev
+tenant: dev
 version: 1
 status: active
 ---

@@ -10,7 +10,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	os.Unsetenv("GYRUS_WORKSPACE")
+	os.Unsetenv("GYRUS_PROJECT")
 	os.Unsetenv("GYRUS_CONFIG")
 	os.Exit(m.Run())
 }
@@ -59,31 +59,31 @@ func TestCommandsRegistrationAndExecution(t *testing.T) {
 		t.Fatalf("Expected bare init command to fail, but succeeded")
 	}
 
-	// 2. gyrus create with explicit owner-group
+	// 2. gyrus create with explicit tenant
 	rootCmd.SetArgs([]string{
 		"create",
 		"--id", "doc-cmd-001",
 		"--title", "CLI Commands Architecture",
 		"--category", "architecture",
 		"--type", "adr",
-		"--owner-group", "platform",
+		"--tenant", "platform",
 		"--content", "Modular subpackages for CLI commands.",
 	})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("Create command failed: %v", err)
 	}
 
-	// 2b. gyrus create without owner-group (should default to root)
+	// 2b. gyrus create without tenant (should default to root)
 	rootCmd.SetArgs([]string{
 		"create",
-		"--id", "doc-cmd-default-owner",
-		"--title", "Default Owner Architecture",
+		"--id", "doc-cmd-default-tenant",
+		"--title", "Default Tenant Architecture",
 		"--category", "architecture",
 		"--type", "adr",
-		"--content", "Testing default root owner.",
+		"--content", "Testing default root tenant.",
 	})
 	if err := rootCmd.Execute(); err != nil {
-		t.Fatalf("Create command without owner-group failed: %v", err)
+		t.Fatalf("Create command without tenant failed: %v", err)
 	}
 
 	// 3. gyrus get
@@ -106,9 +106,6 @@ func TestCommandsRegistrationAndExecution(t *testing.T) {
 	}
 	if uiServeCmd.Flags().Lookup("host") == nil {
 		t.Errorf("Expected --host flag on 'ui serve'")
-	}
-	if uiServeCmd.Flags().Lookup("workspace") == nil {
-		t.Errorf("Expected --workspace flag on 'ui serve'")
 	}
 	if uiServeCmd.Flags().Lookup("config") == nil {
 		t.Errorf("Expected --config flag on 'ui serve'")

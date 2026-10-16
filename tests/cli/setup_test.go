@@ -21,7 +21,7 @@ func TestCLI_Config_ProfileFlags(t *testing.T) {
 
 	cmd := exec.Command(gyrusBinPath, "config", "init",
 		"--profile", "postgres",
-		"--owner-group", "platform-infra",
+		"--tenant", "platform-infra",
 	)
 	cmd.Dir = tempWorkspace
 	var out bytes.Buffer
@@ -40,7 +40,7 @@ func TestCLI_Config_ProfileFlags(t *testing.T) {
 	if !strings.Contains(content, "provider: postgres") {
 		t.Errorf("Expected postgres storage provider in config, got:\n%s", content)
 	}
-	if !strings.Contains(content, "default_owner_group: platform-infra") {
+	if !strings.Contains(content, "tenant: platform-infra") {
 		t.Errorf("Expected owner group 'platform-infra', got:\n%s", content)
 	}
 }
@@ -110,7 +110,7 @@ func TestCLI_ConfigPrecedence(t *testing.T) {
 	globalContent := `storage:
   provider: localfs
   root: global_docs
-default_owner_group: global-team
+tenant: global-team
 `
 	if err := os.WriteFile(filepath.Join(tempHome, ".gyrus.yaml"), []byte(globalContent), 0644); err != nil {
 		t.Fatalf("Failed writing global config: %v", err)
@@ -120,7 +120,7 @@ default_owner_group: global-team
 	wsContent := `storage:
   provider: localfs
   root: custom_docs
-default_owner_group: workspace-team
+tenant: workspace-team
 `
 	if err := os.WriteFile(filepath.Join(tempWorkspace, ".gyrus.yaml"), []byte(wsContent), 0644); err != nil {
 		t.Fatalf("Failed writing workspace config: %v", err)
@@ -132,7 +132,7 @@ default_owner_group: workspace-team
 		"--title", "Precedence Doc",
 		"--category", "technical",
 		"--type", "specification",
-		"--owner-group", "workspace-team",
+		"--tenant", "workspace-team",
 		"--status", "active",
 		"--content", "Stored in custom_docs.",
 	)
@@ -177,7 +177,7 @@ func TestCLI_ConfigShow(t *testing.T) {
 	wsContent := `storage:
   provider: localfs
   root: my_workspace_docs
-default_owner_group: test-group
+tenant: test-group
 `
 	if err := os.WriteFile(filepath.Join(tempWorkspace, ".gyrus.yaml"), []byte(wsContent), 0644); err != nil {
 		t.Fatalf("Failed writing workspace config: %v", err)
@@ -191,8 +191,8 @@ default_owner_group: test-group
 	}
 
 	outStr := string(out)
-	if !strings.Contains(outStr, "# Source: workspace") {
-		t.Errorf("Expected output to contain '# Source: workspace', got:\n%s", outStr)
+	if !strings.Contains(outStr, "# Source: project") {
+		t.Errorf("Expected output to contain '# Source: project', got:\n%s", outStr)
 	}
 	if !strings.Contains(outStr, "# Resolved Storage Root:") {
 		t.Errorf("Expected output to contain '# Resolved Storage Root:', got:\n%s", outStr)
@@ -214,7 +214,7 @@ func TestCLI_ConfigShowJSON(t *testing.T) {
 	wsContent := `storage:
   provider: localfs
   root: json_docs
-default_owner_group: json-group
+tenant: json-group
 `
 	if err := os.WriteFile(filepath.Join(tempWorkspace, ".gyrus.yaml"), []byte(wsContent), 0644); err != nil {
 		t.Fatalf("Failed writing workspace config: %v", err)
@@ -237,8 +237,8 @@ default_owner_group: json-group
 		t.Fatalf("Failed unmarshaling config show JSON: %v\nOutput: %s", err, string(out))
 	}
 
-	if payload.Source != "workspace" {
-		t.Errorf("Expected source 'workspace', got '%s'", payload.Source)
+	if payload.Source != "project" {
+		t.Errorf("Expected source 'project', got '%s'", payload.Source)
 	}
 	if !strings.Contains(payload.StorageRoot, "json_docs") {
 		t.Errorf("Expected storage_root to contain 'json_docs', got '%s'", payload.StorageRoot)
@@ -257,7 +257,7 @@ func TestCLI_InitConfigGlobal(t *testing.T) {
 	cmd := exec.Command(gyrusBinPath, "config", "init",
 		"--global",
 		"--profile", "local",
-		"--owner-group", "global-platform",
+		"--tenant", "global-platform",
 	)
 	cmd.Env = append(os.Environ(), "HOME="+tempHome)
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -271,7 +271,7 @@ func TestCLI_InitConfigGlobal(t *testing.T) {
 	}
 
 	content := string(data)
-	if !strings.Contains(content, "default_owner_group: global-platform") {
+	if !strings.Contains(content, "tenant: global-platform") {
 		t.Errorf("Expected owner group 'global-platform', got:\n%s", content)
 	}
 	if !strings.Contains(content, "provider: localfs") {
@@ -346,7 +346,7 @@ func TestCLI_ConfigInit(t *testing.T) {
 
 	cmd := exec.Command(gyrusBinPath, "config", "init",
 		"--profile", "local",
-		"--owner-group", "dev-team",
+		"--tenant", "dev-team",
 	)
 	cmd.Dir = tempWorkspace
 	var out bytes.Buffer
@@ -365,7 +365,7 @@ func TestCLI_ConfigInit(t *testing.T) {
 	if !strings.Contains(content, "provider: localfs") {
 		t.Errorf("Expected localfs storage provider, got:\n%s", content)
 	}
-	if !strings.Contains(content, "default_owner_group: dev-team") {
+	if !strings.Contains(content, "tenant: dev-team") {
 		t.Errorf("Expected owner group 'dev-team', got:\n%s", content)
 	}
 }

@@ -42,7 +42,7 @@ func TestCLIInitAndCreateAndGet(t *testing.T) {
 		"--title", "CLI Command Routing Architecture",
 		"--category", "architecture",
 		"--type", "adr",
-		"--owner-group", "platform",
+		"--tenant", "platform",
 		"--content", "CLI implementation architecture details.",
 	})
 	if err := rootCmd.Execute(); err != nil {

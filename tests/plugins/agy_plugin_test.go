@@ -48,8 +48,8 @@ func TestAntigravityPluginIntegration(t *testing.T) {
 	if server.Command != "gyrus" {
 		t.Errorf("Unexpected server command: %s", server.Command)
 	}
-	if server.Env["GYRUS_WORKSPACE"] != "${workspaceFolder}" {
-		t.Errorf("Expected GYRUS_WORKSPACE env to be '${workspaceFolder}', got '%s'", server.Env["GYRUS_WORKSPACE"])
+	if server.Env["GYRUS_PROJECT"] != "${workspaceFolder}" {
+		t.Errorf("Expected GYRUS_PROJECT env to be '${workspaceFolder}', got '%s'", server.Env["GYRUS_PROJECT"])
 	}
 
 	// 2. Validate plugin.json compliance against Agent Plugins Standard 1.0.0
@@ -108,8 +108,8 @@ func TestAntigravityPluginIntegration(t *testing.T) {
 	if stdServer.Command != "gyrus" {
 		t.Errorf("Unexpected command in mcp.json: %s", stdServer.Command)
 	}
-	if stdServer.Env["GYRUS_WORKSPACE"] != "${workspaceFolder}" {
-		t.Errorf("Expected GYRUS_WORKSPACE env to be '${workspaceFolder}', got '%s'", stdServer.Env["GYRUS_WORKSPACE"])
+	if stdServer.Env["GYRUS_PROJECT"] != "${workspaceFolder}" {
+		t.Errorf("Expected GYRUS_PROJECT env to be '${workspaceFolder}', got '%s'", stdServer.Env["GYRUS_PROJECT"])
 	}
 
 	// 4. Validate rules/AGENTS.md

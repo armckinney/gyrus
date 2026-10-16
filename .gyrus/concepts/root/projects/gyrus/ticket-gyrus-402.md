@@ -23,7 +23,7 @@ last_updated: 2026-07-22T06:43:33Z
 ---
 
 ## 1. Description
-Implement MCP resources (`memory://doc/{id}`, `memory://schema/{type}`, etc.) and MCP prompts (`prepare-adr`, `review-implementation-against-memory`, `propose-memory-update`), and create the Open Skill Format definition wrapping the `gyrus` CLI binary.
+Implement MCP resources (`memory://concept/{id}`, `memory://schema/{type}`, etc.) and MCP prompts (`prepare-adr`, `review-implementation-against-memory`, `propose-memory-update`), and create the Open Skill Format definition wrapping the `gyrus` CLI binary.
 
 ---
 

@@ -71,29 +71,29 @@ func TestIntegration_PostgresLive(t *testing.T) {
 	runID := time.Now().UnixNano()
 	docAID := fmt.Sprintf("adr-live-pg-%d", runID)
 	docBID := fmt.Sprintf("prd-live-pg-%d", runID)
-	uniqueOwner := fmt.Sprintf("owner-%d", runID)
+	uniqueTenant := fmt.Sprintf("tenant-%d", runID)
 
-	docA := gyrus.Document{
-		ID:         docAID,
-		Title:      "Postgres Relational Architecture",
-		Category:   gyrus.CategoryArchitecture,
-		Type:       gyrus.TypeADR,
-		OwnerGroup: uniqueOwner,
-		Version:    1,
-		Status:     "accepted",
-		Tags:       []string{"postgres", "relational", "sql"},
-		Content:    "High performance PostgreSQL backend with tsvector indexing and JSONB storage.",
+	docA := gyrus.Concept{
+		ID:       docAID,
+		Title:    "Postgres Relational Architecture",
+		Category: gyrus.CategoryArchitecture,
+		Type:     gyrus.TypeADR,
+		Tenant:   uniqueTenant,
+		Version:  1,
+		Status:   "accepted",
+		Tags:     []string{"postgres", "relational", "sql"},
+		Content:  "High performance PostgreSQL backend with tsvector indexing and JSONB storage.",
 	}
-	docB := gyrus.Document{
-		ID:         docBID,
-		Title:      "Product Spec for Cloud Memory",
-		Category:   gyrus.CategoryProduct,
-		Type:       gyrus.TypePRD,
-		OwnerGroup: uniqueOwner,
-		Version:    1,
-		Status:     "active",
-		Tags:       []string{"cloud", "postgres"},
-		Content:    "Product specifications utilizing PostgreSQL storage backend.",
+	docB := gyrus.Concept{
+		ID:       docBID,
+		Title:    "Product Spec for Cloud Memory",
+		Category: gyrus.CategoryProduct,
+		Type:     gyrus.TypePRD,
+		Tenant:   uniqueTenant,
+		Version:  1,
+		Status:   "active",
+		Tags:     []string{"cloud", "postgres"},
+		Content:  "Product specifications utilizing PostgreSQL storage backend.",
 	}
 
 	defer func() {
@@ -128,23 +128,23 @@ func TestIntegration_PostgresLive(t *testing.T) {
 	}
 
 	// 5. Tsvector FTS Search
-	results, err := searcher.Search(ctx, "relational tsvector", gyrus.SearchFilter{OwnerGroup: uniqueOwner})
+	results, err := searcher.Search(ctx, "relational tsvector", gyrus.SearchFilter{Tenant: uniqueTenant})
 	if err != nil {
 		t.Fatalf("Postgres FTS search failed: %v", err)
 	}
-	if len(results) == 0 || results[0].Document.ID != docA.ID {
+	if len(results) == 0 || results[0].Concept.ID != docA.ID {
 		t.Errorf("Expected top FTS match to be docA, got %v", results)
 	}
 
 	// 6. Graph Edges & Neighbors
-	edge := gyrus.DocumentEdge{
-		FromDocumentID:   docB.ID,
-		ToDocumentID:     docA.ID,
+	edge := gyrus.ConceptEdge{
+		FromConceptID:    docB.ID,
+		ToConceptID:      docA.ID,
 		RelationshipType: gyrus.RelDependsOn,
 		CreatedBy:        "test-runner",
 		CreatedAt:        time.Now(),
 	}
-	if err := graphStore.UpsertEdges(ctx, []gyrus.DocumentEdge{edge}); err != nil {
+	if err := graphStore.UpsertEdges(ctx, []gyrus.ConceptEdge{edge}); err != nil {
 		t.Fatalf("Postgres graph upsert failed: %v", err)
 	}
 
@@ -152,7 +152,7 @@ func TestIntegration_PostgresLive(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Postgres graph neighbors failed: %v", err)
 	}
-	if len(outgoing) != 1 || outgoing[0].ToDocumentID != docA.ID {
+	if len(outgoing) != 1 || outgoing[0].ToConceptID != docA.ID {
 		t.Errorf("Expected 1 outgoing edge to docA, got %v", outgoing)
 	}
 }

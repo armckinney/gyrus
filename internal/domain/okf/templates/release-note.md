@@ -4,7 +4,7 @@ title: <Clean Document Title>
 category: operations
 type: release-note
 format: markdown
-owner_group: <team-owning-document>
+tenant: <team-owning-document>
 version: 1
 status: published
 immutable: true

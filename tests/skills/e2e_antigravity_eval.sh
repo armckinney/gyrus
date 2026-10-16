@@ -40,7 +40,7 @@ echo "2. Creating test OKF document..."
   --title "Antigravity Integration Storage Engine ADR" \
   --category "architecture" \
   --type "adr" \
-  --owner-group "root" \
+  --tenant "root" \
   --status "proposed" \
   --content "Testing live Antigravity agent context resolution." \
   --json

@@ -18,20 +18,20 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 		id           string
 		title        string
 		category     string
-		docType      string
-		ownerGroup   string
+		conceptType  string
+		tenant       string
 		status       string
 		tags         string
 		dependencies string
 		content      string
 		contentFile  string
 		scope        string
-		workspace    string
+		project      string
 	)
 
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: "Create a new OKF contract document",
+		Short: "Create a new OKF contract concept",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			engine, err := application.Engine()
 			if err != nil {
@@ -60,18 +60,18 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 			docStatus := status
 			if docStatus == "" {
 				docStatus = "draft"
-				if docType == string(gyrus.TypeADR) {
+				if conceptType == string(gyrus.TypeADR) {
 					docStatus = "proposed"
 				}
 			}
 
-			docOwner := ownerGroup
-			if docOwner == "" {
+			docTenant := tenant
+			if docTenant == "" {
 				cfg := application.Config()
-				if cfg != nil && cfg.DefaultOwnerGroup != "" {
-					docOwner = cfg.DefaultOwnerGroup
+				if cfg != nil && cfg.Tenant != "" {
+					docTenant = cfg.Tenant
 				} else {
-					docOwner = "root"
+					docTenant = "root"
 				}
 			}
 
@@ -79,23 +79,23 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 			if cmd.Flags().Changed("scope") {
 				effectiveScope, _ = cmd.Flags().GetString("scope")
 			}
-			effectiveWorkspace := ""
-			if cmd.Flags().Changed("workspace") {
-				effectiveWorkspace, _ = cmd.Flags().GetString("workspace")
+			effectiveProject := ""
+			if cmd.Flags().Changed("project") {
+				effectiveProject, _ = cmd.Flags().GetString("project")
 			}
 
-			doc := gyrus.Document{
+			doc := gyrus.Concept{
 				ID:           id,
 				Title:        title,
 				Category:     gyrus.Category(category),
-				Type:         gyrus.DocumentType(docType),
-				OwnerGroup:   docOwner,
+				Type:         gyrus.ConceptType(conceptType),
+				Tenant:       docTenant,
 				Version:      1,
 				Status:       docStatus,
 				Tags:         tagsList,
 				Dependencies: depsList,
 				Scope:        effectiveScope,
-				Workspace:    effectiveWorkspace,
+				Project:      effectiveProject,
 				Content:      body,
 			}
 
@@ -108,25 +108,25 @@ func NewCreateCmd(application *app.App) *cobra.Command {
 				data, _ := json.MarshalIndent(ref, "", "  ")
 				fmt.Println(string(data))
 			} else {
-				fmt.Printf("Created document '%s' (v%d, %s)\n", ref.ID, ref.Version, ref.Status)
+				fmt.Printf("Created concept '%s' (v%d, %s)\n", ref.ID, ref.Version, ref.Status)
 			}
 
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVar(&id, "id", "", "Document ID (required, pattern ^[a-z0-9-_]+$)")
-	cmd.Flags().StringVar(&title, "title", "", "Document Title (required)")
-	cmd.Flags().StringVar(&category, "category", "", "Document Category (architecture|business-logic|product|operations|technical)")
-	cmd.Flags().StringVar(&docType, "type", "", "Document Type (adr|prd|guide|specification|...)")
-	cmd.Flags().StringVar(&ownerGroup, "owner-group", "", "Owner Group (defaults to configured owner or root)")
-	cmd.Flags().StringVar(&status, "status", "", "Document Status (draft|proposed|active)")
+	cmd.Flags().StringVar(&id, "id", "", "Concept ID (required, pattern ^[a-z0-9-_]+$)")
+	cmd.Flags().StringVar(&title, "title", "", "Concept Title (required)")
+	cmd.Flags().StringVar(&category, "category", "", "Concept Category (architecture|business-logic|product|operations|technical)")
+	cmd.Flags().StringVar(&conceptType, "type", "", "Concept Type (adr|prd|guide|specification|...)")
+	cmd.Flags().StringVar(&tenant, "tenant", "", "Tenant (defaults to configured tenant or root)")
+	cmd.Flags().StringVar(&status, "status", "", "Concept Status (draft|proposed|active)")
 	cmd.Flags().StringVar(&tags, "tags", "", "Comma-separated list of tags")
-	cmd.Flags().StringVar(&dependencies, "dependencies", "", "Comma-separated list of dependent document IDs")
-	cmd.Flags().StringVar(&scope, "scope", "", "Target scope (workspace or reference)")
-	cmd.Flags().StringVar(&workspace, "workspace", "", "Target workspace name (defaults to configured workspace)")
-	cmd.Flags().StringVar(&content, "content", "", "Inline document body content")
-	cmd.Flags().StringVar(&contentFile, "content-file", "", "Path to file containing document body content")
+	cmd.Flags().StringVar(&dependencies, "dependencies", "", "Comma-separated list of dependent concept IDs")
+	cmd.Flags().StringVar(&scope, "scope", "", "Target scope (project or reference)")
+	cmd.Flags().StringVar(&project, "project", "", "Target project name (defaults to configured project)")
+	cmd.Flags().StringVar(&content, "content", "", "Inline concept body content")
+	cmd.Flags().StringVar(&contentFile, "content-file", "", "Path to file containing concept body content")
 
 	_ = cmd.MarkFlagRequired("id")
 	_ = cmd.MarkFlagRequired("title")

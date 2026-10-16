@@ -20,25 +20,25 @@ const (
 	ProfileVector   Profile = "vector"
 )
 
-// ConfigSetupOptions defines input options for workspace config initialization.
+// ConfigSetupOptions defines input options for project config initialization.
 type ConfigSetupOptions struct {
-	WorkspaceDir string
-	Profile      Profile
-	OwnerGroup   string
+	ProjectDir string
+	Profile    Profile
+	Tenant     string
 }
 
-// ConfigSetupResult contains status details from workspace configuration setup.
+// ConfigSetupResult contains status details from project configuration setup.
 type ConfigSetupResult struct {
 	ConfigFile string
 	StorageDir string
 	Profile    Profile
-	OwnerGroup string
+	Tenant     string
 }
 
 // GenerateConfigYaml generates the .gyrus.yaml config file content for a given profile using the nested schema.
-func GenerateConfigYaml(profile Profile, ownerGroup string) string {
-	if ownerGroup == "" {
-		ownerGroup = "root"
+func GenerateConfigYaml(profile Profile, tenant string) string {
+	if tenant == "" {
+		tenant = "root"
 	}
 
 	switch profile {
@@ -57,12 +57,12 @@ graph:
 search:
   provider: sqlite
 
-default_owner_group: %s
+tenant: %s
 
 git:
   repo_url: ""
   branch: main
-`, ownerGroup)
+`, tenant)
 
 	case ProfileS3:
 		return fmt.Sprintf(`# Gyrus Configuration - AWS S3 Profile
@@ -79,12 +79,12 @@ graph:
 search:
   provider: sqlite
 
-default_owner_group: %s
+tenant: %s
 
 s3:
   bucket_name: "my-gyrus-bucket"
   region: "us-east-1"
-`, ownerGroup)
+`, tenant)
 
 	case ProfileAzure:
 		return fmt.Sprintf(`# Gyrus Configuration - Azure Blob Profile
@@ -101,12 +101,12 @@ graph:
 search:
   provider: sqlite
 
-default_owner_group: %s
+tenant: %s
 
 azure_blob:
   storage_account: "myaccountname"
   container_name: "my-gyrus-container"
-`, ownerGroup)
+`, tenant)
 
 	case ProfileGCS:
 		return fmt.Sprintf(`# Gyrus Configuration - Google Cloud Storage Profile
@@ -123,11 +123,11 @@ graph:
 search:
   provider: sqlite
 
-default_owner_group: %s
+tenant: %s
 
 gcs:
   bucket_name: "my-gyrus-gcs-bucket"
-`, ownerGroup)
+`, tenant)
 
 	case ProfileBlob:
 		return fmt.Sprintf(`# Gyrus Configuration - Cloud Blob Profile
@@ -144,11 +144,11 @@ graph:
 search:
   provider: sqlite
 
-default_owner_group: %s
+tenant: %s
 
 blob:
   bucket_url: "file:///tmp/gyrus-blob-bucket"
-`, ownerGroup)
+`, tenant)
 
 	case ProfilePostgres:
 		return fmt.Sprintf(`# Gyrus Configuration - PostgreSQL Profile
@@ -165,11 +165,11 @@ graph:
 search:
   provider: postgres_fts
 
-default_owner_group: %s
+tenant: %s
 
 postgres:
   connection_string: "postgres://postgres:postgres@postgres:5432/gyrus?sslmode=disable"
-`, ownerGroup)
+`, tenant)
 
 	case ProfileVector:
 		return fmt.Sprintf(`# Gyrus Configuration - Semantic Vector Profile
@@ -186,13 +186,13 @@ graph:
 search:
   provider: vector
 
-default_owner_group: %s
+tenant: %s
 
 vector:
   embedding_provider: ollama
   model: nomic-embed-text
   ollama_endpoint: "http://localhost:11434"
-`, ownerGroup)
+`, tenant)
 
 	default: // ProfileLocal
 		return fmt.Sprintf(`# Gyrus Configuration - LocalFS Profile
@@ -209,15 +209,15 @@ graph:
 search:
   provider: sqlite
 
-default_owner_group: %s
-`, ownerGroup)
+tenant: %s
+`, tenant)
 	}
 }
 
-// WriteConfigFile writes .gyrus.yaml to the specified workspace directory.
-func WriteConfigFile(dir string, profile Profile, ownerGroup string) (string, error) {
+// WriteConfigFile writes .gyrus.yaml to the specified project directory.
+func WriteConfigFile(dir string, profile Profile, tenant string) (string, error) {
 	configPath := filepath.Join(dir, ".gyrus.yaml")
-	content := GenerateConfigYaml(profile, ownerGroup)
+	content := GenerateConfigYaml(profile, tenant)
 
 	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
 		return "", fmt.Errorf("failed to write .gyrus.yaml config file: %w", err)
@@ -227,7 +227,7 @@ func WriteConfigFile(dir string, profile Profile, ownerGroup string) (string, er
 
 // WriteGlobalConfigFile writes .gyrus.yaml to the user's home directory.
 // Returns an error if the file already exists and force is false.
-func WriteGlobalConfigFile(profile Profile, ownerGroup string, force bool) (string, error) {
+func WriteGlobalConfigFile(profile Profile, tenant string, force bool) (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("failed to determine home directory: %w", err)
@@ -238,30 +238,30 @@ func WriteGlobalConfigFile(profile Profile, ownerGroup string, force bool) (stri
 			return "", fmt.Errorf("global config already exists at %s. Use --force to overwrite", configPath)
 		}
 	}
-	return WriteConfigFile(homeDir, profile, ownerGroup)
+	return WriteConfigFile(homeDir, profile, tenant)
 }
 
-// RunConfigSetup generates .gyrus.yaml configuration for the target workspace.
+// RunConfigSetup generates .gyrus.yaml configuration for the target project.
 func RunConfigSetup(opts ConfigSetupOptions) (*ConfigSetupResult, error) {
-	if opts.WorkspaceDir == "" {
-		opts.WorkspaceDir = "."
+	if opts.ProjectDir == "" {
+		opts.ProjectDir = "."
 	}
 	if opts.Profile == "" {
 		opts.Profile = ProfileLocal
 	}
-	if opts.OwnerGroup == "" {
-		opts.OwnerGroup = "root"
+	if opts.Tenant == "" {
+		opts.Tenant = "root"
 	}
 
-	cfgPath, err := WriteConfigFile(opts.WorkspaceDir, opts.Profile, opts.OwnerGroup)
+	cfgPath, err := WriteConfigFile(opts.ProjectDir, opts.Profile, opts.Tenant)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ConfigSetupResult{
 		ConfigFile: cfgPath,
-		StorageDir: filepath.Join(opts.WorkspaceDir, ".gyrus"),
+		StorageDir: filepath.Join(opts.ProjectDir, ".gyrus"),
 		Profile:    opts.Profile,
-		OwnerGroup: opts.OwnerGroup,
+		Tenant:     opts.Tenant,
 	}, nil
 }

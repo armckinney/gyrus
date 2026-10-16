@@ -10,7 +10,7 @@ import (
 )
 
 // Home handles `/`. If an agent client is configured, it renders the chat landing page.
-// Otherwise, it delegates to Docs to display the document explorer.
+// Otherwise, it delegates to Docs to display the concept explorer.
 func (h *Handlers) Home(w http.ResponseWriter, r *http.Request) {
 	if h.uiClientName() != "" {
 		h.Chat(w, r)
@@ -19,29 +19,26 @@ func (h *Handlers) Home(w http.ResponseWriter, r *http.Request) {
 	h.Docs(w, r)
 }
 
-// Docs handles `/docs`, rendering the documentation list with taxonomy sidebar.
+// Docs handles `/docs` and `/concepts`, rendering the concepts list with taxonomy sidebar.
 func (h *Handlers) Docs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenantFilter := strings.TrimSpace(r.URL.Query().Get("tenant"))
-	if tenantFilter == "" {
-		tenantFilter = strings.TrimSpace(r.URL.Query().Get("owner"))
-	}
 	scopeFilter := strings.TrimSpace(r.URL.Query().Get("scope"))
 	categoryFilter := r.URL.Query().Get("category")
 	typeFilter := r.URL.Query().Get("type")
 	statusFilter := r.URL.Query().Get("status")
 
-	// Fetch all documents across system to discover available tenants
+	// Fetch all concepts across system to discover available tenants
 	allSystemResults, err := h.engine.Search(ctx, "", gyrus.SearchFilter{})
 	if err != nil {
 		allSystemResults = nil
 	}
 	availableTenants := h.extractAvailableTenants(allSystemResults)
 
-	// Fetch documents for active tenant (or all if empty)
+	// Fetch concepts for active tenant (or all if empty)
 	var tenantResults []gyrus.SearchResult
 	if tenantFilter != "" {
-		tenantResults, err = h.engine.Search(ctx, "", gyrus.SearchFilter{OwnerGroup: tenantFilter})
+		tenantResults, err = h.engine.Search(ctx, "", gyrus.SearchFilter{Tenant: tenantFilter})
 		if err != nil {
 			tenantResults = nil
 		}
@@ -56,17 +53,18 @@ func (h *Handlers) Docs(w http.ResponseWriter, r *http.Request) {
 	var scopeFilteredResults []gyrus.SearchResult
 	for _, res := range tenantResults {
 		if scopeFilter != "" {
-			docScope := h.determineDocScope(&res.Document, scopeMap)
+			docScope := h.determineDocScope(&res.Concept, scopeMap)
 			if scopeFilter == "reference" {
 				if docScope != "reference" {
 					continue
 				}
-			} else if strings.HasPrefix(scopeFilter, "workspaces/") {
-				if docScope != scopeFilter {
+			} else if strings.HasPrefix(scopeFilter, "projects/") {
+				pName := strings.TrimPrefix(scopeFilter, "projects/")
+				if docScope != "projects/"+pName {
 					continue
 				}
 			} else {
-				if docScope != "workspaces/"+scopeFilter && docScope != scopeFilter {
+				if docScope != "projects/"+scopeFilter {
 					continue
 				}
 			}
@@ -79,13 +77,13 @@ func (h *Handlers) Docs(w http.ResponseWriter, r *http.Request) {
 	// Second pass: apply category, type, and status filters on top of scope-filtered results
 	var filteredResults []gyrus.SearchResult
 	for _, res := range scopeFilteredResults {
-		if categoryFilter != "" && string(res.Document.Category) != categoryFilter {
+		if categoryFilter != "" && string(res.Concept.Category) != categoryFilter {
 			continue
 		}
-		if typeFilter != "" && string(res.Document.Type) != typeFilter {
+		if typeFilter != "" && string(res.Concept.Type) != typeFilter {
 			continue
 		}
-		if statusFilter != "" && res.Document.Status != statusFilter {
+		if statusFilter != "" && res.Concept.Status != statusFilter {
 			continue
 		}
 		filteredResults = append(filteredResults, res)
@@ -94,46 +92,46 @@ func (h *Handlers) Docs(w http.ResponseWriter, r *http.Request) {
 	var docs []DocListItem
 	for _, res := range filteredResults {
 		docs = append(docs, DocListItem{
-			ID:       res.Document.ID,
-			Title:    res.Document.Title,
-			Category: string(res.Document.Category),
-			Type:     string(res.Document.Type),
-			Status:   res.Document.Status,
-			Version:  res.Document.Version,
-			Snippet:  extractSnippet(res.Document.Content),
+			ID:       res.Concept.ID,
+			Title:    res.Concept.Title,
+			Category: string(res.Concept.Category),
+			Type:     string(res.Concept.Type),
+			Status:   res.Concept.Status,
+			Version:  res.Concept.Version,
+			Snippet:  extractSnippet(res.Concept.Content),
 		})
 	}
 
-	filterTitle := "All Documents"
+	filterTitle := "All Concepts"
 	filterSubtitle := "Explore ADRs, specifications, and governance contracts managed by Gyrus."
 	if scopeFilter == "reference" {
 		if typeFilter != "" {
 			filterTitle = fmt.Sprintf("Scope: Reference · %s", typeFilter)
-			filterSubtitle = fmt.Sprintf("Reference documents of type '%s'.", typeFilter)
+			filterSubtitle = fmt.Sprintf("Reference concepts of type '%s'.", typeFilter)
 		} else {
 			filterTitle = "Scope: Reference"
-			filterSubtitle = "Global reference documents, architecture standards, and specifications."
+			filterSubtitle = "Global reference concepts, architecture standards, and specifications."
 		}
 	} else if scopeFilter != "" {
-		wsName := strings.TrimPrefix(scopeFilter, "workspaces/")
+		pName := strings.TrimPrefix(scopeFilter, "projects/")
 		if typeFilter != "" {
-			filterTitle = fmt.Sprintf("Workspace: %s · %s", wsName, typeFilter)
-			filterSubtitle = fmt.Sprintf("Documents of type '%s' scoped to workspace '%s'.", typeFilter, wsName)
+			filterTitle = fmt.Sprintf("Project: %s · %s", pName, typeFilter)
+			filterSubtitle = fmt.Sprintf("Concepts of type '%s' scoped to project '%s'.", typeFilter, pName)
 		} else {
-			filterTitle = fmt.Sprintf("Workspace: %s", wsName)
-			filterSubtitle = fmt.Sprintf("Documents and tickets scoped to workspace '%s'.", wsName)
+			filterTitle = fmt.Sprintf("Project: %s", pName)
+			filterSubtitle = fmt.Sprintf("Concepts and artifacts scoped to project '%s'.", pName)
 		}
 	} else if categoryFilter != "" {
 		filterTitle = fmt.Sprintf("Category: %s", categoryFilter)
-		filterSubtitle = fmt.Sprintf("Documents categorized under %s.", categoryFilter)
+		filterSubtitle = fmt.Sprintf("Concepts categorized under %s.", categoryFilter)
 	} else if typeFilter != "" {
 		filterTitle = fmt.Sprintf("Type: %s", typeFilter)
-		filterSubtitle = fmt.Sprintf("Documents of type %s.", typeFilter)
+		filterSubtitle = fmt.Sprintf("Concepts of type %s.", typeFilter)
 	}
 
 	data := DocsPageData{
 		BasePageData: BasePageData{
-			Title:            "Documents",
+			Title:            "Concepts",
 			StorageBackend:   h.storageBackend(),
 			ActiveNav:        "docs",
 			UIClient:         h.uiClientName(),
@@ -158,24 +156,24 @@ func (h *Handlers) Docs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Doc handles `GET /docs/{id}`, rendering markdown with frontmatter badges and edge relationships.
+// Doc handles `GET /docs/{id}` or `GET /concepts/{id}`, rendering markdown with frontmatter badges and edge relationships.
 func (h *Handlers) Doc(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tenantFilter := strings.TrimSpace(r.URL.Query().Get("tenant"))
-	if tenantFilter == "" {
-		tenantFilter = strings.TrimSpace(r.URL.Query().Get("owner"))
-	}
 
-	id := strings.TrimPrefix(r.URL.Path, "/docs/")
+	id := strings.TrimPrefix(r.URL.Path, "/concepts/")
+	if strings.HasPrefix(r.URL.Path, "/docs/") {
+		id = strings.TrimPrefix(r.URL.Path, "/docs/")
+	}
 	id = strings.TrimSpace(id)
 	if id == "" {
-		http.Redirect(w, r, "/docs", http.StatusFound)
+		http.Redirect(w, r, "/concepts", http.StatusFound)
 		return
 	}
 
 	doc, err := h.engine.Get(ctx, id)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Document '%s' not found: %v", id, err), http.StatusNotFound)
+		http.Error(w, fmt.Sprintf("Concept '%s' not found: %v", id, err), http.StatusNotFound)
 		return
 	}
 
@@ -188,13 +186,13 @@ func (h *Handlers) Doc(w http.ResponseWriter, r *http.Request) {
 		renderedHTML = template.HTML(fmt.Sprintf("<pre>%s</pre>", template.HTMLEscapeString(doc.Content)))
 	}
 
-	// Fetch documents for stats and sidebar
+	// Fetch concepts for stats and sidebar
 	allSystemResults, _ := h.engine.Search(ctx, "", gyrus.SearchFilter{})
 	availableTenants := h.extractAvailableTenants(allSystemResults)
 
 	var tenantResults []gyrus.SearchResult
 	if tenantFilter != "" {
-		tenantResults, _ = h.engine.Search(ctx, "", gyrus.SearchFilter{OwnerGroup: tenantFilter})
+		tenantResults, _ = h.engine.Search(ctx, "", gyrus.SearchFilter{Tenant: tenantFilter})
 	} else {
 		tenantResults = allSystemResults
 	}
@@ -216,6 +214,7 @@ func (h *Handlers) Doc(w http.ResponseWriter, r *http.Request) {
 			CategoryCounts:   categoryCounts,
 			TypeCounts:       typeCounts,
 		},
+		Concept:       doc,
 		Doc:           doc,
 		ContentHTML:   renderedHTML,
 		OutgoingEdges: outgoingEdges,
@@ -233,9 +232,6 @@ func (h *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
 	tenantFilter := strings.TrimSpace(r.URL.Query().Get("tenant"))
-	if tenantFilter == "" {
-		tenantFilter = strings.TrimSpace(r.URL.Query().Get("owner"))
-	}
 	scopeFilter := strings.TrimSpace(r.URL.Query().Get("scope"))
 
 	allSystemResults, _ := h.engine.Search(ctx, "", gyrus.SearchFilter{})
@@ -243,7 +239,7 @@ func (h *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 
 	var tenantResults []gyrus.SearchResult
 	if tenantFilter != "" {
-		tenantResults, _ = h.engine.Search(ctx, "", gyrus.SearchFilter{OwnerGroup: tenantFilter})
+		tenantResults, _ = h.engine.Search(ctx, "", gyrus.SearchFilter{Tenant: tenantFilter})
 	} else {
 		tenantResults = allSystemResults
 	}
@@ -254,22 +250,23 @@ func (h *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 
 	var resultsView []SearchResultItem
 	if query != "" {
-		searchFilter := gyrus.SearchFilter{OwnerGroup: tenantFilter}
+		searchFilter := gyrus.SearchFilter{Tenant: tenantFilter}
 		results, err := h.engine.Search(ctx, query, searchFilter)
 		if err == nil {
 			for _, res := range results {
 				if scopeFilter != "" {
-					docScope := h.determineDocScope(&res.Document, scopeMap)
+					docScope := h.determineDocScope(&res.Concept, scopeMap)
 					if scopeFilter == "reference" && docScope != "reference" {
 						continue
 					}
-					if strings.HasPrefix(scopeFilter, "workspaces/") && docScope != scopeFilter {
+					if strings.HasPrefix(scopeFilter, "projects/") && docScope != scopeFilter {
 						continue
 					}
 				}
 				resultsView = append(resultsView, SearchResultItem{
-					Document:    res.Document,
-					Snippet:     extractSnippet(res.Document.Content),
+					Concept:     res.Concept,
+					Document:    res.Concept,
+					Snippet:     extractSnippet(res.Concept.Content),
 					Score:       res.Score,
 					MatchReason: res.MatchReason,
 				})
@@ -278,17 +275,18 @@ func (h *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 	} else {
 		for _, res := range tenantResults {
 			if scopeFilter != "" {
-				docScope := h.determineDocScope(&res.Document, scopeMap)
+				docScope := h.determineDocScope(&res.Concept, scopeMap)
 				if scopeFilter == "reference" && docScope != "reference" {
 					continue
 				}
-				if strings.HasPrefix(scopeFilter, "workspaces/") && docScope != scopeFilter {
+				if strings.HasPrefix(scopeFilter, "projects/") && docScope != scopeFilter {
 					continue
 				}
 			}
 			resultsView = append(resultsView, SearchResultItem{
-				Document: res.Document,
-				Snippet:  extractSnippet(res.Document.Content),
+				Concept:  res.Concept,
+				Document: res.Concept,
+				Snippet:  extractSnippet(res.Concept.Content),
 			})
 		}
 	}

@@ -23,7 +23,7 @@ type PgxPool interface {
 	Close()
 }
 
-// Store implements DocumentStore, IndexStore, GraphStore, SearchProvider
+// Store implements ConceptStore, IndexStore, GraphStore, SearchProvider
 type Store struct {
 	pool       PgxPool
 	connString string
@@ -46,7 +46,7 @@ func NewStore(ctx context.Context, connString string) (*Store, error) {
 
 func (s *Store) initSchema(ctx context.Context) error {
 	ddl := `
-	CREATE TABLE IF NOT EXISTS documents (
+	CREATE TABLE IF NOT EXISTS concepts (
 		id TEXT PRIMARY KEY,
 		frontmatter JSONB NOT NULL,
 		content TEXT NOT NULL,
@@ -57,20 +57,20 @@ func (s *Store) initSchema(ctx context.Context) error {
 		) STORED
 	);
 
-	CREATE INDEX IF NOT EXISTS idx_documents_search ON documents USING GIN (search_vector);
-	CREATE INDEX IF NOT EXISTS idx_documents_frontmatter ON documents USING GIN (frontmatter);
+	CREATE INDEX IF NOT EXISTS idx_concepts_search ON concepts USING GIN (search_vector);
+	CREATE INDEX IF NOT EXISTS idx_concepts_frontmatter ON concepts USING GIN (frontmatter);
 
-	CREATE TABLE IF NOT EXISTS document_edges (
-		from_document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-		to_document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+	CREATE TABLE IF NOT EXISTS concept_edges (
+		from_concept_id TEXT NOT NULL REFERENCES concepts(id) ON DELETE CASCADE,
+		to_concept_id TEXT NOT NULL REFERENCES concepts(id) ON DELETE CASCADE,
 		relationship_type TEXT NOT NULL,
 		created_by TEXT,
 		created_at TIMESTAMPTZ DEFAULT NOW(),
-		PRIMARY KEY (from_document_id, to_document_id, relationship_type)
+		PRIMARY KEY (from_concept_id, to_concept_id, relationship_type)
 	);
-	CREATE INDEX IF NOT EXISTS idx_edges_to ON document_edges(to_document_id);
+	CREATE INDEX IF NOT EXISTS idx_edges_to ON concept_edges(to_concept_id);
 
-	CREATE TABLE IF NOT EXISTS documents_history (
+	CREATE TABLE IF NOT EXISTS concepts_history (
 		id TEXT NOT NULL,
 		version INT NOT NULL,
 		frontmatter JSONB NOT NULL,
@@ -94,9 +94,9 @@ func (s *Store) Close() {
 	s.pool.Close()
 }
 
-// --- DocumentStore ---
+// --- ConceptStore ---
 
-func (s *Store) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentRef, error) {
+func (s *Store) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRef, error) {
 	if doc.Version == 0 {
 		doc.Version = 1
 	}
@@ -106,36 +106,36 @@ func (s *Store) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentR
 
 	fm, err := json.Marshal(doc)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 	defer tx.Rollback(ctx)
 
 	_, err = tx.Exec(ctx,
-		"INSERT INTO documents (id, frontmatter, content) VALUES ($1, $2, $3)",
+		"INSERT INTO concepts (id, frontmatter, content) VALUES ($1, $2, $3)",
 		doc.ID, fm, doc.Content,
 	)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	_, err = tx.Exec(ctx,
-		"INSERT INTO documents_history (id, version, frontmatter, content, modified_by, modified_at) VALUES ($1, $2, $3, $4, $5, $6)",
+		"INSERT INTO concepts_history (id, version, frontmatter, content, modified_by, modified_at) VALUES ($1, $2, $3, $4, $5, $6)",
 		doc.ID, doc.Version, fm, doc.Content, doc.LastModifiedBy, doc.LastUpdated,
 	)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
-	return gyrus.DocumentRef{
+	return gyrus.ConceptRef{
 		ID:          doc.ID,
 		Version:     doc.Version,
 		Status:      doc.Status,
@@ -143,49 +143,49 @@ func (s *Store) Create(ctx context.Context, doc gyrus.Document) (gyrus.DocumentR
 	}, nil
 }
 
-func (s *Store) Get(ctx context.Context, id string) (gyrus.Document, error) {
+func (s *Store) Get(ctx context.Context, id string) (gyrus.Concept, error) {
 	var fm []byte
 	var content string
 
-	err := s.pool.QueryRow(ctx, "SELECT frontmatter, content FROM documents WHERE id = $1", id).Scan(&fm, &content)
+	err := s.pool.QueryRow(ctx, "SELECT frontmatter, content FROM concepts WHERE id = $1", id).Scan(&fm, &content)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return gyrus.Document{}, fmt.Errorf("document not found: %s", id)
+			return gyrus.Concept{}, fmt.Errorf("concept not found: %s", id)
 		}
-		return gyrus.Document{}, err
+		return gyrus.Concept{}, err
 	}
 
-	var doc gyrus.Document
+	var doc gyrus.Concept
 	if err := json.Unmarshal(fm, &doc); err != nil {
-		return gyrus.Document{}, err
+		return gyrus.Concept{}, err
 	}
 	doc.Content = content
 
 	return doc, nil
 }
 
-func (s *Store) Update(ctx context.Context, id string, patch gyrus.DocumentPatch, expectedVersion int) (gyrus.DocumentRef, error) {
+func (s *Store) Update(ctx context.Context, id string, patch gyrus.ConceptPatch, expectedVersion int) (gyrus.ConceptRef, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 	defer tx.Rollback(ctx)
 
 	var fmBytes []byte
 	var content string
 
-	err = tx.QueryRow(ctx, "SELECT frontmatter, content FROM documents WHERE id = $1 FOR UPDATE", id).Scan(&fmBytes, &content)
+	err = tx.QueryRow(ctx, "SELECT frontmatter, content FROM concepts WHERE id = $1 FOR UPDATE", id).Scan(&fmBytes, &content)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
-	var doc gyrus.Document
+	var doc gyrus.Concept
 	if err := json.Unmarshal(fmBytes, &doc); err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	if expectedVersion != 0 && doc.Version != expectedVersion {
-		return gyrus.DocumentRef{}, fmt.Errorf("version mismatch: expected %d, got %d", expectedVersion, doc.Version)
+		return gyrus.ConceptRef{}, fmt.Errorf("version mismatch: expected %d, got %d", expectedVersion, doc.Version)
 	}
 
 	if patch.Title != nil {
@@ -209,27 +209,27 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.DocumentPatch
 
 	newFmBytes, err := json.Marshal(doc)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
-	_, err = tx.Exec(ctx, "UPDATE documents SET frontmatter = $1, content = $2 WHERE id = $3", newFmBytes, doc.Content, id)
+	_, err = tx.Exec(ctx, "UPDATE concepts SET frontmatter = $1, content = $2 WHERE id = $3", newFmBytes, doc.Content, id)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	_, err = tx.Exec(ctx,
-		"INSERT INTO documents_history (id, version, frontmatter, content, modified_by, modified_at) VALUES ($1, $2, $3, $4, $5, $6)",
+		"INSERT INTO concepts_history (id, version, frontmatter, content, modified_by, modified_at) VALUES ($1, $2, $3, $4, $5, $6)",
 		doc.ID, doc.Version, newFmBytes, doc.Content, doc.LastModifiedBy, doc.LastUpdated,
 	)
 	if err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return gyrus.DocumentRef{}, err
+		return gyrus.ConceptRef{}, err
 	}
 
-	return gyrus.DocumentRef{
+	return gyrus.ConceptRef{
 		ID:          doc.ID,
 		Version:     doc.Version,
 		Status:      doc.Status,
@@ -238,18 +238,18 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.DocumentPatch
 }
 
 func (s *Store) Delete(ctx context.Context, id string) error {
-	res, err := s.pool.Exec(ctx, "DELETE FROM documents WHERE id = $1", id)
+	res, err := s.pool.Exec(ctx, "DELETE FROM concepts WHERE id = $1", id)
 	if err != nil {
 		return err
 	}
 	if res.RowsAffected() == 0 {
-		return fmt.Errorf("document not found: %s", id)
+		return fmt.Errorf("concept not found: %s", id)
 	}
 	return nil
 }
 
 func (s *Store) Archive(ctx context.Context, id string) error {
-	patch := gyrus.DocumentPatch{
+	patch := gyrus.ConceptPatch{
 		Status: func() *string { s := "archived"; return &s }(),
 		Reason: "archived",
 	}
@@ -259,16 +259,14 @@ func (s *Store) Archive(ctx context.Context, id string) error {
 
 // --- IndexStore ---
 
-func (s *Store) Index(ctx context.Context, doc gyrus.Document) error {
-	// Our postgres implementation is the primary store, so index is essentially a no-op or upsert.
-	// We'll perform an upsert just in case it's used to manually sync the index.
+func (s *Store) Index(ctx context.Context, doc gyrus.Concept) error {
 	fm, err := json.Marshal(doc)
 	if err != nil {
 		return err
 	}
 
 	_, err = s.pool.Exec(ctx, `
-		INSERT INTO documents (id, frontmatter, content)
+		INSERT INTO concepts (id, frontmatter, content)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (id) DO UPDATE SET frontmatter = EXCLUDED.frontmatter, content = EXCLUDED.content
 	`, doc.ID, fm, doc.Content)
@@ -280,19 +278,16 @@ func (s *Store) Remove(ctx context.Context, id string) error {
 }
 
 func (s *Store) Sync(ctx context.Context, storageRoot string) (gyrus.SyncReport, error) {
-	// Placeholder for IndexStore sync
 	return gyrus.SyncReport{}, nil
 }
 
 func (s *Store) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
-	// Implement generic search without FTS for IndexStore if needed, or route to FTS.
-	// Let's use the SearchProvider FTS.
 	return s.SearchFTS(ctx, query.Query, query.Filter)
 }
 
 // --- GraphStore ---
 
-func (s *Store) UpsertEdges(ctx context.Context, edges []gyrus.DocumentEdge) error {
+func (s *Store) UpsertEdges(ctx context.Context, edges []gyrus.ConceptEdge) error {
 	if len(edges) == 0 {
 		return nil
 	}
@@ -305,11 +300,11 @@ func (s *Store) UpsertEdges(ctx context.Context, edges []gyrus.DocumentEdge) err
 
 	for _, e := range edges {
 		_, err := tx.Exec(ctx, `
-			INSERT INTO document_edges (from_document_id, to_document_id, relationship_type, created_by, created_at)
+			INSERT INTO concept_edges (from_concept_id, to_concept_id, relationship_type, created_by, created_at)
 			VALUES ($1, $2, $3, $4, $5)
-			ON CONFLICT (from_document_id, to_document_id, relationship_type) 
+			ON CONFLICT (from_concept_id, to_concept_id, relationship_type) 
 			DO UPDATE SET created_by = EXCLUDED.created_by, created_at = EXCLUDED.created_at
-		`, e.FromDocumentID, e.ToDocumentID, e.RelationshipType, e.CreatedBy, e.CreatedAt)
+		`, e.FromConceptID, e.ToConceptID, e.RelationshipType, e.CreatedBy, e.CreatedAt)
 		if err != nil {
 			return err
 		}
@@ -320,13 +315,13 @@ func (s *Store) UpsertEdges(ctx context.Context, edges []gyrus.DocumentEdge) err
 
 func (s *Store) DeleteEdges(ctx context.Context, fromID string, toID string, relType gyrus.RelationshipType) error {
 	_, err := s.pool.Exec(ctx, `
-		DELETE FROM document_edges 
-		WHERE from_document_id = $1 AND to_document_id = $2 AND relationship_type = $3
+		DELETE FROM concept_edges 
+		WHERE from_concept_id = $1 AND to_concept_id = $2 AND relationship_type = $3
 	`, fromID, toID, relType)
 	return err
 }
 
-func (s *Store) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilter) ([]gyrus.DocumentEdge, error) {
+func (s *Store) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilter) ([]gyrus.ConceptEdge, error) {
 	var rows pgx.Rows
 	var err error
 
@@ -343,15 +338,15 @@ func (s *Store) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilte
 	}
 
 	if dir == "outgoing" {
-		rows, err = s.pool.Query(ctx, "SELECT from_document_id, to_document_id, relationship_type, created_by, created_at FROM document_edges WHERE from_document_id = $1"+whereClause, args...)
+		rows, err = s.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE from_concept_id = $1"+whereClause, args...)
 	} else if dir == "incoming" {
-		rows, err = s.pool.Query(ctx, "SELECT from_document_id, to_document_id, relationship_type, created_by, created_at FROM document_edges WHERE to_document_id = $1"+whereClause, args...)
+		rows, err = s.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE to_concept_id = $1"+whereClause, args...)
 	} else {
 		// both
 		if filter.RelationshipType != "" {
-			rows, err = s.pool.Query(ctx, "SELECT from_document_id, to_document_id, relationship_type, created_by, created_at FROM document_edges WHERE (from_document_id = $1 OR to_document_id = $1) AND relationship_type = $2", id, filter.RelationshipType)
+			rows, err = s.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE (from_concept_id = $1 OR to_concept_id = $1) AND relationship_type = $2", id, filter.RelationshipType)
 		} else {
-			rows, err = s.pool.Query(ctx, "SELECT from_document_id, to_document_id, relationship_type, created_by, created_at FROM document_edges WHERE from_document_id = $1 OR to_document_id = $1", id)
+			rows, err = s.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE from_concept_id = $1 OR to_concept_id = $1", id)
 		}
 	}
 
@@ -360,10 +355,10 @@ func (s *Store) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilte
 	}
 	defer rows.Close()
 
-	var edges []gyrus.DocumentEdge
+	var edges []gyrus.ConceptEdge
 	for rows.Next() {
-		var e gyrus.DocumentEdge
-		if err := rows.Scan(&e.FromDocumentID, &e.ToDocumentID, &e.RelationshipType, &e.CreatedBy, &e.CreatedAt); err != nil {
+		var e gyrus.ConceptEdge
+		if err := rows.Scan(&e.FromConceptID, &e.ToConceptID, &e.RelationshipType, &e.CreatedBy, &e.CreatedAt); err != nil {
 			return nil, err
 		}
 		edges = append(edges, e)
@@ -373,30 +368,26 @@ func (s *Store) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilte
 }
 
 func (s *Store) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.GraphPath, error) {
-	// A simple BFS for multi-hop traversal
-	// For simplicity, returning just 1 path if maxDepth is 1.
 	var paths []gyrus.GraphPath
 
 	if query.MaxDepth <= 0 {
 		return paths, nil
 	}
 
-	// This is a naive implementation. In a real scenario, use recursive CTEs.
-	// Let's implement a recursive CTE in postgres for traversal.
 	sql := `
 	WITH RECURSIVE traverse AS (
-		SELECT from_document_id, to_document_id, relationship_type, 1 AS depth
-		FROM document_edges
-		WHERE from_document_id = $1
+		SELECT from_concept_id, to_concept_id, relationship_type, 1 AS depth
+		FROM concept_edges
+		WHERE from_concept_id = $1
 		
 		UNION
 		
-		SELECT e.from_document_id, e.to_document_id, e.relationship_type, t.depth + 1
-		FROM document_edges e
-		INNER JOIN traverse t ON e.from_document_id = t.to_document_id
+		SELECT e.from_concept_id, e.to_concept_id, e.relationship_type, t.depth + 1
+		FROM concept_edges e
+		INNER JOIN traverse t ON e.from_concept_id = t.to_concept_id
 		WHERE t.depth < $2
 	)
-	SELECT from_document_id, to_document_id, relationship_type FROM traverse;
+	SELECT from_concept_id, to_concept_id, relationship_type FROM traverse;
 	`
 	rows, err := s.pool.Query(ctx, sql, query.StartID, query.MaxDepth)
 	if err != nil {
@@ -404,11 +395,10 @@ func (s *Store) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.G
 	}
 	defer rows.Close()
 
-	// Collecting edges
-	var edges []gyrus.DocumentEdge
+	var edges []gyrus.ConceptEdge
 	for rows.Next() {
-		var e gyrus.DocumentEdge
-		if err := rows.Scan(&e.FromDocumentID, &e.ToDocumentID, &e.RelationshipType); err != nil {
+		var e gyrus.ConceptEdge
+		if err := rows.Scan(&e.FromConceptID, &e.ToConceptID, &e.RelationshipType); err != nil {
 			return nil, err
 		}
 		edges = append(edges, e)
@@ -418,8 +408,8 @@ func (s *Store) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.G
 		nodes := make(map[string]bool)
 		nodes[query.StartID] = true
 		for _, e := range edges {
-			nodes[e.FromDocumentID] = true
-			nodes[e.ToDocumentID] = true
+			nodes[e.FromConceptID] = true
+			nodes[e.ToConceptID] = true
 		}
 
 		var nodeList []string
@@ -464,9 +454,9 @@ func (s *Store) SearchFTS(ctx context.Context, query string, filter gyrus.Search
 		args = append(args, filter.Status)
 		argCount++
 	}
-	if filter.OwnerGroup != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'owner_group' = $%d", argCount))
-		args = append(args, filter.OwnerGroup)
+	if filter.Tenant != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'tenant' = $%d", argCount))
+		args = append(args, filter.Tenant)
 		argCount++
 	}
 	if filter.Tag != "" {
@@ -489,7 +479,7 @@ func (s *Store) SearchFTS(ctx context.Context, query string, filter gyrus.Search
 
 	sql := fmt.Sprintf(`
 		SELECT frontmatter, content, %s
-		FROM documents
+		FROM concepts
 		WHERE %s
 		ORDER BY score DESC
 		LIMIT 50
@@ -511,14 +501,14 @@ func (s *Store) SearchFTS(ctx context.Context, query string, filter gyrus.Search
 			return nil, err
 		}
 
-		var doc gyrus.Document
+		var doc gyrus.Concept
 		if err := json.Unmarshal(fm, &doc); err != nil {
 			return nil, err
 		}
 		doc.Content = content
 
 		results = append(results, gyrus.SearchResult{
-			Document:    doc,
+			Concept:     doc,
 			Score:       score,
 			MatchReason: "FTS Match",
 		})
@@ -532,19 +522,19 @@ func (s *Store) SearchProviderSearch(ctx context.Context, query string, filter g
 }
 
 // Wrapper for the exact interface method
-func (s *Store) SearchDocuments(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
+func (s *Store) SearchConcepts(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
 	return s.SearchFTS(ctx, query, filter)
 }
 
 // --- SchemaStore ---
 
-// GetSchema retrieves a persisted schema template for a document type from PostgreSQL.
-func (s *Store) GetSchema(ctx context.Context, docType string) (string, error) {
+// GetSchema retrieves a persisted schema template for a concept type from PostgreSQL.
+func (s *Store) GetSchema(ctx context.Context, conceptType string) (string, error) {
 	var content string
-	err := s.pool.QueryRow(ctx, "SELECT content FROM schemas WHERE id = $1", docType).Scan(&content)
+	err := s.pool.QueryRow(ctx, "SELECT content FROM schemas WHERE id = $1", conceptType).Scan(&content)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return "", fmt.Errorf("schema '%s' not found: %w", docType, err)
+			return "", fmt.Errorf("schema '%s' not found: %w", conceptType, err)
 		}
 		return "", err
 	}
@@ -552,8 +542,8 @@ func (s *Store) GetSchema(ctx context.Context, docType string) (string, error) {
 }
 
 // SaveSchema persists an OKF schema template to the schemas table in PostgreSQL.
-func (s *Store) SaveSchema(ctx context.Context, docType string, content string) error {
-	if err := okf.ValidateSchemaContent(docType, content); err != nil {
+func (s *Store) SaveSchema(ctx context.Context, conceptType string, content string) error {
+	if err := okf.ValidateSchemaContent(conceptType, content); err != nil {
 		return err
 	}
 
@@ -563,7 +553,7 @@ func (s *Store) SaveSchema(ctx context.Context, docType string, content string) 
 	ON CONFLICT (id) DO UPDATE
 	SET content = EXCLUDED.content, updated_at = NOW()
 	`
-	_, err := s.pool.Exec(ctx, query, docType, content)
+	_, err := s.pool.Exec(ctx, query, conceptType, content)
 	return err
 }
 
@@ -587,13 +577,13 @@ func (s *Store) ListSchemas(ctx context.Context) ([]string, error) {
 }
 
 // DeleteSchema removes a persisted schema template from PostgreSQL.
-func (s *Store) DeleteSchema(ctx context.Context, docType string) error {
-	tag, err := s.pool.Exec(ctx, "DELETE FROM schemas WHERE id = $1", docType)
+func (s *Store) DeleteSchema(ctx context.Context, conceptType string) error {
+	tag, err := s.pool.Exec(ctx, "DELETE FROM schemas WHERE id = $1", conceptType)
 	if err != nil {
 		return err
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("schema '%s' not found", docType)
+		return fmt.Errorf("schema '%s' not found", conceptType)
 	}
 	return nil
 }

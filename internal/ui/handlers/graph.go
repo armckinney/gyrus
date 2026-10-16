@@ -45,7 +45,7 @@ func (h *Handlers) Graph(w http.ResponseWriter, r *http.Request) {
 
 	var tenantResults []gyrus.SearchResult
 	if tenantFilter != "" {
-		tenantResults, _ = h.engine.Search(ctx, "", gyrus.SearchFilter{OwnerGroup: tenantFilter})
+		tenantResults, _ = h.engine.Search(ctx, "", gyrus.SearchFilter{Tenant: tenantFilter})
 	} else {
 		tenantResults = allSystemResults
 	}
@@ -84,7 +84,7 @@ func (h *Handlers) APIGraph(w http.ResponseWriter, r *http.Request) {
 		tenantFilter = strings.TrimSpace(r.URL.Query().Get("owner"))
 	}
 
-	results, err := h.engine.Search(ctx, "", gyrus.SearchFilter{OwnerGroup: tenantFilter})
+	results, err := h.engine.Search(ctx, "", gyrus.SearchFilter{Tenant: tenantFilter})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to load graph nodes: %v", err), http.StatusInternalServerError)
 		return
@@ -97,7 +97,7 @@ func (h *Handlers) APIGraph(w http.ResponseWriter, r *http.Request) {
 
 	nodeMap := make(map[string]bool)
 	for _, res := range results {
-		doc := res.Document
+		doc := res.Concept
 		nodeMap[doc.ID] = true
 
 		payload.Nodes = append(payload.Nodes, GraphNodeJSON{
@@ -114,12 +114,12 @@ func (h *Handlers) APIGraph(w http.ResponseWriter, r *http.Request) {
 		edges, err := h.engine.Neighbors(ctx, docID, gyrus.EdgeFilter{Direction: "outgoing"})
 		if err == nil {
 			for _, edge := range edges {
-				// If target node does not exist in our active document index, inject an external ghost node
-				if !nodeMap[edge.ToDocumentID] {
-					nodeMap[edge.ToDocumentID] = true
+				// If target node does not exist in our active concept index, inject an external ghost node
+				if !nodeMap[edge.ToConceptID] {
+					nodeMap[edge.ToConceptID] = true
 					payload.Nodes = append(payload.Nodes, GraphNodeJSON{
-						ID:       edge.ToDocumentID,
-						Title:    edge.ToDocumentID,
+						ID:       edge.ToConceptID,
+						Title:    edge.ToConceptID,
 						Category: "external",
 						Type:     "reference",
 						Status:   "external",
@@ -127,8 +127,8 @@ func (h *Handlers) APIGraph(w http.ResponseWriter, r *http.Request) {
 				}
 
 				payload.Edges = append(payload.Edges, GraphEdgeJSON{
-					Source:           edge.FromDocumentID,
-					Target:           edge.ToDocumentID,
+					Source:           edge.FromConceptID,
+					Target:           edge.ToConceptID,
 					RelationshipType: string(edge.RelationshipType),
 				})
 			}

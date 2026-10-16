@@ -17,11 +17,12 @@ func BuildRootCmd() (*cobra.Command, error) {
 	}
 
 	rootCmd := &cobra.Command{
-		Use:           "gyrus",
-		Short:         "Gyrus: Unified Context & Memory Engine",
-		Long:          "Gyrus is a high-performance local-first memory and context engine for software development teams and AI agents.",
-		SilenceUsage:  true,
-		SilenceErrors: true,
+		Use:               "gyrus",
+		Short:             "Gyrus: Unified Context & Memory Engine",
+		Long:              "Gyrus is a high-performance local-first memory and context engine for software development teams and AI agents.",
+		SilenceUsage:      true,
+		SilenceErrors:     true,
+		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 	}
 
 	commands.Register(rootCmd, application)

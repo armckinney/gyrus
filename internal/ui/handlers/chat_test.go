@@ -50,7 +50,7 @@ func (m *mockRunner) StreamTurn(ctx context.Context, opts agent.TurnOptions, out
 
 func setupTestHandlers(t *testing.T) (*handlers.Handlers, *app.App, *lifecycle.Engine) {
 	tempWorkspace := t.TempDir()
-	application, err := app.NewWithWorkspace(tempWorkspace)
+	application, err := app.NewWithProject(tempWorkspace)
 	if err != nil {
 		t.Fatalf("failed initializing app: %v", err)
 	}

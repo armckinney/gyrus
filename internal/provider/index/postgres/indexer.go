@@ -47,7 +47,7 @@ func NewIndexer(ctx context.Context, connString string) (*Indexer, error) {
 
 func (idx *Indexer) initSchema(ctx context.Context) error {
 	ddl := `
-	CREATE TABLE IF NOT EXISTS documents (
+	CREATE TABLE IF NOT EXISTS concepts (
 		id TEXT PRIMARY KEY,
 		frontmatter JSONB NOT NULL,
 		content TEXT NOT NULL,
@@ -58,8 +58,8 @@ func (idx *Indexer) initSchema(ctx context.Context) error {
 		) STORED
 	);
 
-	CREATE INDEX IF NOT EXISTS idx_documents_search ON documents USING GIN (search_vector);
-	CREATE INDEX IF NOT EXISTS idx_documents_frontmatter ON documents USING GIN (frontmatter);
+	CREATE INDEX IF NOT EXISTS idx_concepts_search ON concepts USING GIN (search_vector);
+	CREATE INDEX IF NOT EXISTS idx_concepts_frontmatter ON concepts USING GIN (frontmatter);
 	`
 	_, err := idx.pool.Exec(ctx, ddl)
 	return err
@@ -75,24 +75,24 @@ func (idx *Indexer) Close() {
 	db.ClosePostgres(idx.connString)
 }
 
-// Index inserts or updates a document envelope in PostgreSQL.
-func (idx *Indexer) Index(ctx context.Context, doc gyrus.Document) error {
+// Index inserts or updates a concept envelope in PostgreSQL.
+func (idx *Indexer) Index(ctx context.Context, doc gyrus.Concept) error {
 	fm, err := json.Marshal(doc)
 	if err != nil {
 		return err
 	}
 
 	_, err = idx.pool.Exec(ctx, `
-		INSERT INTO documents (id, frontmatter, content)
+		INSERT INTO concepts (id, frontmatter, content)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (id) DO UPDATE SET frontmatter = EXCLUDED.frontmatter, content = EXCLUDED.content
 	`, doc.ID, fm, doc.Content)
 	return err
 }
 
-// Remove deletes a document envelope from the index.
+// Remove deletes a concept envelope from the index.
 func (idx *Indexer) Remove(ctx context.Context, id string) error {
-	_, err := idx.pool.Exec(ctx, "DELETE FROM documents WHERE id = $1", id)
+	_, err := idx.pool.Exec(ctx, "DELETE FROM concepts WHERE id = $1", id)
 	return err
 }
 
@@ -103,7 +103,7 @@ func (idx *Indexer) Sync(ctx context.Context, storageRoot string) (gyrus.SyncRep
 
 // Search executes an index search query.
 func (idx *Indexer) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
-	rows, err := idx.pool.Query(ctx, "SELECT frontmatter, content FROM documents WHERE id = $1", query.Query)
+	rows, err := idx.pool.Query(ctx, "SELECT frontmatter, content FROM concepts WHERE id = $1", query.Query)
 	if err != nil {
 		return nil, err
 	}
@@ -117,12 +117,12 @@ func (idx *Indexer) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyru
 			return nil, err
 		}
 
-		var doc gyrus.Document
+		var doc gyrus.Concept
 		if err := json.Unmarshal(fm, &doc); err != nil {
 			return nil, err
 		}
 		doc.Content = content
-		results = append(results, gyrus.SearchResult{Document: doc, Score: 1.0})
+		results = append(results, gyrus.SearchResult{Concept: doc, Score: 1.0})
 	}
 	return results, nil
 }

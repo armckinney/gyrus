@@ -122,9 +122,9 @@ Archives (deletes) a document from storage and search index.
 ## 4. MCP Resources & Prompts
 
 ### Resources
-- **URI:** `memory://doc/{id}`  
+- **URI:** `memory://concept/{id}`  
   **MIME Type:** `text/markdown`  
-  **Description:** Reads raw Markdown content of an OKF document.
+  **Description:** Reads raw Markdown content of an OKF concept.
 
 ### Prompts
 - **Prompt Name:** `prepare-adr`  

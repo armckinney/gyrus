@@ -32,12 +32,12 @@ Use this skill whenever you need to resolve architectural context, align with re
 
 ## 🛠️ Primary Interface: Model Context Protocol (MCP) Tools
 
-- **`gyrus_suggest_context`**: `{ "prompt": string, "limit"?: int }`
-- **`gyrus_search`**: `{ "query": string, "limit"?: int }`
-- **`gyrus_get_document`**: `{ "id": string }`
-- **`gyrus_create_document`**: `{ "id": string, "title": string, "category": string, "type": string, "owner_group": string, "status": string, "content": string }`
-- **`gyrus_update_document`**: `{ "id": string, "title"?: string, "status"?: string, "content"?: string }`
-- **`gyrus_link_documents`**: `{ "from_id": string, "to_id": string, "rel_type": string }`
+- **`gyrus_suggest_context`**: `{ "prompt": string, "limit"?: int, "project"?: string }`
+- **`gyrus_search`**: `{ "query": string, "limit"?: int, "project"?: string, "tenant"?: string }`
+- **`gyrus_get`**: `{ "id": string }`
+- **`gyrus_create`**: `{ "id": string, "title": string, "category": string, "type": string, "tenant": string, "status": string, "content": string, "project"?: string }`
+- **`gyrus_update`**: `{ "id": string, "title"?: string, "status"?: string, "content"?: string }`
+- **`gyrus_link`**: `{ "from_id": string, "to_id": string, "rel_type": string }`
 - **`gyrus_sync`**: `{}`
 
 ---
@@ -47,7 +47,7 @@ Use this skill whenever you need to resolve architectural context, align with re
 - `gyrus suggest-context --prompt "<task>" --json`
 - `gyrus search --query "<query>" --json`
 - `gyrus get <id> --json`
-- `gyrus create --id "<id>" --title "<title>" --category "<cat>" --type "<type>" --owner-group "<grp>" --content "<md>"`
+- `gyrus create --id "<id>" --title "<title>" --category "<cat>" --type "<type>" --tenant "<tenant>" --content "<md>"`
 - `gyrus update <id> --status "<status>" --expected-version <v>`
 - `gyrus link <from-id> <to-id> --rel-type <type>`
 - `gyrus sync`

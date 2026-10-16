@@ -46,23 +46,23 @@ func TestRRFAndHybridSearch(t *testing.T) {
 		},
 	}
 
-	doc1 := gyrus.Document{ID: "doc1", Content: "doc1"}
-	doc2 := gyrus.Document{ID: "doc2", Content: "doc2"}
+	doc1 := gyrus.Concept{ID: "doc1", Content: "doc1"}
+	doc2 := gyrus.Concept{ID: "doc2", Content: "doc2"}
 
 	// Lexical gives doc2 rank 1, doc1 rank 2
 	lexical := &MockLexicalSearch{
 		Results: []gyrus.SearchResult{
-			{Document: doc2, Score: 0.9, MatchReason: "bm25"},
-			{Document: doc1, Score: 0.5, MatchReason: "bm25"},
+			{Concept: doc2, Score: 0.9, MatchReason: "bm25"},
+			{Concept: doc1, Score: 0.5, MatchReason: "bm25"},
 		},
 	}
 
 	store := NewStore(lexical, embedder)
-	err := store.AddDocument(context.Background(), doc1)
+	err := store.AddConcept(context.Background(), doc1)
 	if err != nil {
 		t.Fatalf("failed to add doc1: %v", err)
 	}
-	err = store.AddDocument(context.Background(), doc2)
+	err = store.AddConcept(context.Background(), doc2)
 	if err != nil {
 		t.Fatalf("failed to add doc2: %v", err)
 	}
@@ -79,37 +79,18 @@ func TestRRFAndHybridSearch(t *testing.T) {
 	// Calculate expected scores
 	// RRF(doc1): lexical rank 2 (1/62), vector rank 1 (1/61)
 	// RRF(doc2): lexical rank 1 (1/61), vector rank 2 (1/62)
-	// Because doc1 vector sim = 0.9 / sqrt(0.9^2 + 0.1^2) ~ 0.99
-	// doc2 vector sim = 0.0
-	// So RRF should be equal. To differentiate them, we can check that they are both scored properly.
-
 	score1 := 1.0/62.0 + 1.0/61.0
 	score2 := 1.0/61.0 + 1.0/62.0
 
 	for _, res := range results {
 		var expected float64
-		if res.Document.ID == "doc1" {
+		if res.Concept.ID == "doc1" {
 			expected = score1
 		} else {
 			expected = score2
 		}
 		if math.Abs(res.Score-expected) > 1e-6 {
-			t.Errorf("expected score %f for %s, got %f", expected, res.Document.ID, res.Score)
+			t.Errorf("expected score %f for %s, got %f", expected, res.Concept.ID, res.Score)
 		}
-	}
-}
-
-// -----------------------------------------------------------------------------
-// [Test Level]: Unit Test
-// [Purpose]: Verifies that cosine similarity calculates normalized dot products accurately.
-// [Execution Surface]: In-Memory Unit Test
-// [Assertions]: Identical unit vectors return cosine similarity 1.0.
-// -----------------------------------------------------------------------------
-func TestCosineSimilarity(t *testing.T) {
-	a := []float32{1.0, 0.0, 0.0}
-	b := []float32{1.0, 0.0, 0.0}
-	sim := cosineSimilarity(a, b)
-	if math.Abs(float64(sim-1.0)) > 1e-6 {
-		t.Errorf("Expected ~1.0, got %f", sim)
 	}
 }

@@ -11,7 +11,7 @@ import (
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Provider Integration Test
-// [Purpose]: Verifies that the PostgreSQL Indexer properly indexes, searches, and removes document envelopes.
+// [Purpose]: Verifies that the PostgreSQL Indexer properly indexes, searches, and removes concept envelopes.
 // [Execution Surface]: In-Memory PostgreSQL Mock Pool (pgxmock)
 // [Assertions]: SQL queries for INSERT/UPDATE, DELETE, and SELECT execute matching expectations.
 // -----------------------------------------------------------------------------
@@ -25,19 +25,19 @@ func TestPostgresIndexer_IndexSearchRemove(t *testing.T) {
 	indexer := &Indexer{pool: mock}
 	ctx := context.Background()
 
-	doc := gyrus.Document{
-		ID:         "adr-001-pg",
-		Title:      "Postgres Storage Driver",
-		Category:   gyrus.CategoryArchitecture,
-		Type:       gyrus.TypeADR,
-		OwnerGroup: "platform",
-		Version:    1,
-		Status:     "accepted",
-		Content:    "PostgreSQL backend persistence.",
+	doc := gyrus.Concept{
+		ID:       "adr-001-pg",
+		Title:    "Postgres Storage Driver",
+		Category: gyrus.CategoryArchitecture,
+		Type:     gyrus.TypeADR,
+		Tenant:   "platform",
+		Version:  1,
+		Status:   "accepted",
+		Content:  "PostgreSQL backend persistence.",
 	}
 
 	// 1. Index
-	mock.ExpectExec("INSERT INTO documents").
+	mock.ExpectExec("INSERT INTO concepts").
 		WithArgs("adr-001-pg", pgxmock.AnyArg(), "PostgreSQL backend persistence.").
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
@@ -50,7 +50,7 @@ func TestPostgresIndexer_IndexSearchRemove(t *testing.T) {
 	rows := pgxmock.NewRows([]string{"frontmatter", "content"}).
 		AddRow(fmBytes, "PostgreSQL backend persistence.")
 
-	mock.ExpectQuery("SELECT frontmatter, content FROM documents WHERE id = \\$1").
+	mock.ExpectQuery("SELECT frontmatter, content FROM concepts WHERE id = \\$1").
 		WithArgs("adr-001-pg").
 		WillReturnRows(rows)
 
@@ -58,12 +58,12 @@ func TestPostgresIndexer_IndexSearchRemove(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Search failed: %v", err)
 	}
-	if len(results) != 1 || results[0].Document.ID != doc.ID {
+	if len(results) != 1 || results[0].Concept.ID != doc.ID {
 		t.Errorf("Expected result for %s, got %v", doc.ID, results)
 	}
 
 	// 3. Remove
-	mock.ExpectExec("DELETE FROM documents WHERE id = \\$1").
+	mock.ExpectExec("DELETE FROM concepts WHERE id = \\$1").
 		WithArgs("adr-001-pg").
 		WillReturnResult(pgxmock.NewResult("DELETE", 1))
 

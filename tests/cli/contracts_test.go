@@ -18,7 +18,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	os.Unsetenv("GYRUS_WORKSPACE")
+	os.Unsetenv("GYRUS_PROJECT")
 	os.Unsetenv("GYRUS_CONFIG")
 
 	tempDir, err := os.MkdirTemp("", "gyrus-bin-*")
@@ -60,7 +60,7 @@ func TestCLI_SchemaValidation_ExitCode1(t *testing.T) {
 		"--title", "Bad ID Doc",
 		"--category", "architecture",
 		"--type", "adr",
-		"--owner-group", "root",
+		"--tenant", "root",
 	)
 	createCmd.Dir = tempWorkspace
 	var stdout, stderr bytes.Buffer
@@ -106,7 +106,7 @@ func TestCLI_IllegalLifecycleTransition_ExitCode2(t *testing.T) {
 		"--title", "Storage Engine Architecture",
 		"--category", "architecture",
 		"--type", "adr",
-		"--owner-group", "platform",
+		"--tenant", "platform",
 		"--status", "accepted",
 	)
 	createCmd.Dir = tempWorkspace
@@ -159,7 +159,7 @@ func TestCLI_ImmutabilityEnforcement_ExitCode2(t *testing.T) {
 		"--title", "Finalized Decision",
 		"--category", "architecture",
 		"--type", "adr",
-		"--owner-group", "platform",
+		"--tenant", "platform",
 		"--status", "accepted",
 		"--content", "Original finalized content.",
 	)
@@ -213,7 +213,7 @@ func TestCLI_OptimisticConcurrencyConflict_ExitCode4(t *testing.T) {
 		"--title", "Storage Engine Spec",
 		"--category", "technical",
 		"--type", "specification",
-		"--owner-group", "platform",
+		"--tenant", "platform",
 		"--status", "active",
 	)
 	createCmd.Dir = tempWorkspace

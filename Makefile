@@ -13,11 +13,11 @@ lint:
 
 test:
 	@echo "Running all Gyrus tests..."
-	@GYRUS_WORKSPACE="" GYRUS_CONFIG="" go test ./...
+	@GYRUS_PROJECT="" GYRUS_CONFIG="" go test ./...
 
 test-integration: build
 	@echo "Running Integration Tests (tests/...)..."
-	@GYRUS_WORKSPACE="" GYRUS_CONFIG="" RUN_INTEGRATION_TESTS=1 RUN_DOCKER_TESTS=1 go test ./tests/...
+	@GYRUS_PROJECT="" GYRUS_CONFIG="" RUN_INTEGRATION_TESTS=1 RUN_DOCKER_TESTS=1 go test ./tests/...
 
 clean:
 	@echo "Cleaning build artifacts..."

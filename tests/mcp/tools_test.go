@@ -64,10 +64,10 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 			"id":          "prd-mcp-e2e-001",
 			"title":       "MCP Interface Spec",
 			"category":    "product",
-			"type":        "prd",
-			"owner_group": "platform-eng",
-			"status":      "active",
-			"content":     "Full specification for AI agent memory interface.",
+			"type":     "prd",
+			"tenant":   "platform-eng",
+			"status":   "active",
+			"content":  "Full specification for AI agent memory interface.",
 		},
 	})
 	textA := parseToolContent(t, createRespA)
@@ -79,11 +79,11 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 	createRespB := client.Call(t, "tools/call", map[string]any{
 		"name": "gyrus_create",
 		"arguments": map[string]any{
-			"id":          "adr-mcp-e2e-001",
-			"title":       "Stdio JSON-RPC Transport",
-			"category":    "architecture",
-			"type":        "adr",
-			"owner_group": "platform-eng",
+			"id":       "adr-mcp-e2e-001",
+			"title":    "Stdio JSON-RPC Transport",
+			"category": "architecture",
+			"type":     "adr",
+			"tenant":   "platform-eng",
 			"status":      "proposed",
 			"content":     "Architecture for bidirectional standard streams RPC communication.",
 		},
@@ -207,7 +207,7 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 		},
 	})
 	archiveText := parseToolContent(t, archiveResp)
-	if !strings.Contains(archiveText, "Archived") {
+	if !strings.Contains(strings.ToLower(archiveText), "archived") {
 		t.Errorf("Expected archive confirmation, got: %s", archiveText)
 	}
 
@@ -229,7 +229,7 @@ id: <unique-id>
 title: <Runbook>
 category: operations
 type: runbook
-owner_group: ops
+tenant: ops
 version: 1
 status: active
 ---

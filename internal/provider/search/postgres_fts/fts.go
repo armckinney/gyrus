@@ -66,9 +66,9 @@ func (p *SearchProvider) Search(ctx context.Context, query string, filter gyrus.
 		args = append(args, filter.Status)
 		argCount++
 	}
-	if filter.OwnerGroup != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'owner_group' = $%d", argCount))
-		args = append(args, filter.OwnerGroup)
+	if filter.Tenant != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'tenant' = $%d", argCount))
+		args = append(args, filter.Tenant)
 		argCount++
 	}
 	if filter.Tag != "" {
@@ -91,7 +91,7 @@ func (p *SearchProvider) Search(ctx context.Context, query string, filter gyrus.
 
 	sql := fmt.Sprintf(`
 		SELECT frontmatter, content, %s
-		FROM documents
+		FROM concepts
 		WHERE %s
 		ORDER BY score DESC
 		LIMIT 50
@@ -113,14 +113,14 @@ func (p *SearchProvider) Search(ctx context.Context, query string, filter gyrus.
 			return nil, err
 		}
 
-		var doc gyrus.Document
+		var doc gyrus.Concept
 		if err := json.Unmarshal(fm, &doc); err != nil {
 			return nil, err
 		}
 		doc.Content = content
 
 		results = append(results, gyrus.SearchResult{
-			Document:    doc,
+			Concept:     doc,
 			Score:       score,
 			MatchReason: "PostgreSQL tsvector FTS Match",
 		})

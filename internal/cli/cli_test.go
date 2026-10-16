@@ -11,7 +11,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	os.Unsetenv("GYRUS_WORKSPACE")
+	os.Unsetenv("GYRUS_PROJECT")
 	os.Unsetenv("GYRUS_CONFIG")
 	os.Exit(m.Run())
 }

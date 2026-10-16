@@ -14,20 +14,20 @@ import (
 // NewSearchCmd constructs the 'search' Cobra command.
 func NewSearchCmd(application *app.App) *cobra.Command {
 	var (
-		queryStr   string
-		category   string
-		docType    string
-		status     string
-		tag        string
-		ownerGroup string
-		scope      string
-		workspace  string
-		maxResults int
+		queryStr    string
+		category    string
+		conceptType string
+		status      string
+		tag         string
+		tenant      string
+		scope       string
+		project     string
+		maxResults  int
 	)
 
 	cmd := &cobra.Command{
 		Use:   "search",
-		Short: "Execute search query over OKF documents and metadata",
+		Short: "Execute search query over OKF concepts and metadata",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if queryStr == "" && len(args) > 0 {
 				queryStr = strings.Join(args, " ")
@@ -42,19 +42,19 @@ func NewSearchCmd(application *app.App) *cobra.Command {
 			if cmd.Flags().Changed("scope") {
 				effectiveScope, _ = cmd.Flags().GetString("scope")
 			}
-			effectiveWorkspace := ""
-			if cmd.Flags().Changed("workspace") {
-				effectiveWorkspace, _ = cmd.Flags().GetString("workspace")
+			effectiveProject := ""
+			if cmd.Flags().Changed("project") {
+				effectiveProject, _ = cmd.Flags().GetString("project")
 			}
 
 			filter := gyrus.SearchFilter{
-				Category:   gyrus.Category(category),
-				Type:       gyrus.DocumentType(docType),
-				Status:     status,
-				Tag:        tag,
-				OwnerGroup: ownerGroup,
-				Scope:      effectiveScope,
-				Workspace:  effectiveWorkspace,
+				Category: gyrus.Category(category),
+				Type:     gyrus.ConceptType(conceptType),
+				Status:   status,
+				Tag:      tag,
+				Tenant:   tenant,
+				Scope:    effectiveScope,
+				Project:  effectiveProject,
 			}
 
 			results, err := engine.Search(context.Background(), queryStr, filter)
@@ -72,10 +72,10 @@ func NewSearchCmd(application *app.App) *cobra.Command {
 			} else {
 				fmt.Printf("Search Results (%d matches):\n", len(results))
 				for i, res := range results {
-					doc := res.Document
+					doc := res.Concept
 					scopeTag := doc.Scope
-					if doc.Workspace != "" {
-						scopeTag = "workspace:" + doc.Workspace
+					if doc.Project != "" {
+						scopeTag = "project:" + doc.Project
 					}
 					fmt.Printf("  %d. [%s] %s (%s, %s, status: %s, scope: %s, score: %.1f)\n",
 						i+1, doc.ID, doc.Title, doc.Type, doc.Category, doc.Status, scopeTag, res.Score)
@@ -88,12 +88,12 @@ func NewSearchCmd(application *app.App) *cobra.Command {
 
 	cmd.Flags().StringVar(&queryStr, "query", "", "Lexical search query text")
 	cmd.Flags().StringVar(&category, "category", "", "Filter by category")
-	cmd.Flags().StringVar(&docType, "type", "", "Filter by document type")
+	cmd.Flags().StringVar(&conceptType, "type", "", "Filter by concept type")
 	cmd.Flags().StringVar(&status, "status", "", "Filter by status")
 	cmd.Flags().StringVar(&tag, "tag", "", "Filter by tag")
-	cmd.Flags().StringVar(&ownerGroup, "owner-group", "", "Filter by owner group")
-	cmd.Flags().StringVar(&scope, "scope", "", "Filter by scope (workspace, reference, all)")
-	cmd.Flags().StringVar(&workspace, "workspace", "", "Filter by workspace name")
+	cmd.Flags().StringVar(&tenant, "tenant", "", "Filter by tenant")
+	cmd.Flags().StringVar(&scope, "scope", "", "Filter by scope (project, reference, all)")
+	cmd.Flags().StringVar(&project, "project", "", "Filter by project name")
 	cmd.Flags().IntVar(&maxResults, "max-results", 10, "Maximum number of results to return")
 
 	return cmd

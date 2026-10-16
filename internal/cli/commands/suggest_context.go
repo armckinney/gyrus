@@ -12,25 +12,25 @@ import (
 // NewSuggestContextCmd constructs the 'suggest-context' Cobra command.
 func NewSuggestContextCmd(application *app.App) *cobra.Command {
 	var (
-		prompt    string
-		maxTokens int
-		scope     string
-		workspace string
-		category  string
-		maxDocs   int
+		prompt      string
+		maxTokens   int
+		scope       string
+		project     string
+		category    string
+		maxConcepts int
 	)
 
 	cmd := &cobra.Command{
 		Use:   "suggest-context",
-		Short: "Suggest and linearize relevant document context for an agent prompt",
+		Short: "Suggest and linearize relevant concept context for an agent prompt",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			engine, err := application.Engine()
 			if err != nil {
 				return err
 			}
 
-			if maxDocs <= 0 {
-				maxDocs = 5
+			if maxConcepts <= 0 {
+				maxConcepts = 5
 			}
 			_ = maxTokens
 
@@ -38,18 +38,18 @@ func NewSuggestContextCmd(application *app.App) *cobra.Command {
 			if cmd.Flags().Changed("scope") {
 				effectiveScope, _ = cmd.Flags().GetString("scope")
 			}
-			effectiveWorkspace := ""
-			if cmd.Flags().Changed("workspace") {
-				effectiveWorkspace, _ = cmd.Flags().GetString("workspace")
+			effectiveProject := ""
+			if cmd.Flags().Changed("project") {
+				effectiveProject, _ = cmd.Flags().GetString("project")
 			}
 
 			filter := gyrus.SearchFilter{
-				Category:  gyrus.Category(category),
-				Scope:     effectiveScope,
-				Workspace: effectiveWorkspace,
+				Category: gyrus.Category(category),
+				Scope:    effectiveScope,
+				Project:  effectiveProject,
 			}
 
-			contextLayer, err := engine.SuggestContextWithFilter(context.Background(), prompt, filter, maxDocs)
+			contextLayer, err := engine.SuggestContextWithFilter(context.Background(), prompt, filter, maxConcepts)
 			if err != nil {
 				return err
 			}
@@ -65,10 +65,10 @@ func NewSuggestContextCmd(application *app.App) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&prompt, "prompt", "", "Prompt context or task description (required)")
-	cmd.Flags().StringVar(&scope, "scope", "", "Context scope filter (workspace, reference, all)")
-	cmd.Flags().StringVar(&workspace, "workspace", "", "Explicit workspace name to scope context to")
+	cmd.Flags().StringVar(&scope, "scope", "", "Context scope filter (project, reference, all)")
+	cmd.Flags().StringVar(&project, "project", "", "Explicit project name to scope context to")
 	cmd.Flags().StringVar(&category, "category", "", "Filter by category")
-	cmd.Flags().IntVar(&maxDocs, "max-docs", 5, "Maximum number of documents to include")
+	cmd.Flags().IntVar(&maxConcepts, "max-concepts", 5, "Maximum number of concepts to include")
 	cmd.Flags().IntVar(&maxTokens, "max-tokens", 4000, "Maximum token context budget")
 	_ = cmd.MarkFlagRequired("prompt")
 

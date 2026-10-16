@@ -9,8 +9,8 @@
                 <span class="badge badge-type">{{.Doc.Type}}</span>
                 <span class="badge badge-{{.Doc.Status}}">{{.Doc.Status}}</span>
                 <span class="badge badge-id">v{{.Doc.Version}}</span>
-                {{if .Doc.OwnerGroup}}
-                <span class="badge badge-id">Owner: {{.Doc.OwnerGroup}}</span>
+                {{if or .Doc.Tenant .Doc.OwnerGroup}}
+                <span class="badge badge-id">Tenant: {{if .Doc.Tenant}}{{.Doc.Tenant}}{{else}}{{.Doc.OwnerGroup}}{{end}}</span>
                 {{end}}
                 {{if .Doc.Immutable}}
                 <span class="badge" style="background-color: rgba(239, 68, 68, 0.15); color: var(--color-danger);">🔒 Immutable</span>
@@ -31,14 +31,14 @@
 
         <div class="relationships-panel">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3 style="font-size: 1.1rem; font-weight: 600;">Document Relationships & Lineage</h3>
+                <h3 style="font-size: 1.1rem; font-weight: 600;">Concept Relationships & Lineage</h3>
                 <a href="/graph?focus={{.Doc.ID}}" class="btn btn-outline btn-sm" hx-get="/graph?focus={{.Doc.ID}}" hx-target="#main-content" hx-push-url="true">
                     Explore in Graph Visualizer →
                 </a>
             </div>
 
             {{if and (not .OutgoingEdges) (not .IncomingEdges)}}
-            <p class="text-muted text-sm">No linked relationships recorded for this document.</p>
+            <p class="text-muted text-sm">No linked relationships recorded for this concept.</p>
             {{else}}
                 {{if .OutgoingEdges}}
                 <div style="margin-bottom: 1rem;">
@@ -48,8 +48,8 @@
                         <div class="edge-item">
                             <span class="badge badge-type">{{.RelationshipType}}</span>
                             <span style="color: var(--text-muted);">→</span>
-                            <a href="/docs/{{.ToDocumentID}}" style="color: var(--color-primary); font-weight: 600; text-decoration: none;" hx-get="/docs/{{.ToDocumentID}}" hx-target="#main-content" hx-push-url="true">
-                                {{.ToDocumentID}}
+                            <a href="/docs/{{.ToConceptID}}" style="color: var(--color-primary); font-weight: 600; text-decoration: none;" hx-get="/docs/{{.ToConceptID}}" hx-target="#main-content" hx-push-url="true">
+                                {{.ToConceptID}}
                             </a>
                         </div>
                         {{end}}
@@ -63,12 +63,12 @@
                     <div class="edge-list">
                         {{range .IncomingEdges}}
                         <div class="edge-item">
-                            <a href="/docs/{{.FromDocumentID}}" style="color: var(--color-primary); font-weight: 600; text-decoration: none;" hx-get="/docs/{{.FromDocumentID}}" hx-target="#main-content" hx-push-url="true">
-                                {{.FromDocumentID}}
+                            <a href="/docs/{{.FromConceptID}}" style="color: var(--color-primary); font-weight: 600; text-decoration: none;" hx-get="/docs/{{.FromConceptID}}" hx-target="#main-content" hx-push-url="true">
+                                {{.FromConceptID}}
                             </a>
                             <span style="color: var(--text-muted);">→</span>
                             <span class="badge badge-type">{{.RelationshipType}}</span>
-                            <span style="color: var(--text-muted); font-size: 0.8rem;">(this document)</span>
+                            <span style="color: var(--text-muted); font-size: 0.8rem;">(this concept)</span>
                         </div>
                         {{end}}
                     </div>

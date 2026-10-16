@@ -12,9 +12,9 @@ import (
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Provider Integration Test
-// [Purpose]: Verifies that PostgreSQL Store creates a document and appends an entry to documents_history.
+// [Purpose]: Verifies that PostgreSQL Store creates a concept and appends an entry to concepts_history.
 // [Execution Surface]: In-Memory PostgreSQL Mock Pool (pgxmock)
-// [Assertions]: INSERT queries for documents and documents_history execute in a transaction.
+// [Assertions]: INSERT queries for concepts and concepts_history execute in a transaction.
 // -----------------------------------------------------------------------------
 func TestStore_Create(t *testing.T) {
 	mock, err := pgxmock.NewPool()
@@ -25,15 +25,15 @@ func TestStore_Create(t *testing.T) {
 
 	store := &Store{pool: mock}
 
-	doc := gyrus.Document{
+	doc := gyrus.Concept{
 		ID:      "doc-1",
 		Title:   "Test Doc",
 		Content: "Hello World",
 	}
 
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO documents").WithArgs("doc-1", pgxmock.AnyArg(), "Hello World").WillReturnResult(pgxmock.NewResult("INSERT", 1))
-	mock.ExpectExec("INSERT INTO documents_history").WithArgs("doc-1", 1, pgxmock.AnyArg(), "Hello World", pgxmock.AnyArg(), pgxmock.AnyArg()).WillReturnResult(pgxmock.NewResult("INSERT", 1))
+	mock.ExpectExec("INSERT INTO concepts").WithArgs("doc-1", pgxmock.AnyArg(), "Hello World").WillReturnResult(pgxmock.NewResult("INSERT", 1))
+	mock.ExpectExec("INSERT INTO concepts_history").WithArgs("doc-1", 1, pgxmock.AnyArg(), "Hello World", pgxmock.AnyArg(), pgxmock.AnyArg()).WillReturnResult(pgxmock.NewResult("INSERT", 1))
 	mock.ExpectCommit()
 
 	ref, err := store.Create(context.Background(), doc)
@@ -52,7 +52,7 @@ func TestStore_Create(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Provider Integration Test
-// [Purpose]: Verifies that PostgreSQL Store fetches document frontmatter JSON and content.
+// [Purpose]: Verifies that PostgreSQL Store fetches concept frontmatter JSON and content.
 // [Execution Surface]: In-Memory PostgreSQL Mock Pool (pgxmock)
 // [Assertions]: SELECT query returns frontmatter and content fields without error.
 // -----------------------------------------------------------------------------
@@ -65,7 +65,7 @@ func TestStore_Get(t *testing.T) {
 
 	store := &Store{pool: mock}
 
-	doc := gyrus.Document{
+	doc := gyrus.Concept{
 		ID:    "doc-1",
 		Title: "Test Doc",
 	}
@@ -74,7 +74,7 @@ func TestStore_Get(t *testing.T) {
 	rows := pgxmock.NewRows([]string{"frontmatter", "content"}).
 		AddRow(fmBytes, "Hello World")
 
-	mock.ExpectQuery("SELECT frontmatter, content FROM documents WHERE id = \\$1").
+	mock.ExpectQuery("SELECT frontmatter, content FROM concepts WHERE id = \\$1").
 		WithArgs("doc-1").
 		WillReturnRows(rows)
 
@@ -97,9 +97,9 @@ func TestStore_Get(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Provider Integration Test
-// [Purpose]: Verifies that PostgreSQL Store updates document content with row locking (SELECT ... FOR UPDATE) and history logging.
+// [Purpose]: Verifies that PostgreSQL Store updates concept content with row locking (SELECT ... FOR UPDATE) and history logging.
 // [Execution Surface]: In-Memory PostgreSQL Mock Pool (pgxmock)
-// [Assertions]: Transaction locks row, updates documents, and writes new history version.
+// [Assertions]: Transaction locks row, updates concepts, and writes new history version.
 // -----------------------------------------------------------------------------
 func TestStore_Update(t *testing.T) {
 	mock, err := pgxmock.NewPool()
@@ -110,7 +110,7 @@ func TestStore_Update(t *testing.T) {
 
 	store := &Store{pool: mock}
 
-	doc := gyrus.Document{
+	doc := gyrus.Concept{
 		ID:      "doc-1",
 		Version: 1,
 		Title:   "Test Doc",
@@ -118,15 +118,15 @@ func TestStore_Update(t *testing.T) {
 	fmBytes, _ := json.Marshal(doc)
 
 	mock.ExpectBegin()
-	mock.ExpectQuery("SELECT frontmatter, content FROM documents WHERE id = \\$1 FOR UPDATE").
+	mock.ExpectQuery("SELECT frontmatter, content FROM concepts WHERE id = \\$1 FOR UPDATE").
 		WithArgs("doc-1").
 		WillReturnRows(pgxmock.NewRows([]string{"frontmatter", "content"}).AddRow(fmBytes, "Old content"))
 
-	mock.ExpectExec("UPDATE documents SET frontmatter = \\$1, content = \\$2 WHERE id = \\$3").
+	mock.ExpectExec("UPDATE concepts SET frontmatter = \\$1, content = \\$2 WHERE id = \\$3").
 		WithArgs(pgxmock.AnyArg(), "New content", "doc-1").
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
-	mock.ExpectExec("INSERT INTO documents_history").
+	mock.ExpectExec("INSERT INTO concepts_history").
 		WithArgs("doc-1", 2, pgxmock.AnyArg(), "New content", pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
@@ -134,7 +134,7 @@ func TestStore_Update(t *testing.T) {
 
 	patchTitle := "Updated Test Doc"
 	patchContent := "New content"
-	patch := gyrus.DocumentPatch{
+	patch := gyrus.ConceptPatch{
 		Title:   &patchTitle,
 		Content: &patchContent,
 	}
@@ -157,7 +157,7 @@ func TestStore_Update(t *testing.T) {
 // [Test Level]: Provider Integration Test
 // [Purpose]: Verifies that PostgreSQL Store upserts and queries graph relationship edges.
 // [Execution Surface]: In-Memory PostgreSQL Mock Pool (pgxmock)
-// [Assertions]: INSERT and SELECT queries on document_edges table execute cleanly.
+// [Assertions]: INSERT and SELECT queries on concept_edges table execute cleanly.
 // -----------------------------------------------------------------------------
 func TestStore_GraphEdges(t *testing.T) {
 	mock, err := pgxmock.NewPool()
@@ -169,10 +169,10 @@ func TestStore_GraphEdges(t *testing.T) {
 	store := &Store{pool: mock}
 
 	// Test UpsertEdges
-	edges := []gyrus.DocumentEdge{
+	edges := []gyrus.ConceptEdge{
 		{
-			FromDocumentID:   "doc-1",
-			ToDocumentID:     "doc-2",
+			FromConceptID:    "doc-1",
+			ToConceptID:      "doc-2",
 			RelationshipType: gyrus.RelDependsOn,
 			CreatedBy:        "user",
 			CreatedAt:        time.Now(),
@@ -180,7 +180,7 @@ func TestStore_GraphEdges(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO document_edges").
+	mock.ExpectExec("INSERT INTO concept_edges").
 		WithArgs("doc-1", "doc-2", gyrus.RelDependsOn, "user", pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 	mock.ExpectCommit()
@@ -192,10 +192,10 @@ func TestStore_GraphEdges(t *testing.T) {
 
 	// Test Neighbors
 	now := time.Now()
-	rows := pgxmock.NewRows([]string{"from_document_id", "to_document_id", "relationship_type", "created_by", "created_at"}).
+	rows := pgxmock.NewRows([]string{"from_concept_id", "to_concept_id", "relationship_type", "created_by", "created_at"}).
 		AddRow("doc-1", "doc-2", string(gyrus.RelDependsOn), "user", now)
 
-	mock.ExpectQuery("SELECT from_document_id, to_document_id, relationship_type, created_by, created_at FROM document_edges WHERE from_document_id = \\$1 OR to_document_id = \\$1").
+	mock.ExpectQuery("SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE from_concept_id = \\$1 OR to_concept_id = \\$1").
 		WithArgs("doc-1").
 		WillReturnRows(rows)
 
@@ -234,7 +234,7 @@ id: <unique-id>
 title: <Title>
 category: operations
 type: runbook
-owner_group: ops
+tenant: ops
 version: 1
 status: active
 ---

@@ -44,13 +44,13 @@ func TestToolsExecution(t *testing.T) {
 	createReq := mcp_sdk.CallToolRequest{}
 	createReq.Params.Name = "gyrus_create"
 	createReq.Params.Arguments = map[string]any{
-		"id":          "spec-tools-001",
-		"title":       "Tools Package Architecture",
-		"category":    "technical",
-		"type":        "specification",
-		"owner_group": "platform-team",
-		"status":      "active",
-		"content":     "Modular directory architecture for MCP tools.",
+		"id":       "spec-tools-001",
+		"title":    "Tools Package Architecture",
+		"category": "technical",
+		"type":     "specification",
+		"tenant":   "platform-team",
+		"status":   "active",
+		"content":  "Modular directory architecture for MCP tools.",
 	}
 	res, err := handler.HandleCreate(ctx, createReq)
 	if err != nil || res.IsError {
@@ -173,7 +173,7 @@ id: <unique-id>
 title: <Title>
 category: operations
 type: runbook
-owner_group: ops
+tenant: ops
 version: 1
 status: active
 ---

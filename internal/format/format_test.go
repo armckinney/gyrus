@@ -9,83 +9,89 @@ import (
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies that the OKF Markdown format engine serializes and deserializes documents with full field integrity.
+// [Purpose]: Verifies that the OKF Markdown format engine serializes and deserializes concepts with full field integrity.
 // [Execution Surface]: In-Memory Package (internal/format)
 // [Assertions]: Serialized OKF markdown reconstructs all metadata fields (ID, Title, Tags, Content) identically.
 // -----------------------------------------------------------------------------
 func TestOKFFormatSerialization(t *testing.T) {
 	fmtEngine := format.NewOKFFormat()
 
-	doc := &gyrus.Document{
-		ID:         "adr-001-test",
-		Title:      "Test ADR Document",
-		Category:   "architecture",
-		Type:       "adr",
-		OwnerGroup: "root",
-		Version:    1,
-		Status:     "proposed",
-		Tags:       []string{"test", "architecture"},
-		Content:    "# Test Content\n\nThis is a test body.",
+	concept := &gyrus.Concept{
+		ID:       "adr-001-test",
+		Title:    "Test ADR Concept",
+		Category: "architecture",
+		Type:     "adr",
+		Tenant:   "root",
+		Version:  1,
+		Status:   "proposed",
+		Tags:     []string{"test", "architecture"},
+		Content:  "# Test Content\n\nThis is a test body.",
 	}
 
-	data, err := fmtEngine.Serialize(doc)
+	data, err := fmtEngine.Serialize(concept)
 	if err != nil {
-		t.Fatalf("Failed to serialize OKF document: %v", err)
+		t.Fatalf("Failed to serialize OKF concept: %v", err)
 	}
 
 	deserialized, err := fmtEngine.Deserialize(data)
 	if err != nil {
-		t.Fatalf("Failed to deserialize OKF document: %v", err)
+		t.Fatalf("Failed to deserialize OKF concept: %v", err)
 	}
 
-	if deserialized.ID != doc.ID {
-		t.Errorf("Expected ID %s, got %s", doc.ID, deserialized.ID)
+	if deserialized.ID != concept.ID {
+		t.Errorf("Expected ID %s, got %s", concept.ID, deserialized.ID)
 	}
-	if deserialized.Title != doc.Title {
-		t.Errorf("Expected Title %s, got %s", doc.Title, deserialized.Title)
+	if deserialized.Title != concept.Title {
+		t.Errorf("Expected Title %s, got %s", concept.Title, deserialized.Title)
 	}
 	if len(deserialized.Tags) != 2 || deserialized.Tags[0] != "test" {
-		t.Errorf("Expected tags %v, got %v", doc.Tags, deserialized.Tags)
+		t.Errorf("Expected tags %v, got %v", concept.Tags, deserialized.Tags)
 	}
-	if deserialized.Content != doc.Content {
-		t.Errorf("Expected content:\n%s\nGot:\n%s", doc.Content, deserialized.Content)
+	if deserialized.Tenant != concept.Tenant {
+		t.Errorf("Expected Tenant %s, got %s", concept.Tenant, deserialized.Tenant)
+	}
+	if deserialized.Content != concept.Content {
+		t.Errorf("Expected content:\n%s\nGot:\n%s", concept.Content, deserialized.Content)
 	}
 }
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies that the Relational format engine serializes and deserializes documents into relational payloads.
+// [Purpose]: Verifies that the Relational format engine serializes and deserializes concepts into relational payloads.
 // [Execution Surface]: In-Memory Package (internal/format)
-// [Assertions]: Relational document representation serializes without error and maintains document identity upon deserialization.
+// [Assertions]: Relational concept representation serializes without error and maintains concept identity upon deserialization.
 // -----------------------------------------------------------------------------
 func TestRelationalFormatSerialization(t *testing.T) {
 	fmtEngine := format.NewRelationalFormat()
 
-	doc := &gyrus.Document{
-		ID:         "spec-001-test",
-		Title:      "Test Spec Document",
-		Category:   "technical",
-		Type:       "specification",
-		OwnerGroup: "root",
-		Version:    1,
-		Status:     "active",
-		Content:    "Relational payload content.",
+	concept := &gyrus.Concept{
+		ID:       "spec-001-test",
+		Title:    "Test Spec Concept",
+		Category: "technical",
+		Type:     "specification",
+		Tenant:   "root",
+		Version:  1,
+		Status:   "active",
+		Content:  "Relational payload content.",
 	}
 
-	data, err := fmtEngine.Serialize(doc)
+	data, err := fmtEngine.Serialize(concept)
 	if err != nil {
-		t.Fatalf("Failed to serialize Relational document: %v", err)
+		t.Fatalf("Failed to serialize Relational concept: %v", err)
 	}
 
 	deserialized, err := fmtEngine.Deserialize(data)
 	if err != nil {
-		t.Fatalf("Failed to deserialize Relational document: %v", err)
+		t.Fatalf("Failed to deserialize Relational concept: %v", err)
 	}
 
-	if deserialized.ID != doc.ID {
-		t.Errorf("Expected ID %s, got %s", doc.ID, deserialized.ID)
+	if deserialized.ID != concept.ID {
+		t.Errorf("Expected ID %s, got %s", concept.ID, deserialized.ID)
 	}
-	if deserialized.Content != doc.Content {
-		t.Errorf("Expected Content %s, got %s", doc.Content, deserialized.Content)
+	if deserialized.Tenant != concept.Tenant {
+		t.Errorf("Expected Tenant %s, got %s", concept.Tenant, deserialized.Tenant)
+	}
+	if deserialized.Content != concept.Content {
+		t.Errorf("Expected Content %s, got %s", concept.Content, deserialized.Content)
 	}
 }

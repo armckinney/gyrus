@@ -165,14 +165,14 @@
                             </a>
                         </li>
                         <li class="nav-group-subheading">
-                            <span class="nav-subheading-text">Workspaces</span>
+                            <span class="nav-subheading-text">Projects</span>
                         </li>
-                        {{range .Scopes.Workspaces}}
+                        {{range .Scopes.Projects}}
                         <li>
-                            <a href="/docs?scope=workspaces/{{.Name}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}"
+                            <a href="/docs?scope=projects/{{.Name}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}"
                                id="nav-scope-ws-{{.Name}}"
-                               class="nav-link nav-sub-link {{if or (eq $.ActiveScope (printf "workspaces/%s" .Name)) (eq $.ActiveScope .Name)}}active{{end}}"
-                               hx-get="/docs?scope=workspaces/{{.Name}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}"
+                               class="nav-link nav-sub-link {{if or (eq $.ActiveScope (printf "projects/%s" .Name)) (eq $.ActiveScope .Name)}}active{{end}}"
+                               hx-get="/docs?scope=projects/{{.Name}}{{if $.SelectedTenant}}&tenant={{$.SelectedTenant}}{{end}}"
                                hx-target="#main-content"
                                hx-push-url="true"
                                title="{{.Name}}">

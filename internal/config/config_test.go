@@ -11,7 +11,7 @@ import (
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies that when no workspace or global config exists, defaults are used.
+// [Purpose]: Verifies that when no project or global config exists, defaults are used.
 // [Assertions]: Source is SourceDefault, StorageRoot points to ~/.gyrus.
 // -----------------------------------------------------------------------------
 func TestLoadDefaultsOnly(t *testing.T) {
@@ -33,14 +33,14 @@ func TestLoadDefaultsOnly(t *testing.T) {
 	if rc.Config.StorageProvider() != "" {
 		t.Errorf("Expected empty default storage provider, got '%s'", rc.Config.StorageProvider())
 	}
-	if rc.Config.OwnerGroup() != "root" {
-		t.Errorf("Expected default owner group 'root', got '%s'", rc.Config.OwnerGroup())
+	if rc.Config.TenantName() != "root" {
+		t.Errorf("Expected default tenant 'root', got '%s'", rc.Config.TenantName())
 	}
 }
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies that global ~/.gyrus.yaml is used when no workspace config exists.
+// [Purpose]: Verifies that global ~/.gyrus.yaml is used when no project config exists.
 // [Assertions]: Source is SourceGlobal, values loaded from ~/.gyrus.yaml.
 // -----------------------------------------------------------------------------
 func TestLoadGlobalOnly(t *testing.T) {
@@ -50,7 +50,7 @@ func TestLoadGlobalOnly(t *testing.T) {
 	globalYaml := `storage:
   provider: postgres
   root: .gyrus
-default_owner_group: global-ops
+tenant: global-ops
 postgres:
   connection_string: postgres://user:pass@localhost:5432/gyrus
 `
@@ -69,8 +69,8 @@ postgres:
 	if rc.Config.StorageProvider() != "postgres" {
 		t.Errorf("Expected storage provider 'postgres', got '%s'", rc.Config.StorageProvider())
 	}
-	if rc.Config.DefaultOwnerGroup != "global-ops" {
-		t.Errorf("Expected owner group 'global-ops', got '%s'", rc.Config.DefaultOwnerGroup)
+	if rc.Config.Tenant != "global-ops" {
+		t.Errorf("Expected tenant 'global-ops', got '%s'", rc.Config.Tenant)
 	}
 	expectedRoot := filepath.Join(tempHome, ".gyrus")
 	if rc.StorageRoot != expectedRoot {
@@ -80,10 +80,10 @@ postgres:
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies that workspace .gyrus.yaml is loaded when present.
-// [Assertions]: Source is SourceWorkspace, values loaded from workspace .gyrus.yaml.
+// [Purpose]: Verifies that project .gyrus.yaml is loaded when present.
+// [Assertions]: Source is SourceProject, values loaded from project .gyrus.yaml.
 // -----------------------------------------------------------------------------
-func TestLoadWorkspaceOnly(t *testing.T) {
+func TestLoadProjectOnly(t *testing.T) {
 	tempWork := t.TempDir()
 	tempHome := t.TempDir()
 
@@ -94,10 +94,10 @@ index:
   provider: sqlite
 search:
   provider: sqlite
-default_owner_group: workspace-team
+tenant: project-team
 `
 	if err := os.WriteFile(filepath.Join(tempWork, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
-		t.Fatalf("Failed writing workspace config: %v", err)
+		t.Fatalf("Failed writing project config: %v", err)
 	}
 
 	rc, err := config.LoadFrom(tempWork, tempHome)
@@ -105,14 +105,14 @@ default_owner_group: workspace-team
 		t.Fatalf("LoadFrom failed: %v", err)
 	}
 
-	if rc.Source != config.SourceWorkspace {
-		t.Errorf("Expected source '%s', got '%s'", config.SourceWorkspace, rc.Source)
+	if rc.Source != config.SourceProject {
+		t.Errorf("Expected source '%s', got '%s'", config.SourceProject, rc.Source)
 	}
 	if rc.Config.StorageProvider() != "localfs" {
 		t.Errorf("Expected storage provider 'localfs', got '%s'", rc.Config.StorageProvider())
 	}
-	if rc.Config.DefaultOwnerGroup != "workspace-team" {
-		t.Errorf("Expected owner group 'workspace-team', got '%s'", rc.Config.DefaultOwnerGroup)
+	if rc.Config.Tenant != "project-team" {
+		t.Errorf("Expected tenant 'project-team', got '%s'", rc.Config.Tenant)
 	}
 	expectedRoot := filepath.Join(tempWork, ".my-store")
 	if rc.StorageRoot != expectedRoot {
@@ -122,17 +122,17 @@ default_owner_group: workspace-team
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies full override semantics: workspace config completely overrides global config.
-// [Assertions]: Source is SourceWorkspace, global-only values are NOT merged into workspace config.
+// [Purpose]: Verifies full override semantics: project config completely overrides global config.
+// [Assertions]: Source is SourceProject, global-only values are NOT merged into project config.
 // -----------------------------------------------------------------------------
-func TestLoadWorkspaceOverGlobal(t *testing.T) {
+func TestLoadProjectOverGlobal(t *testing.T) {
 	tempWork := t.TempDir()
 	tempHome := t.TempDir()
 
 	// Global defines postgres and global-ops
 	globalYaml := `storage:
   provider: postgres
-default_owner_group: global-ops
+tenant: global-ops
 postgres:
   connection_string: postgres://localhost:5432/global
 `
@@ -140,13 +140,13 @@ postgres:
 		t.Fatalf("Failed writing global config: %v", err)
 	}
 
-	// Workspace defines localfs and local-team (does NOT set postgres)
+	// Project defines localfs and local-team (does NOT set postgres)
 	wsYaml := `storage:
   provider: localfs
-default_owner_group: local-team
+tenant: local-team
 `
 	if err := os.WriteFile(filepath.Join(tempWork, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
-		t.Fatalf("Failed writing workspace config: %v", err)
+		t.Fatalf("Failed writing project config: %v", err)
 	}
 
 	rc, err := config.LoadFrom(tempWork, tempHome)
@@ -154,16 +154,16 @@ default_owner_group: local-team
 		t.Fatalf("LoadFrom failed: %v", err)
 	}
 
-	if rc.Source != config.SourceWorkspace {
-		t.Errorf("Expected source '%s', got '%s'", config.SourceWorkspace, rc.Source)
+	if rc.Source != config.SourceProject {
+		t.Errorf("Expected source '%s', got '%s'", config.SourceProject, rc.Source)
 	}
 	if rc.Config.StorageProvider() != "localfs" {
 		t.Errorf("Expected storage provider 'localfs', got '%s'", rc.Config.StorageProvider())
 	}
-	if rc.Config.DefaultOwnerGroup != "local-team" {
-		t.Errorf("Expected owner group 'local-team', got '%s'", rc.Config.DefaultOwnerGroup)
+	if rc.Config.Tenant != "local-team" {
+		t.Errorf("Expected tenant 'local-team', got '%s'", rc.Config.Tenant)
 	}
-	// Full override: global postgres connection string is NOT merged into workspace
+	// Full override: global postgres connection string is NOT merged into project
 	if rc.Config.Postgres.ConnectionString != "" {
 		t.Errorf("Expected empty postgres connection string due to full override, got '%s'", rc.Config.Postgres.ConnectionString)
 	}
@@ -195,21 +195,21 @@ func TestLoadMalformedGlobal(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies that malformed workspace config falls through to valid global config.
+// [Purpose]: Verifies that malformed project config falls through to valid global config.
 // [Assertions]: Source is SourceGlobal.
 // -----------------------------------------------------------------------------
-func TestLoadMalformedWorkspace(t *testing.T) {
+func TestLoadMalformedProject(t *testing.T) {
 	tempWork := t.TempDir()
 	tempHome := t.TempDir()
 
 	badYaml := `: this is not valid: yaml : [unclosed`
 	if err := os.WriteFile(filepath.Join(tempWork, ".gyrus.yaml"), []byte(badYaml), 0644); err != nil {
-		t.Fatalf("Failed writing bad workspace config: %v", err)
+		t.Fatalf("Failed writing bad project config: %v", err)
 	}
 
 	goodGlobal := `storage:
   provider: localfs
-default_owner_group: fallback-global
+tenant: fallback-global
 `
 	if err := os.WriteFile(filepath.Join(tempHome, ".gyrus.yaml"), []byte(goodGlobal), 0644); err != nil {
 		t.Fatalf("Failed writing good global config: %v", err)
@@ -223,8 +223,8 @@ default_owner_group: fallback-global
 	if rc.Source != config.SourceGlobal {
 		t.Errorf("Expected source '%s', got '%s'", config.SourceGlobal, rc.Source)
 	}
-	if rc.Config.DefaultOwnerGroup != "fallback-global" {
-		t.Errorf("Expected owner group 'fallback-global', got '%s'", rc.Config.DefaultOwnerGroup)
+	if rc.Config.Tenant != "fallback-global" {
+		t.Errorf("Expected tenant 'fallback-global', got '%s'", rc.Config.Tenant)
 	}
 }
 
@@ -292,31 +292,31 @@ func TestRelativePathResolution(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies that GYRUS_WORKSPACE environment variable overrides working directory.
-// [Assertions]: Load() resolves .gyrus.yaml from GYRUS_WORKSPACE directory.
+// [Purpose]: Verifies that GYRUS_PROJECT environment variable overrides working directory.
+// [Assertions]: Load() resolves .gyrus.yaml from GYRUS_PROJECT directory.
 // -----------------------------------------------------------------------------
-func TestLoad_EnvGyrusWorkspace(t *testing.T) {
+func TestLoad_EnvGyrusProject(t *testing.T) {
 	tempWork := t.TempDir()
 	wsYaml := `storage:
   provider: localfs
   root: .gyrus
-default_owner_group: env-ws-group
+tenant: env-ws-group
 `
 	if err := os.WriteFile(filepath.Join(tempWork, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
 		t.Fatalf("Failed writing config: %v", err)
 	}
 
-	t.Setenv("GYRUS_WORKSPACE", tempWork)
+	t.Setenv("GYRUS_PROJECT", tempWork)
 
 	rc, err := config.Load()
 	if err != nil {
-		t.Fatalf("Load with GYRUS_WORKSPACE failed: %v", err)
+		t.Fatalf("Load with GYRUS_PROJECT failed: %v", err)
 	}
-	if rc.Source != config.SourceWorkspace {
-		t.Errorf("Expected source '%s', got '%s'", config.SourceWorkspace, rc.Source)
+	if rc.Source != config.SourceProject {
+		t.Errorf("Expected source '%s', got '%s'", config.SourceProject, rc.Source)
 	}
-	if rc.Config.OwnerGroup() != "env-ws-group" {
-		t.Errorf("Expected owner group 'env-ws-group', got '%s'", rc.Config.OwnerGroup())
+	if rc.Config.TenantName() != "env-ws-group" {
+		t.Errorf("Expected tenant 'env-ws-group', got '%s'", rc.Config.TenantName())
 	}
 }
 
@@ -331,7 +331,7 @@ func TestLoad_EnvGyrusConfig(t *testing.T) {
 	cfgYaml := `storage:
   provider: localfs
   root: ./my-storage
-default_owner_group: custom-cfg-group
+tenant: custom-cfg-group
 `
 	if err := os.WriteFile(cfgPath, []byte(cfgYaml), 0644); err != nil {
 		t.Fatalf("Failed writing custom config: %v", err)
@@ -343,65 +343,65 @@ default_owner_group: custom-cfg-group
 	if err != nil {
 		t.Fatalf("Load with GYRUS_CONFIG failed: %v", err)
 	}
-	if rc.Source != config.SourceWorkspace {
-		t.Errorf("Expected source '%s', got '%s'", config.SourceWorkspace, rc.Source)
+	if rc.Source != config.SourceProject {
+		t.Errorf("Expected source '%s', got '%s'", config.SourceProject, rc.Source)
 	}
-	if rc.Config.OwnerGroup() != "custom-cfg-group" {
-		t.Errorf("Expected owner group 'custom-cfg-group', got '%s'", rc.Config.OwnerGroup())
-	}
-}
-
-// -----------------------------------------------------------------------------
-// [Test Level]: Unit Test
-// [Purpose]: Verifies that LoadWithWorkspace explicitly resolves the specified workspace.
-// [Assertions]: LoadWithWorkspace loads .gyrus.yaml from target directory.
-// -----------------------------------------------------------------------------
-func TestLoadWithWorkspace(t *testing.T) {
-	tempWork := t.TempDir()
-	wsYaml := `storage:
-  provider: localfs
-  root: .gyrus
-default_owner_group: explicit-ws
-`
-	if err := os.WriteFile(filepath.Join(tempWork, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
-		t.Fatalf("Failed writing config: %v", err)
-	}
-
-	rc, err := config.LoadWithWorkspace(tempWork)
-	if err != nil {
-		t.Fatalf("LoadWithWorkspace failed: %v", err)
-	}
-	if rc.Config.OwnerGroup() != "explicit-ws" {
-		t.Errorf("Expected owner group 'explicit-ws', got '%s'", rc.Config.OwnerGroup())
+	if rc.Config.TenantName() != "custom-cfg-group" {
+		t.Errorf("Expected tenant 'custom-cfg-group', got '%s'", rc.Config.TenantName())
 	}
 }
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies that explicit workspace configuration is parsed and accessible.
-// [Assertions]: Config.WorkspaceName() matches configured workspace or empty default.
+// [Purpose]: Verifies that LoadWithProject explicitly resolves the specified project.
+// [Assertions]: LoadWithProject loads .gyrus.yaml from target directory.
 // -----------------------------------------------------------------------------
-func TestWorkspaceConfiguration(t *testing.T) {
+func TestLoadWithProject(t *testing.T) {
 	tempWork := t.TempDir()
 	wsYaml := `storage:
   provider: localfs
   root: .gyrus
-workspace: gyrus-core
-default_owner_group: root
+tenant: explicit-ws
 `
 	if err := os.WriteFile(filepath.Join(tempWork, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
 		t.Fatalf("Failed writing config: %v", err)
 	}
 
-	rc, err := config.LoadWithWorkspace(tempWork)
+	rc, err := config.LoadWithProject(tempWork)
 	if err != nil {
-		t.Fatalf("LoadWithWorkspace failed: %v", err)
+		t.Fatalf("LoadWithProject failed: %v", err)
 	}
-	if rc.Config.WorkspaceName() != "gyrus-core" {
-		t.Errorf("Expected workspace 'gyrus-core', got '%s'", rc.Config.WorkspaceName())
+	if rc.Config.TenantName() != "explicit-ws" {
+		t.Errorf("Expected tenant 'explicit-ws', got '%s'", rc.Config.TenantName())
+	}
+}
+
+// -----------------------------------------------------------------------------
+// [Test Level]: Unit Test
+// [Purpose]: Verifies that explicit project configuration is parsed and accessible.
+// [Assertions]: Config.ProjectName() matches configured project or empty default.
+// -----------------------------------------------------------------------------
+func TestProjectConfiguration(t *testing.T) {
+	tempWork := t.TempDir()
+	wsYaml := `storage:
+  provider: localfs
+  root: .gyrus
+project: gyrus-core
+tenant: root
+`
+	if err := os.WriteFile(filepath.Join(tempWork, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
+		t.Fatalf("Failed writing config: %v", err)
 	}
 
-	// Test empty workspace
+	rc, err := config.LoadWithProject(tempWork)
+	if err != nil {
+		t.Fatalf("LoadWithProject failed: %v", err)
+	}
+	if rc.Config.ProjectName() != "gyrus-core" {
+		t.Errorf("Expected project 'gyrus-core', got '%s'", rc.Config.ProjectName())
+	}
+
+	// Test empty project
 	tempWork2 := t.TempDir()
 	wsYaml2 := `storage:
   provider: localfs
@@ -409,91 +409,28 @@ default_owner_group: root
 	if err := os.WriteFile(filepath.Join(tempWork2, ".gyrus.yaml"), []byte(wsYaml2), 0644); err != nil {
 		t.Fatalf("Failed writing config: %v", err)
 	}
-	rc2, err := config.LoadWithWorkspace(tempWork2)
+	rc2, err := config.LoadWithProject(tempWork2)
 	if err != nil {
-		t.Fatalf("LoadWithWorkspace failed: %v", err)
+		t.Fatalf("LoadWithProject failed: %v", err)
 	}
-	if rc2.Config.WorkspaceName() != "" {
-		t.Errorf("Expected empty workspace, got '%s'", rc2.Config.WorkspaceName())
+	if rc2.Config.ProjectName() != "" {
+		t.Errorf("Expected empty project, got '%s'", rc2.Config.ProjectName())
 	}
 }
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies automation config loading, defaults, and overrides.
-// [Assertions]: Default values are true, explicit false values override defaults.
-// -----------------------------------------------------------------------------
-func TestAutomationConfiguration(t *testing.T) {
-	// 1. Defaults when automation section is omitted
-	tempWork1 := t.TempDir()
-	wsYaml1 := `storage:
-  provider: localfs
-`
-	if err := os.WriteFile(filepath.Join(tempWork1, ".gyrus.yaml"), []byte(wsYaml1), 0644); err != nil {
-		t.Fatalf("Failed writing config: %v", err)
-	}
-	rc1, err := config.LoadWithWorkspace(tempWork1)
-	if err != nil {
-		t.Fatalf("LoadWithWorkspace failed: %v", err)
-	}
-	if !rc1.Config.HooksEnabled() {
-		t.Errorf("Expected default HooksEnabled() to be true")
-	}
-	if !rc1.Config.AutoContext() {
-		t.Errorf("Expected default AutoContext() to be true")
-	}
-	if !rc1.Config.ArchitecturalCheck() {
-		t.Errorf("Expected default ArchitecturalCheck() to be true")
-	}
-	if len(rc1.Config.IgnoredPaths()) == 0 {
-		t.Errorf("Expected default IgnoredPaths() to be non-empty")
-	}
-
-	// 2. Explicit overrides
-	tempWork2 := t.TempDir()
-	wsYaml2 := `storage:
-  provider: localfs
-automation:
-  hooks_enabled: false
-  auto_context: false
-  architectural_check: false
-  ignored_paths:
-    - "custom/**"
-`
-	if err := os.WriteFile(filepath.Join(tempWork2, ".gyrus.yaml"), []byte(wsYaml2), 0644); err != nil {
-		t.Fatalf("Failed writing config: %v", err)
-	}
-	rc2, err := config.LoadWithWorkspace(tempWork2)
-	if err != nil {
-		t.Fatalf("LoadWithWorkspace failed: %v", err)
-	}
-	if rc2.Config.HooksEnabled() {
-		t.Errorf("Expected HooksEnabled() to be false when configured false")
-	}
-	if rc2.Config.AutoContext() {
-		t.Errorf("Expected AutoContext() to be false when configured false")
-	}
-	if rc2.Config.ArchitecturalCheck() {
-		t.Errorf("Expected ArchitecturalCheck() to be false when configured false")
-	}
-	if len(rc2.Config.IgnoredPaths()) != 1 || rc2.Config.IgnoredPaths()[0] != "custom/**" {
-		t.Errorf("Expected IgnoredPaths() to contain 'custom/**', got %v", rc2.Config.IgnoredPaths())
-	}
-}
-
-// -----------------------------------------------------------------------------
-// [Test Level]: Unit Test
-// [Purpose]: Verifies that RunConfigSetup creates .gyrus.yaml with designated profile and owner group.
+// [Purpose]: Verifies that RunConfigSetup creates .gyrus.yaml with designated profile and tenant.
 // [Execution Surface]: In-Memory / Temporary Filesystem
-// [Assertions]: Creates .gyrus.yaml in workspace and returns correct status fields.
+// [Assertions]: Creates .gyrus.yaml in project and returns correct status fields.
 // -----------------------------------------------------------------------------
 func TestRunConfigSetup(t *testing.T) {
 	tempDir := t.TempDir()
 
 	res, err := config.RunConfigSetup(config.ConfigSetupOptions{
-		WorkspaceDir: tempDir,
-		Profile:      config.ProfileLocal,
-		OwnerGroup:   "test-group",
+		ProjectDir: tempDir,
+		Profile:    config.ProfileLocal,
+		Tenant:     "test-group",
 	})
 	if err != nil {
 		t.Fatalf("RunConfigSetup failed: %v", err)
@@ -549,8 +486,8 @@ func TestWriteConfigFileProfiles(t *testing.T) {
 			if !strings.Contains(content, p.keyword) {
 				t.Errorf("Expected config to contain '%s', got:\n%s", p.keyword, content)
 			}
-			if !strings.Contains(content, "default_owner_group: my-team") {
-				t.Errorf("Expected config to contain owner group 'my-team', got:\n%s", content)
+			if !strings.Contains(content, "tenant: my-team") {
+				t.Errorf("Expected config to contain tenant 'my-team', got:\n%s", content)
 			}
 		})
 	}

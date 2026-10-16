@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	os.Unsetenv("GYRUS_WORKSPACE")
+	os.Unsetenv("GYRUS_PROJECT")
 	os.Unsetenv("GYRUS_CONFIG")
 
 	tempDir, err := os.MkdirTemp("", "gyrus-mcp-bin-*")

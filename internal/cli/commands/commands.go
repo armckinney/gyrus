@@ -29,7 +29,7 @@ func Register(rootCmd *cobra.Command, application *app.App) {
 	rootCmd.AddCommand(NewLinkCmd(application))
 	rootCmd.AddCommand(NewUnlinkCmd(application))
 
-	// Workspace & Maintenance Commands
+	// Project & Maintenance Commands
 	rootCmd.AddCommand(NewSyncCmd(application))
 	rootCmd.AddCommand(NewValidateCmd(application))
 	rootCmd.AddCommand(NewSchemaCmd(application))
@@ -38,5 +38,4 @@ func Register(rootCmd *cobra.Command, application *app.App) {
 	// Setup & Server Commands
 	rootCmd.AddCommand(NewMCPCmd(application))
 	rootCmd.AddCommand(NewUICmd(application))
-	rootCmd.AddCommand(NewHookCmd(application))
 }

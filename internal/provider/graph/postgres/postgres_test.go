@@ -27,10 +27,10 @@ func TestPostgresGraphStore_EdgesAndNeighbors(t *testing.T) {
 	ctx := context.Background()
 
 	now := time.Now()
-	edges := []gyrus.DocumentEdge{
+	edges := []gyrus.ConceptEdge{
 		{
-			FromDocumentID:   "prd-001",
-			ToDocumentID:     "adr-001",
+			FromConceptID:    "prd-001",
+			ToConceptID:      "adr-001",
 			RelationshipType: gyrus.RelDependsOn,
 			CreatedBy:        "dev-1",
 			CreatedAt:        now,
@@ -39,7 +39,7 @@ func TestPostgresGraphStore_EdgesAndNeighbors(t *testing.T) {
 
 	// 1. Upsert Edges
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO document_edges").
+	mock.ExpectExec("INSERT INTO concept_edges").
 		WithArgs("prd-001", "adr-001", "depends_on", "dev-1", now).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 	mock.ExpectCommit()
@@ -49,10 +49,10 @@ func TestPostgresGraphStore_EdgesAndNeighbors(t *testing.T) {
 	}
 
 	// 2. Neighbors Outgoing
-	rows := pgxmock.NewRows([]string{"from_document_id", "to_document_id", "relationship_type", "created_by", "created_at"}).
+	rows := pgxmock.NewRows([]string{"from_concept_id", "to_concept_id", "relationship_type", "created_by", "created_at"}).
 		AddRow("prd-001", "adr-001", "depends_on", "dev-1", now)
 
-	mock.ExpectQuery("SELECT from_document_id, to_document_id, relationship_type, created_by, created_at FROM document_edges WHERE from_document_id = \\$1").
+	mock.ExpectQuery("SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE from_concept_id = \\$1").
 		WithArgs("prd-001").
 		WillReturnRows(rows)
 
@@ -60,12 +60,12 @@ func TestPostgresGraphStore_EdgesAndNeighbors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Neighbors failed: %v", err)
 	}
-	if len(outgoing) != 1 || outgoing[0].ToDocumentID != "adr-001" {
+	if len(outgoing) != 1 || outgoing[0].ToConceptID != "adr-001" {
 		t.Errorf("Expected outgoing edge to adr-001, got %v", outgoing)
 	}
 
 	// 3. Delete Edges
-	mock.ExpectExec("DELETE FROM document_edges WHERE from_document_id = \\$1 AND to_document_id = \\$2 AND relationship_type = \\$3").
+	mock.ExpectExec("DELETE FROM concept_edges WHERE from_concept_id = \\$1 AND to_concept_id = \\$2 AND relationship_type = \\$3").
 		WithArgs("prd-001", "adr-001", "depends_on").
 		WillReturnResult(pgxmock.NewResult("DELETE", 1))
 

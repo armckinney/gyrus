@@ -40,15 +40,15 @@ func TestIntegration_LocalProfile(t *testing.T) {
 
 	ctx := context.Background()
 
-	doc := gyrus.Document{
-		ID:         "standard-001",
-		Title:      "Coding Standard",
-		Category:   gyrus.CategoryTechnical,
-		Type:       gyrus.TypeStandards,
-		OwnerGroup: "engineering",
-		Version:    1,
-		Status:     "active",
-		Content:    "All Go code must follow standard idiomatic patterns.",
+	doc := gyrus.Concept{
+		ID:       "standard-001",
+		Title:    "Coding Standard",
+		Category: gyrus.CategoryTechnical,
+		Type:     gyrus.TypeStandards,
+		Tenant:   "engineering",
+		Version:  1,
+		Status:   "active",
+		Content:  "All Go code must follow standard idiomatic patterns.",
 	}
 
 	// 1. Storage Create
@@ -74,14 +74,14 @@ func TestIntegration_LocalProfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Search failed: %v", err)
 	}
-	if len(results) != 1 || results[0].Document.ID != doc.ID {
+	if len(results) != 1 || results[0].Concept.ID != doc.ID {
 		t.Errorf("Expected search match for standard-001, got %v", results)
 	}
 
 	// 4. Graph Edge Link
-	err = graphStore.UpsertEdges(ctx, []gyrus.DocumentEdge{{
-		FromDocumentID:   "standard-001",
-		ToDocumentID:     "adr-001",
+	err = graphStore.UpsertEdges(ctx, []gyrus.ConceptEdge{{
+		FromConceptID:    "standard-001",
+		ToConceptID:      "adr-001",
 		RelationshipType: gyrus.RelDependsOn,
 		CreatedAt:        time.Now(),
 	}})
@@ -93,7 +93,7 @@ func TestIntegration_LocalProfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Neighbors failed: %v", err)
 	}
-	if len(neighbors) != 1 || neighbors[0].ToDocumentID != "adr-001" {
+	if len(neighbors) != 1 || neighbors[0].ToConceptID != "adr-001" {
 		t.Errorf("Expected outgoing edge to adr-001, got %v", neighbors)
 	}
 }

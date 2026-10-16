@@ -33,12 +33,12 @@ func BenchmarkDocumentIndexing(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		doc := gyrus.Document{
+		doc := gyrus.Concept{
 			ID:          fmt.Sprintf("bench-doc-%d", i),
 			Title:       fmt.Sprintf("Benchmark Document %d", i),
 			Category:    gyrus.CategoryTechnical,
 			Type:        gyrus.TypeSpecification,
-			OwnerGroup:  "benchmarks",
+			Tenant:      "benchmarks",
 			Version:     1,
 			Status:      "active",
 			LastUpdated: time.Now(),
@@ -70,12 +70,12 @@ func BenchmarkFTS5Search(b *testing.B) {
 
 	// Seed 500 documents
 	for i := 0; i < 500; i++ {
-		doc := gyrus.Document{
+		doc := gyrus.Concept{
 			ID:          fmt.Sprintf("seed-doc-%d", i),
 			Title:       fmt.Sprintf("Seed Document %d", i),
 			Category:    gyrus.CategoryArchitecture,
 			Type:        gyrus.TypeADR,
-			OwnerGroup:  "platform",
+			Tenant:      "platform",
 			Version:     1,
 			Status:      "accepted",
 			LastUpdated: time.Now(),
@@ -118,11 +118,11 @@ func BenchmarkGraphTraversal(b *testing.B) {
 	ctx := context.Background()
 
 	// Seed a chain of 50 graph edges
-	var edges []gyrus.DocumentEdge
+	var edges []gyrus.ConceptEdge
 	for i := 0; i < 50; i++ {
-		edges = append(edges, gyrus.DocumentEdge{
-			FromDocumentID:   fmt.Sprintf("node-%d", i),
-			ToDocumentID:     fmt.Sprintf("node-%d", i+1),
+		edges = append(edges, gyrus.ConceptEdge{
+			FromConceptID:    fmt.Sprintf("node-%d", i),
+			ToConceptID:      fmt.Sprintf("node-%d", i+1),
 			RelationshipType: gyrus.RelDependsOn,
 			CreatedAt:        time.Now(),
 		})

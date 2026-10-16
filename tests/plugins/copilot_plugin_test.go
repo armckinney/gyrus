@@ -58,8 +58,8 @@ func TestMultiAgentCopilotAndClaudeIntegration(t *testing.T) {
 		if server.Command != "gyrus" {
 			t.Errorf("Expected command 'gyrus', got '%s'", server.Command)
 		}
-		if server.Env["GYRUS_WORKSPACE"] != "${workspaceFolder}" {
-			t.Errorf("Expected GYRUS_WORKSPACE env to be '${workspaceFolder}', got '%s'", server.Env["GYRUS_WORKSPACE"])
+		if server.Env["GYRUS_PROJECT"] != "${workspaceFolder}" {
+			t.Errorf("Expected GYRUS_PROJECT env to be '${workspaceFolder}', got '%s'", server.Env["GYRUS_PROJECT"])
 		}
 	})
 
@@ -122,8 +122,8 @@ func TestMultiAgentCopilotAndClaudeIntegration(t *testing.T) {
 		if server.Command != "gyrus" {
 			t.Errorf("Expected command 'gyrus', got '%s'", server.Command)
 		}
-		if server.Env["GYRUS_WORKSPACE"] != "${workspaceFolder}" {
-			t.Errorf("Expected GYRUS_WORKSPACE env to be '${workspaceFolder}', got '%s'", server.Env["GYRUS_WORKSPACE"])
+		if server.Env["GYRUS_PROJECT"] != "${workspaceFolder}" {
+			t.Errorf("Expected GYRUS_PROJECT env to be '${workspaceFolder}', got '%s'", server.Env["GYRUS_PROJECT"])
 		}
 	})
 }
