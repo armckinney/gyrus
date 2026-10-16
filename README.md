@@ -171,7 +171,7 @@ search:
   provider: okf
 ```
 
-Explicit links persist as `links: [{concept, rel}]` in source frontmatter. Targets use qualified names such as `root/reference/adr-example` or `root/projects/gyrus/ticket-003`; dependency arrays and per-link creation metadata are removed. Existing-concept operations require qualified names, while creation keeps a local frontmatter `id`. API results expose the derived `name`. Before switching an existing SQLite graph, use the packaged [gyrus-migrate-okf skill](packaging/plugins/gyrus/skills/gyrus-migrate-okf/SKILL.md) to back up and export database-only edges.
+Explicit links persist as `links: [{concept, rel}]` in source frontmatter. Targets use qualified names such as `root/reference/adr-example` or `root/projects/gyrus/ticket-003`; dependency arrays and per-link creation metadata are removed. Existing-concept operations require qualified names, while creation keeps a local frontmatter `id`. API results expose the derived `name`. Before switching an existing SQLite graph, use the packaged [gyrus-migrate-sqlite-to-okf skill](packaging/plugins/gyrus/skills/gyrus-migrate-sqlite-to-okf/SKILL.md) to back up and export database-only edges.
 
 #### Step 2b: Install Agent Plugin via Client Marketplace
 
@@ -199,6 +199,8 @@ The Gyrus Agent Plugin package (compliant with the [Agent Plugins Standard 1.0.0
 > 📖 **Full Guide:** For advanced customization and enterprise storage profiles, see the **[Gyrus Installation & Initialization Guide](.gyrus/concepts/root/reference/guide-005-installation-and-initialization.md)**.
 
 Once initialized, AI agents have immediate access to Gyrus CLI commands and OKF frontmatter schema references.
+
+Use the packaged [gyrus-test-lifecycle skill](packaging/plugins/gyrus/skills/gyrus-test-lifecycle/SKILL.md) for agent-led verification of an installed release through CLI, MCP, and HTTP interfaces. It uses temporary localfs/OKF data and public Gyrus commands, without repository source, builds, development tests, or a bundled scripting runtime. The [gyrus-migrate-sqlite-to-okf skill](packaging/plugins/gyrus/skills/gyrus-migrate-sqlite-to-okf/SKILL.md) guides legacy relationship and SQLite graph migration without a Go installation.
 
 By default, Gyrus resolves configuration and storage path in the following order:
 1. **Workspace Config:** `.gyrus.yaml` located in current working directory or any parent repository directory.

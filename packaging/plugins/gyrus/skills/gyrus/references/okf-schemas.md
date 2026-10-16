@@ -58,4 +58,4 @@ Same-state updates are allowed. Preserve finalized ADR/proposal/release-note bod
 
 Normal typed serialization drops unknown top-level fields/comments and trims surrounding body whitespace.
 
-Use `gyrus-migrate-okf` for legacy data. `gyrus sync` neither converts old schemas nor exports database-only edges.
+Use `gyrus-migrate-sqlite-to-okf` for legacy data. `gyrus sync` neither converts old schemas nor exports database-only edges.

@@ -57,6 +57,7 @@ Use this skill whenever you need to resolve architectural context, align with re
 ## 📚 Skill Reference Guides
 
 - 📄 **[OKF Schemas Reference](references/okf-schemas.md)**
+- **[Installed-release lifecycle verification](../gyrus-test-lifecycle/SKILL.md):** Run agent-led CLI, MCP, and UI checks with isolated consumer fixtures, without repository source or development tooling.
 
 
 ## Qualified identity and relationships

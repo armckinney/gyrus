@@ -4,9 +4,9 @@ id: spec-005-composability
 type: specification
 format: markdown
 category: technical
-version: 3
+version: 4
 status: active
-last_updated: 2026-10-16T16:57:36Z
+last_updated: 2026-10-16T18:59:08Z
 last_modified_by: ""
 tenant: root
 ---
@@ -49,7 +49,7 @@ An OKF index requires OKF graph/search. SQLite indexes support SQLite or OKF gra
 
 OKF uses direct collection scans without persistent caches/indexes. Keyword search defaults to ten results; metadata-only browsing is uncapped unless the SDK request supplies a limit. SQLite and PostgreSQL retain their own retrieval semantics. Scope/project derive from canonical concept paths.
 
-Typed source-owned links make graph relationships portable. Before switching an existing SQLite graph, use the packaged gyrus-migrate-okf skill to back up, export, and verify every database-only edge. PostgreSQL migration and legacy blob-layout conversion are outside v1.
+Typed source-owned links make graph relationships portable. Before switching an existing SQLite graph, use the packaged gyrus-migrate-sqlite-to-okf skill to back up, export, and verify every database-only edge. PostgreSQL migration and legacy blob-layout conversion are outside v1.
 
 ## Qualified concepts and minimal links
 

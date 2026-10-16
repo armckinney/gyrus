@@ -4,9 +4,9 @@ id: tech-ref-003-mcp-manual
 type: technical-reference
 format: markdown
 category: technical
-version: 3
+version: 4
 status: active
-last_updated: 2026-10-16T16:56:27Z
+last_updated: 2026-10-16T18:59:19Z
 last_modified_by: ""
 tenant: root
 ---
@@ -43,7 +43,7 @@ Link/unlink persist typed source frontmatter links and use qualified concept nam
 
 Sync validates the provider's authoritative collection without a database in OKF mode. IndexedFiles counts validated concepts, not retained index rows. Invalid-record reports return JSON content with isError=true; fatal failures return tool errors. Invalid concepts and duplicate qualified names fail queries rather than hiding partial results.
 
-Before switching an existing SQLite graph, use the packaged gyrus-migrate-okf skill to back up, export, and verify database-only edges. Change all three provider fields and restart the server afterward. Sync alone cannot export old graph edges.
+Before switching an existing SQLite graph, use the packaged gyrus-migrate-sqlite-to-okf skill to back up, export, and verify database-only edges. Change all three provider fields and restart the server afterward. Sync alone cannot export old graph edges.
 
 ## Resources and prompts
 

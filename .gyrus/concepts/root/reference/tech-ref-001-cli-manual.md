@@ -4,9 +4,9 @@ id: tech-ref-001-cli-manual
 type: technical-reference
 format: markdown
 category: technical
-version: 4
+version: 5
 status: active
-last_updated: 2026-10-16T16:57:36Z
+last_updated: 2026-10-16T18:59:08Z
 last_modified_by: ""
 tenant: root
 ---
@@ -182,7 +182,7 @@ OKF keyword search returns the top ten matches; `gyrus search --query "" --scope
 
 Link/unlink persist source-owned {concept, rel} links with qualified concept names. Missing targets remain valid. Neighbors/traversal operate on persisted relationships. Version/Git/object-precondition conflicts map to exit code 4. Sync scans and validates the authoritative provider; IndexedFiles counts validated concepts. Invalid-record reports remain visible in text/JSON and produce validation exit code 1.
 
-Before switching a SQLite graph, use the packaged gyrus-migrate-okf skill to back up and export database-only edges, prove qualified tuple parity, change all three provider fields, and restart MCP processes. There is no gyrus migrate command, and sync alone cannot export database-only edges.
+Before switching a SQLite graph, use the packaged gyrus-migrate-sqlite-to-okf skill to back up and export database-only edges, prove qualified tuple parity, change all three provider fields, and restart MCP processes. There is no gyrus migrate command, and sync alone cannot export database-only edges.
 
 ## Qualified-name arguments
 

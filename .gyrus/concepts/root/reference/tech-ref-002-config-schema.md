@@ -4,9 +4,9 @@ id: tech-ref-002-config-schema
 type: technical-reference
 format: markdown
 category: technical
-version: 2
+version: 3
 status: active
-last_updated: 2026-10-16T06:40:15Z
+last_updated: 2026-10-16T18:59:08Z
 last_modified_by: ""
 tenant: root
 ---
@@ -59,7 +59,7 @@ No database or DSN is required. Queries scan canonical concepts, reject invalid/
 
 Graph mutations persist typed frontmatter links alongside dependencies. Cooperating local processes use interprocess locks, Git pushes reject conflicts, and cloud writes/deletes require ETag/generation conditions. Unsupported conditional writes fail rather than overwriting unconditionally.
 
-Before changing an existing SQLite configuration, run the packaged gyrus-migrate-okf workflow to preserve database-only graph edges. Keep backups and the old database, verify tuple/audit parity, then switch all three fields and restart MCP processes.
+Before changing an existing SQLite configuration, run the packaged gyrus-migrate-sqlite-to-okf workflow to preserve database-only graph edges. Keep backups and the old database, verify tuple/audit parity, then switch all three fields and restart MCP processes.
 
 ## Configuration discovery
 

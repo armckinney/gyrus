@@ -4,9 +4,9 @@ id: guide-002-setup-onboarding
 type: guide
 format: markdown
 category: technical
-version: 2
+version: 3
 status: active
-last_updated: 2026-10-16T06:40:16Z
+last_updated: 2026-10-16T18:59:08Z
 last_modified_by: ""
 tenant: root
 ---
@@ -38,7 +38,7 @@ Concepts live under concepts/<tenant>/reference/ or concepts/<tenant>/projects/<
 
 ## Existing SQLite installations
 
-Use the packaged gyrus-migrate-okf skill before changing secondary providers. Pause writers; inventory the complete SQLite graph and concept collection; make consistent database, concept, and config backups; export source-owned typed links; compare edge tuples and audit metadata; switch all three providers together; restart MCP processes. Keep the original database and backups. This first migration workflow does not export PostgreSQL or convert legacy blob layouts.
+Use the packaged gyrus-migrate-sqlite-to-okf skill before changing secondary providers. Pause writers; inventory the complete SQLite graph and concept collection; make consistent database, concept, and config backups; export source-owned typed links; compare edge tuples and audit metadata; switch all three providers together; restart MCP processes. Keep the original database and backups. This first migration workflow does not export PostgreSQL or convert legacy blob layouts.
 
 ## Agent integrations
 

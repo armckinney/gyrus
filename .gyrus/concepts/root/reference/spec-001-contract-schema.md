@@ -4,14 +4,12 @@ id: spec-001-contract-schema
 type: specification
 format: markdown
 category: technical
-version: 5
+version: 7
 status: active
-last_updated: 2026-10-16T18:32:57Z
+last_updated: 2026-10-16T18:59:19Z
 last_modified_by: ""
 tenant: root
 ---
-
-# Gyrus concept schema contract
 
 This specification describes the implemented Gyrus contract for Markdown concepts with YAML frontmatter and supported JSON concept envelopes. Typed relationship metadata, required fields, lifecycle rules, and tenant/project topology are Gyrus extensions to [upstream Open Knowledge Format](https://github.com/GoogleCloudPlatform/open-knowledge-format/blob/main/SPEC.md). Upstream OKF expresses concept relationships through ordinary Markdown links; it does not mandate the Gyrus-specific schema below.
 
@@ -138,9 +136,9 @@ Normal Markdown reading/writing trims surrounding body whitespace, and serializa
 
 Persisted schema templates override embedded templates for schema retrieval. Template validation checks parseability and matching type when supplied; template placeholders/custom headings do not replace the code-defined concept validator or add new supported concept types.
 
-`migration.ConvertLinks`, owned by the `gyrus-migrate-okf` skill under `packaging/plugins/gyrus/skills/gyrus-migrate-okf/scripts/migration`, is a source-checkout local conversion path, separate from strict runtime readers. It inventories the entire collection, merges legacy dependencies as `depends_on` with old/new typed links, deduplicates qualified tuples, and removes link creation metadata. It resolves short targets only when unique; ambiguous or absent short targets require explicit `NameMappings`. Already-qualified missing targets remain valid for OKF.
+The packaged `gyrus-migrate-sqlite-to-okf` skill provides an agent-led local conversion procedure separate from strict runtime readers. It requires installed Gyrus plus available file tools, and a SQLite-capable tool when database-only graph edges exist; it requires no Go installation or source checkout. The agent inventories the entire collection, merges legacy dependencies as `depends_on` with old/new typed links and SQLite edges, deduplicates qualified tuples, and removes link creation metadata. Short targets resolve only when unique; ambiguous or absent short targets require explicit recorded mappings. Already-qualified missing targets remain valid for OKF.
 
-Applying changed records requires a backup directory outside the concept collection and quiescent writers. Conversion backs up concepts and the supplied configuration, preserves exact body bytes and statuses, increments each changed source revision once, and verifies resulting tuple/body/status/revision parity. A repeat conversion plans zero updates. The SQLite export helper separately preserves database-only relationships as the same minimal qualified links and ignores old edge creation metadata. Old database identity schemas require explicit export/rebuild, not automatic runtime reuse; sync alone performs neither conversion nor graph export.
+Applying changed records requires backups outside the concept collection, quiescent writers, and a fully converted and validated staging copy. The procedure preserves exact body bytes and statuses, increments each changed source revision once, and verifies tuple/body/status/revision parity plus zero planned changes on repeat. SQLite export uses a consistent database snapshot and ignores old edge creation metadata. Missing database tooling blocks export rather than dropping edges. Old database identity schemas require explicit export/rebuild, not automatic runtime reuse; sync alone performs neither conversion nor graph export.
 
 ## Implementation references
 
@@ -148,4 +146,4 @@ Applying changed records requires a backup directory outside the concept collect
 - [Structural validation](../../../../internal/domain/okf/validator.go), [qualified names](../../../../internal/domain/okf/name.go), and [collection locations/scans](../../../../internal/domain/okf/collection.go)
 - [Frontmatter order](../../../../internal/format/frontmatter.go), [relationship-shape checks](../../../../internal/format/relationships.go), and [Markdown serialization](../../../../internal/format/okf.go)
 - [Lifecycle transitions](../../../../internal/domain/lifecycle/engine.go) and [file-backed patch rules](../../../../internal/domain/lifecycle/patch.go)
-- [OKF graph persistence](../../../../internal/provider/graph/okf/graph.go) and [legacy conversion](../../../../packaging/plugins/gyrus/skills/gyrus-migrate-okf/scripts/migration/links.go)
+- [OKF graph persistence](../../../../internal/provider/graph/okf/graph.go) and [legacy conversion](../../../../packaging/plugins/gyrus/skills/gyrus-migrate-sqlite-to-okf/references/sqlite-to-okf.md)

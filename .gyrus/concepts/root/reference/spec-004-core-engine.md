@@ -4,14 +4,12 @@ id: spec-004-core-engine
 type: specification
 format: markdown
 category: technical
-version: 4
+version: 6
 status: active
-last_updated: 2026-10-16T18:32:57Z
+last_updated: 2026-10-16T18:59:08Z
 last_modified_by: ""
 tenant: root
 ---
-
-# Core SDK provider architecture
 
 Gyrus composes ConceptStore, IndexStore, GraphStore, and SearchProvider through the application container. Storage is constructed once, then injected into the selected providers. Effective provider validation runs before opening storage/database/network resources.
 
@@ -45,4 +43,4 @@ Creation accepts a local ID and tenant/scope/project. All existing-concept opera
 
 ## Shared package boundaries
 
-Provider contracts remain in pkg/gyrus. internal/persistence/fileio supplies local locking, safe paths, and atomic file replacement; internal/persistence/db manages shared SQLite/PostgreSQL connections. These are concrete infrastructure packages, not providers or a second persistence interface. internal/provider/shared/okf supplies scanner validation, snapshots, filtering, and ranking used by the independent OKF adapters. Conversion code and its tests belong to the gyrus-migrate-okf skill under packaging/plugins/gyrus/skills/gyrus-migrate-okf/scripts/migration; application/runtime packages do not import it. All packages remain within the existing Go module.
+Provider contracts remain in pkg/gyrus. internal/persistence/fileio supplies local locking, safe paths, and atomic file replacement; internal/persistence/db manages shared SQLite/PostgreSQL connections. These are concrete infrastructure packages, not providers or a second persistence interface. internal/provider/shared/okf supplies scanner validation, snapshots, filtering, and ranking used by the independent OKF adapters. Legacy conversion is an agent-led procedure in the packaged gyrus-migrate-sqlite-to-okf skill, using installed Gyrus and available file/database tools. It has no Go helper package or runtime imports and does not require a Go installation or source checkout. The packaged gyrus-test-lifecycle skill likewise verifies public CLI, MCP, and HTTP behavior through agent instructions without a bundled language runtime.

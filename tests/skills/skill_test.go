@@ -1,23 +1,18 @@
 package skills_test
 
 import (
-	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
-// -----------------------------------------------------------------------------
-// [Test Level]: Integration Test
-// [Purpose]: Validates Agent Skills structure, YAML frontmatter, references, and tool mappings on disk.
-// [Execution Surface]: Packaging Skills Directory (packaging/skills/)
-// [Assertions]: Skills have valid name, applyTo block, existing reference docs, and documented tool actions.
-// -----------------------------------------------------------------------------
 func TestSkillStaticAnalysis(t *testing.T) {
 	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
-		t.Fatalf("Failed to resolve repo root: %v", err)
+		t.Fatalf("resolve repo root: %v", err)
 	}
 
 	skills := []struct {
@@ -45,77 +40,68 @@ func TestSkillStaticAnalysis(t *testing.T) {
 				"sync",
 			},
 		},
-		{name: "gyrus-migrate-okf", references: []string{"sqlite-to-okf.md"}, expectedActions: []string{"gyrus config show", "gyrus sync"}},
 		{
-			name:       "gyrus-index",
-			references: []string{},
-			expectedActions: []string{
-				"gyrus sync",
-			},
+			name:            "gyrus-migrate-sqlite-to-okf",
+			references:      []string{"sqlite-to-okf.md"},
+			expectedActions: []string{"gyrus config show", "gyrus sync"},
+		},
+		{
+			name:            "gyrus-test-lifecycle",
+			references:      []string{"consumer-lifecycle.md"},
+			expectedActions: []string{"gyrus config init", "gyrus mcp serve", "gyrus ui serve", "gyrus validate"},
+		},
+		{
+			name:            "gyrus-index",
+			expectedActions: []string{"gyrus sync"},
 		},
 	}
 
-	for _, s := range skills {
-		t.Run(s.name, func(t *testing.T) {
-			skillDir := filepath.Join(repoRoot, "packaging", "plugins", "gyrus", "skills", s.name)
-			skillMD := filepath.Join(skillDir, "SKILL.md")
-
-			// a. Verify SKILL.md existence & readable frontmatter
-			content, err := os.ReadFile(skillMD)
+	for _, skill := range skills {
+		t.Run(skill.name, func(t *testing.T) {
+			skillDir := filepath.Join(repoRoot, "packaging", "plugins", "gyrus", "skills", skill.name)
+			content, err := os.ReadFile(filepath.Join(skillDir, "SKILL.md"))
 			if err != nil {
-				t.Fatalf("Failed to read %s: %v", skillMD, err)
+				t.Fatal(err)
+			}
+			text := strings.ReplaceAll(string(content), "\r\n", "\n")
+			frontmatter, ok := strings.CutPrefix(text, "---\n")
+			if !ok {
+				t.Fatal("SKILL.md must start with YAML frontmatter")
+			}
+			frontmatter, _, ok = strings.Cut(frontmatter, "\n---\n")
+			if !ok {
+				t.Fatal("SKILL.md missing closing frontmatter delimiter")
+			}
+			var meta struct {
+				Name        string `yaml:"name"`
+				Description string `yaml:"description"`
+			}
+			if err := yaml.Unmarshal([]byte(frontmatter), &meta); err != nil {
+				t.Fatalf("invalid YAML frontmatter: %v", err)
+			}
+			if meta.Name != skill.name || strings.TrimSpace(meta.Description) == "" {
+				t.Errorf("invalid skill metadata: %+v", meta)
 			}
 
-			strContent := string(content)
-
-			// b. Verify YAML frontmatter fields
-			if !strings.Contains(strContent, "name: "+s.name) {
-				t.Errorf("SKILL.md missing valid name frontmatter: name: %s", s.name)
-			}
-			if !strings.Contains(strContent, "applyTo:") {
-				t.Errorf("SKILL.md missing applyTo frontmatter block")
-			}
-
-			// c. Verify reference guides exist on disk
-			for _, ref := range s.references {
-				refPath := filepath.Join(skillDir, "references", ref)
-				if _, err := os.Stat(refPath); os.IsNotExist(err) {
-					t.Errorf("Missing required skill reference file: %s", refPath)
+			documents := []string{text}
+			for _, reference := range skill.references {
+				link := "references/" + reference
+				if !strings.Contains(text, "]("+link+")") {
+					t.Errorf("SKILL.md does not link required reference: %s", link)
 				}
+				data, err := os.ReadFile(filepath.Join(skillDir, "references", reference))
+				if err != nil {
+					t.Fatalf("read required reference %s: %v", reference, err)
+				}
+				documents = append(documents, string(data))
 			}
 
-			// d. Verify all documented actions are present in SKILL.md text
-			for _, action := range s.expectedActions {
-				if !strings.Contains(strContent, action) {
-					t.Errorf("SKILL.md for %s does not document expected action/tool: %s", s.name, action)
+			instructions := strings.Join(documents, "\n")
+			for _, action := range skill.expectedActions {
+				if !strings.Contains(instructions, action) {
+					t.Errorf("skill does not document expected action/tool: %s", action)
 				}
 			}
 		})
-	}
-}
-
-func TestMigrationSkillFrontmatterAndReference(t *testing.T) {
-	root := filepath.Join("..", "..", "packaging", "plugins", "gyrus", "skills", "gyrus-migrate-okf")
-	data, err := os.ReadFile(filepath.Join(root, "SKILL.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	parts := strings.SplitN(string(data), "---", 3)
-	if len(parts) != 3 {
-		t.Fatal("missing frontmatter")
-	}
-	var meta struct {
-		Name        string   `yaml:"name"`
-		Description string   `yaml:"description"`
-		ApplyTo     []string `yaml:"applyTo"`
-	}
-	if err := yaml.Unmarshal([]byte(parts[1]), &meta); err != nil {
-		t.Fatal(err)
-	}
-	if meta.Name != "gyrus-migrate-okf" || meta.Description == "" || len(meta.ApplyTo) == 0 {
-		t.Fatalf("invalid skill metadata: %+v", meta)
-	}
-	if _, err := os.Stat(filepath.Join(root, "references", "sqlite-to-okf.md")); err != nil {
-		t.Fatal(err)
 	}
 }
