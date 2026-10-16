@@ -100,8 +100,7 @@ graph LR
     %% Client and Adapter Relations
     CICD -->|invokes| CLI
     AgentTools -->|loads plugin| Plugin
-    Plugin -->|invokes| CLI
-    Plugin -->|registers| MCP
+    Plugin -->|uses| MCP
     CLI -->|implements| CoreSDK
     MCP -->|implements| CoreSDK
     Humans -->|invokes| Apps
@@ -156,26 +155,30 @@ gyrus config show
 ```
 Generates `.gyrus.yaml` in the workspace root (or `~/.gyrus.yaml` when using `--global`) with your desired storage profile (`localfs`, `git`, `s3`, `azure_blob`, `gcs`, or `postgres`) and security boundaries (`owner_group`). Use `--force` to overwrite an existing configuration.
 
-#### Step 2b: Install Agent Plugin & Register MCP Server
-```bash
-gyrus client install --target antigravity
-```
-Installs the Gyrus Agent Plugin package (compliant with the [Agent Plugins Standard 1.0.0](https://agent-plugins.org/)) into your project or user environment, equipping the unified Gyrus skill (`skills/gyrus/SKILL.md`), instructions (`rules/AGENTS.md`), and registering stdio MCP servers for your target AI coding assistant (`antigravity`, `claude`, `codex`, or `copilot`).
+#### Step 2b: Install Agent Plugin via Client Marketplace
 
-##### Direct Plugin Installation from GitHub Repository (Claude Code & OpenAI Codex)
-Install the plugin directly via Git-backed marketplace discovery without cloning manually:
+Install Gyrus directly into your AI coding assistant using native harness plugin commands:
 
 ```bash
-# Claude Code
-claude plugin marketplace add armckinney/gyrus
-claude plugin install gyrus@gyrus
-
 # OpenAI Codex CLI
 codex plugin marketplace add armckinney/gyrus
-codex plugin install gyrus@gyrus
+codex plugin add gyrus@armckinney
+
+# Google Antigravity (AGY)
+agy plugin install https://github.com/armckinney/gyrus/tree/main/packaging/plugins/gyrus
+
+# GitHub Copilot CLI
+copilot plugin marketplace add armckinney/gyrus
+copilot plugin install gyrus@armckinney
+
+# Claude Code
+claude plugin marketplace add armckinney/gyrus
+claude plugin install gyrus@armckinney
 ```
 
-> 📖 **Full Guide:** For advanced customization, multi-client options, global user-home installation (`--global`), Docker execution (`--mode docker`), and enterprise storage profiles, see the **[Gyrus Installation & Initialization Guide](.gyrus/docs/root/reference/guide-005-installation-and-initialization.md)**.
+The Gyrus Agent Plugin package (compliant with the [Agent Plugins Standard 1.0.0](https://agent-plugins.org/)) equips your coding harness with Gyrus context resolution skills (`skills/gyrus/SKILL.md`), governance instructions (`rules/AGENTS.md`), and pre-configured stdio Model Context Protocol (MCP) server integration.
+
+> 📖 **Full Guide:** For advanced customization and enterprise storage profiles, see the **[Gyrus Installation & Initialization Guide](.gyrus/docs/root/reference/guide-005-installation-and-initialization.md)**.
 
 Once initialized, AI agents have immediate access to Gyrus CLI commands and OKF frontmatter schema references.
 

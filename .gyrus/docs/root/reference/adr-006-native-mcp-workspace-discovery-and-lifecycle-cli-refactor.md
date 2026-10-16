@@ -5,10 +5,10 @@ category: architecture
 type: adr
 format: markdown
 owner_group: root
-version: 2
-status: accepted
-last_modified_by: ""
-last_updated: 2026-09-30T22:42:04Z
+version: 3
+status: superseded
+last_modified_by: "antigravity"
+last_updated: 2026-10-16T01:24:00Z
 ---
 
 # ADR 006: Native MCP Architecture, Multi-Tier Workspace Discovery, and Client Lifecycle CLI Refactor

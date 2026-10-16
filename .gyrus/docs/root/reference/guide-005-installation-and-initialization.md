@@ -1,65 +1,63 @@
 ---
 id: guide-005-installation-and-initialization
-title: Gyrus Installation & Workspace Initialization Guide
-category: technical
+title: Gyrus Installation & Initialization Guide
+category: operations
 type: guide
 format: markdown
 owner_group: root
-version: 5
+version: 4
 status: active
 last_modified_by: antigravity
-last_updated: 2026-10-06T09:15:00Z
+last_updated: 2026-10-16T01:25:00Z
 tags:
   - installation
   - initialization
   - setup
+  - quickstart
+  - marketplace
   - plugins
-  - mcp
-  - agent-skills
 dependencies:
   - prd-001-specification-roadmap
-  - adr-001-oop-core-refactoring-and-package-reorganization
-  - adr-004-agent-plugin-packaging-distribution-and-init-revamp
-  - guide-003-agent-skills-setup
+  - adr-008-native-client-plugin-marketplace-distribution
 ---
 
-# Gyrus Installation & Workspace Initialization Guide
+# Gyrus Installation & Initialization Guide
 
-This guide covers installing the Gyrus CLI binary on your machine and initializing your workspace or user environment with custom configurations, Agent Plugins, and Model Context Protocol (MCP) server registrations.
+This guide walks you through installing the `gyrus` standalone binary, initializing your workspace configuration (`.gyrus.yaml`), and installing the Gyrus Agent Plugin into your AI coding assistant via native harness marketplaces.
 
 ---
 
-## 📥 1. Installing the Gyrus CLI
+## 📦 1. Installing the Gyrus Binary
 
-Choose one of the following methods to install the `gyrus` executable into your system `$PATH`:
+### From Binary Release / Source Build
 
-### Option A: One-Liner Installer Script (Recommended)
 ```bash
-curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/packaging/install.sh | bash
-```
-This automatically detects your OS (`linux`, `darwin`, `windows`) and architecture (`amd64`, `arm64`), downloads the latest binary release from GitHub, and places `gyrus` into `/usr/local/bin` (or `~/.local/bin`).
-
-### Option B: Build from Source via `go install`
-```bash
-go install github.com/armckinney/gyrus/cmd/gyrus@latest
+git clone https://github.com/armckinney/gyrus.git
+cd gyrus
+make build
 ```
 
-### Option C: Manual Binary Release Download
-Download the pre-compiled binary tarball for your platform directly from [Gyrus GitHub Releases](https://github.com/armckinney/gyrus/releases/latest).
+Verify the installation:
+
+```bash
+./gyrus --help
+```
+
+Ensure the compiled `gyrus` executable is moved to your system `PATH` (e.g. `/usr/local/bin/gyrus`) so client harnesses can launch it for Model Context Protocol (MCP) interactions.
 
 ---
 
 ## 🚀 2. Two-Step Workspace Initialization
 
-Gyrus cleanly decouples workspace repository configuration from client tool distribution using explicit subcommands:
+Gyrus cleanly decouples workspace repository configuration from client tool distribution:
 
 ```mermaid
 graph TD
-    A["Workspace & Agent Setup"] --> B{"Choose Workflow"}
-    B --> C["gyrus config init [--global]\n(Workspace or Global Setup)"]
-    B --> D["gyrus client install --target <target>\n(Agent Plugin & MCP Registration)"]
+    A["Workspace & Agent Setup"] --> B{"Setup Sequence"}
+    B --> C["1. gyrus config init [--global]\n(Storage & Persistence Profile)"]
+    B --> D["2. Native Harness Plugin Install\n(Codex, Antigravity, Copilot, Claude)"]
     C --> E[".gyrus.yaml or ~/.gyrus.yaml"]
-    D --> F[".agents/plugins/gyrus + Client MCP JSON"]
+    D --> F["Remote Marketplace Installation\n(gyrus@armckinney)"]
 ```
 
 ---
@@ -99,61 +97,61 @@ gyrus config init --profile vector    # Semantic Vector Search Profile
 ```
 
 ### Required Cloud Storage Permissions
-When using cloud object storage (`remote-s3`, `remote-azure`, `remote-gcs`), ensure your environment has appropriate data plane access:
-- **AWS S3 (`remote-s3`):** IAM policy must grant `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`, and `s3:ListBucket`.
-- **Azure Blob (`remote-azure`):** Azure identity must be assigned `Storage Blob Data Contributor` or `Storage Blob Data Owner`.
-- **Google Cloud Storage (`remote-gcs`):** Service account must be assigned `roles/storage.objectAdmin` or `roles/storage.objectUser`.
+When using cloud object storage (`s3`, `azure`, `gcs`), ensure your environment has appropriate data plane access:
+- **AWS S3 (`s3`):** IAM policy must grant `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`, and `s3:ListBucket`.
+- **Azure Blob (`azure`):** Azure identity must be assigned `Storage Blob Data Contributor` or `Storage Blob Data Owner`.
+- **Google Cloud Storage (`gcs`):** Service account must be assigned `roles/storage.objectAdmin` or `roles/storage.objectUser`.
 
 ---
 
-## 🤖 4. Installing Agent Plugin & Registering MCP (`gyrus client install`)
+## 🤖 4. Installing Agent Plugin via Harness Marketplace
 
-Installs the packaged Gyrus Agent Plugin and registers the MCP server configuration for an explicit AI coding assistant:
+Install Gyrus directly into your AI coding assistant using native harness plugin commands:
 
-```bash
-gyrus client install --target antigravity
-```
-
-### Flag Options
-
-| Flag | Shorthand | Description | Default |
-| :--- | :--- | :--- | :--- |
-| `--target` | `-t` | **Required.** Client target: `antigravity`, `claude`, `codex`, or `copilot`. | None |
-| `--mode` | `-m` | Execution mode: `local` (local binary) or `container` (containerized Docker). | `local` |
-| `--mcp-container-image` | | Docker container image tag for containerized mode. | `ghcr.io/armckinney/gyrus:latest` |
-| `--global` | `-g` | Install into user home runtime path rather than repository workspace. | `false` |
-| `--plugin-dir` | | Custom target directory for the extracted plugin bundle. | Derived per target |
-| `--no-hooks` | | Skip installing agent lifecycle hooks in the plugin. | `false` |
-
-### Target Platform Mapping
-
-| Platform Target | Flag Example | Generated Plugin Location | Registered MCP Config File |
-| :--- | :--- | :--- | :--- |
-| **Google Antigravity** | `gyrus client install -t antigravity` | `.agents/plugins/gyrus/` *(Global: `~/.gemini/config/plugins/gyrus/`)* | Discovered directly from plugin `mcp_config.json` |
-| **GitHub Copilot** | `gyrus client install -t copilot` | `.agents/plugins/gyrus/` | `.vscode/mcp.json` |
-| **OpenAI Codex** | `gyrus client install -t codex` | `.agents/plugins/gyrus/` | `.codex/mcp.json` |
-| **Claude Desktop / Code** | `gyrus client install -t claude` | `marketplace.json` / `.claude-plugin` | `.claude/mcp.json` (or `~/.config/Claude/claude_desktop_config.json` with `-g`) |
-
-#### Direct Plugin Installation from GitHub Repository (Claude Code & OpenAI Codex)
-You can install the Gyrus plugin directly from this GitHub repository into Claude Code or OpenAI Codex using their native Git marketplace discovery without manual cloning:
+### OpenAI Codex CLI
 
 ```bash
-# Claude Code
-claude plugin marketplace add armckinney/gyrus
-claude plugin install gyrus@gyrus
-
-# OpenAI Codex CLI
+# Register the GitHub repository as a remote marketplace
 codex plugin marketplace add armckinney/gyrus
-codex plugin install gyrus@gyrus
+
+# Install the gyrus plugin
+codex plugin add gyrus@armckinney
 ```
 
-## 🎛️ 5. Configuring & Enabling/Disabling Agent Automation & Hooks
+### Google Antigravity (AGY)
 
-Gyrus installs lifecycle hooks (`PreInvocation` and `Stop`) into the Agent Plugin bundle to automate context retrieval and encourage documentation compliance without nagging on routine code changes.
+```bash
+# Install directly from repository plugin path
+agy plugin install https://github.com/armckinney/gyrus/tree/main/packaging/plugins/gyrus
+```
+
+For workspace development inside the Gyrus repository, Antigravity automatically discovers local plugins via `.agents/plugins.json`.
+
+### GitHub Copilot CLI
+
+```bash
+# Register marketplace and install plugin
+copilot plugin marketplace add armckinney/gyrus
+copilot plugin install gyrus@armckinney
+```
+
+### Anthropic Claude Code
+
+```bash
+# Register marketplace and install plugin
+claude plugin marketplace add armckinney/gyrus
+claude plugin install gyrus@armckinney
+```
+
+---
+
+## 🎛️ 5. Configuring Automation & Lifecycle Hooks
+
+Gyrus packages lifecycle hooks (`PreInvocation` and `Stop`) into the Agent Plugin bundle to automate context retrieval and encourage documentation compliance without nagging on routine code changes.
 
 You can configure, enable, or disable this functionality at multiple levels:
 
-### 1. In Workspace Configuration (`.gyrus.yaml`)
+### In Workspace Configuration (`.gyrus.yaml`)
 To customize or disable hooks for your repository, add the `automation` block:
 
 ```yaml
@@ -169,21 +167,8 @@ automation:
     - "node_modules/**"
 ```
 
-### 2. Temporary Shell Override (Environment Variable)
+### Temporary Shell Override (Environment Variable)
 To temporarily disable all hook execution without modifying configuration:
 ```bash
 export GYRUS_HOOKS_ENABLED=false
 ```
-
-### 3. Installation Without Hooks
-To install the plugin bundle without generating `hooks.json`:
-```bash
-gyrus client install --target antigravity --no-hooks
-```
-
-
----
-
-## 🔒 5. Safe Non-Destructive Config Merging
-
-When updating client MCP configuration files (`.vscode/mcp.json`, `.codex/mcp.json`, etc.), Gyrus non-destructively parses existing JSON content and adds or updates only the `"gyrus"` server entry. All other pre-existing user servers (e.g. `sqlite`, `github`, `fetch`) remain completely untouched.
