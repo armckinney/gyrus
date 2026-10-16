@@ -1,0 +1,21 @@
+{
+  "name": "armckinney",
+  "interface": {
+    "displayName": "armckinney Codex Marketplace"
+  },
+  "plugins": [
+    {
+      "name": "gyrus",
+      "source": {
+        "source": "local",
+        "path": "./packaging/plugins/gyrus"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "NONE"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
+

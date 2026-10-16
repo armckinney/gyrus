@@ -5,8 +5,10 @@
       "args": [
         "mcp",
         "serve"
-      ]
+      ],
+      "env": {
+        "GYRUS_WORKSPACE": "${workspaceFolder}"
+      }
     }
   }
 }
-
