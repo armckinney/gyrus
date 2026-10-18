@@ -13,7 +13,7 @@
 
 **Gyrus** is an open-source **Context Control Plane** and knowledge graph designed to bridge the gap between human engineering teams and AI coding assistants (such as Cursor, Claude Code, GitHub Copilot, and custom agents). Built in Go, Gyrus organizes codebase context, Architecture Design Records (ADRs), specifications, PRDs, runbooks, and guidelines using the **Open Knowledge Format (OKF)** standard.
 
-Rather than replacing your existing tools or forcing a migration to a proprietary cloud platform, Gyrus coordinates your existing infrastructure—Git repositories, documentation platforms (e.g. Confluence), local filesystems, search engines, and vector databases—under a single, provider-neutral context model.
+Gyrus coordinates Git repositories, local filesystems, cloud object storage, PostgreSQL, lexical search, and concept relationships under a provider-neutral context model.
 
 ---
 
@@ -31,7 +31,7 @@ Rather than replacing your existing tools or forcing a migration to a proprietar
 
 * **Not a replacement for Git, Confluence, or documentation platforms** — Gyrus coordinates and materializes context across them.
 * **Not a coding agent or agent orchestration framework** — Gyrus provides the governed context layer that any coding or research agent consumes.
-* **Not a proprietary vector database or locked-in wiki** — Gyrus uses search indexes, vector embeddings, and knowledge graphs as derived projections while canonical Markdown artifacts remain the source of truth.
+* **Portable knowledge** — Canonical Markdown concepts remain the source of truth for file-backed storage; lexical search and explicit graph relationships provide retrieval without an embedding service.
 * **Not a replacement for MCP or Agent Skills** — Gyrus leverages MCP and Agent Skills as runtime transport and behavioral integration adapters.
 
 ---
@@ -58,7 +58,7 @@ Rather than replacing your existing tools or forcing a migration to a proprietar
 | **Skills + Documentation MCP** | Low-cost way to guide agents toward structured docs | Relies on each agent to consistently follow instructions; high prompt token bloat | Converts recommended agent behavior into an enforceable Go core engine & single-source MCP |
 | **Agent Memory Platforms** *(e.g. Mem0)* | Persistent facts, session memories, and user state | Optimized for individual agents rather than shared, governed, human-readable knowledge | Preserves coherent Markdown artifacts and separates temporary memory from trusted knowledge |
 | **Repository-Local Files** | Version-controlled, portable, close to the code | Limited global discovery, cross-repository reuse, & central governance | Combines local repository ownership with global context inheritance and unified indexing |
-| **Vector DBs & RAG Frameworks** *(e.g. Pinecone, Chroma)* | High-dimensional semantic similarity search | Raw text chunks lack contract boundaries, explicit edges (`depends_on`), or state governance | Uses search/vector/graph DBs as replaceable derived indexes beneath a governed context model |
+| **Vector DBs & RAG Frameworks** *(e.g. Pinecone, Chroma)* | High-dimensional semantic similarity search | Raw text chunks lack contract boundaries, explicit edges (`depends_on`), or state governance | Provides governed concepts, lexical search, and explicit relationships; semantic search is deferred to future backend work |
 | **Gyrus Context Engine** | **Shared, governed, portable context across humans & heterogeneous AI agents** | *Complements existing tools rather than replacing them* | **Provides canonical OKF contracts, context resolution, provider neutrality, & zero-infra local/cloud scale** |
 
 > 📖 *For a complete strategic comparison and deep-dive market analysis, see the official PRD: [Gyrus Product Value Proposition & Strategic Positioning](.gyrus/concepts/root/reference/prd-002-value-proposition-positioning.md).*
@@ -89,7 +89,7 @@ graph LR
     subgraph Services ["Core Services & Provider Drivers"]
         IndexSvc["Concept Index Service\n\nProviders:\n- OKF\n- PostgreSQL"]
         GraphSvc["Knowledge Graph Service\n\nProviders:\n- OKF\n- PostgreSQL"]
-        SearchSvc["Search Service\n\nProviders:\n- OKF keyword scan\n- PostgreSQL full-text search\n- Vector search"]
+        SearchSvc["Search Service\n\nProviders:\n- OKF keyword scan\n- PostgreSQL full-text search"]
         PersistSvc["Concept Persistence Service\n\nProviders:\n- localfs\n- Git Repo (GitHub, Bitbucket)\n- Blob Storage (S3, Azure SA)\n- PostgreSQL"]
     end
 
@@ -153,9 +153,9 @@ gyrus config init --global
 # Inspect the resolved configuration at any time
 gyrus config show
 ```
-Generates `.gyrus.yaml` in the workspace root (or `~/.gyrus.yaml` when using `--global`) with your desired profile (`local`, `git`, `blob`, `s3`, `azure`, `gcs`, `postgres`, or `vector`) and tenant boundary (`tenant`). Use `--force` to overwrite an existing configuration.
+Generates `.gyrus.yaml` in the workspace root (or `~/.gyrus.yaml` when using `--global`) with your desired profile (`local`, `git`, `blob`, `s3`, `azure`, `gcs`, or `postgres`) and tenant boundary (`tenant`). Use `--force` to overwrite an existing configuration. Unsupported profiles fail before writing files.
 
-File-backed profiles default to direct-scan OKF indexing, graph relationships, and search with no database. Keyword searches return the top 10 matches; empty-query browsing returns all metadata matches. PostgreSQL and vector profiles remain available.
+File-backed profiles default to direct-scan OKF indexing, graph relationships, and search with no database. Keyword searches return the top 10 matches; empty-query browsing returns all metadata matches. PostgreSQL provides native full-text search. Vector search, its profile, and embedding configuration have been removed; legacy vector settings fail explicitly.
 
 ```yaml
 tenant: root
@@ -173,9 +173,11 @@ search:
 
 Explicit links persist as `links: [{concept, rel}]` in source frontmatter. Targets use qualified names such as `root/reference/adr-example` or `root/projects/gyrus/ticket-003`; dependency arrays and per-link creation metadata are removed. Existing-concept operations require qualified names, while creation keeps a local frontmatter `id`. API results expose the derived `name`. Before switching an existing SQLite graph, use the packaged [gyrus-migrate-sqlite-to-okf skill](packaging/plugins/gyrus/skills/gyrus-migrate-sqlite-to-okf/SKILL.md) to back up and export database-only edges.
 
-SQLite index/graph/search providers and the CLI/MCP sync operation have been removed. OKF reads concepts and links directly from storage. The shared SQLite persistence package remains available for future cache work. The vector profile uses OKF index/graph and lexical fallback.
+SQLite index/graph/search providers and the CLI/MCP sync operation have been removed. OKF reads concepts and links directly from storage. The shared SQLite persistence package remains available for future cache work. Semantic search and vectorization are deferred to future backend work.
 
 Keyword search defaults to ten results. CLI `--max-results` and MCP `max_results` pass positive limits through to the selected provider; empty-query metadata browsing is unlimited unless a positive limit is supplied. PostgreSQL search applies the same tenant, scope, and project filters.
+
+The UI graph expands outgoing links only from concepts visible in its active scope. Immediate external targets appear as display-only ghost nodes, with deterministic node/edge ordering. Edge-query failures return an error instead of a partial graph. PostgreSQL stale updates use the shared concurrency error and CLI exit code 4.
 
 #### Step 2b: Install Agent Plugin via Client Marketplace
 
@@ -221,7 +223,8 @@ Create an Architecture Design Record (ADR):
   --title "Use OKF for portable knowledge" \
   --category "architecture" \
   --type "adr" \
-  --owner-group "platform" \
+  --tenant "root" \
+  --scope "reference" \
   --content "We choose direct-scan OKF for portable knowledge and keyword search."
 ```
 

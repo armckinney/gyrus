@@ -15,6 +15,8 @@ gyrus search --query '' --scope all --max-results 0 --json
 
 Require localfs storage inside the private workspace, OKF index/graph/search, and zero initial concepts. Require that CLI help and MCP tools expose no sync command/tool. SQLite index/graph/search configuration must fail explicitly before data writes. Save the generated configuration for a final byte comparison. Do not copy customer configuration or data. Inspect `--help` for create/update/search/schema/link/unlink/archive/validate, `mcp serve`, and `ui serve` as needed.
 
+In separate disposable directories, verify `config init --profile vector` and an unknown profile fail without creating/replacing configuration. Verify configurations with `search.provider: vector` or any top-level `vector:` section (including empty/null) fail before storage access. Use copies of private fixture configurations for these rejection checks; keep the main test configuration unchanged.
+
 ## 2. Schema and interface interoperability
 
 List embedded schemas and save `schema get guide --json`. Set a private override with `schema set guide --content '<valid guide template with a unique marker>' --json` and read it back.
@@ -58,6 +60,8 @@ MCP traversal from the project guide at depth 3 must finish despite the cycle/se
 ## 5. UI, direct edits, and restart
 
 Start an owned `gyrus ui serve --config <private-config> --host 127.0.0.1 --port <available-port>`. Use a browser or available HTTP tool, bypassing proxies for loopback. Poll readiness with a bounded deadline. Require successful HTTP responses and meaningful content at `/`, `/concepts`, `/graph`, `/search?q=updatedonlymarker`, `/concepts/lifecycle/reference/guide-reference`, and `/api/graph`. Graph node IDs must be qualified and include the missing target; graph edges must match the five stored edges. Concept page must render the body marker.
+
+Add a private graph boundary fixture: a visible reference concept points to a concept in another project, which points onward to a third name. The UI graph must show the visible source's edge and the immediate target as a ghost; it must not show the hidden source's outgoing edge or body/title metadata. Repeat the same HTTP request and require byte-identical node/edge ordering. Include these fixtures in archive cleanup. Perform this check separately from the five-edge baseline assertions.
 
 Get the reference's returned filepath and confirm it is inside private storage. Replace only body marker `updatedonlymarker` with `externaleditmarker` using file-edit tools. Without sync/restart, require running MCP search, fresh CLI get, and the UI concept page to reflect it. `gyrus validate <filepath> --json` must pass. Restart only the owned MCP process and verify the graph persists.
 
