@@ -46,11 +46,19 @@ func Validate(concept *gyrus.Concept) error {
 	if concept == nil {
 		return &ValidationError{Field: "concept", Message: "concept cannot be nil"}
 	}
+	if concept.Name != "" {
+		if err := ValidateName(concept.Name); err != nil {
+			return err
+		}
+	}
 	if concept.ID == "" {
 		return &ValidationError{Field: "id", Message: "id is mandatory"}
 	}
 	if !idRegex.MatchString(concept.ID) {
 		return &ValidationError{Field: "id", Message: fmt.Sprintf("id '%s' must match pattern ^[a-z0-9-_]+$", concept.ID)}
+	}
+	if err := ValidateSegment("id", concept.ID); err != nil {
+		return err
 	}
 	if concept.Title == "" {
 		return &ValidationError{Field: "title", Message: "title is mandatory and cannot be empty"}
@@ -69,6 +77,22 @@ func Validate(concept *gyrus.Concept) error {
 	}
 	if concept.Status == "" {
 		return &ValidationError{Field: "status", Message: "status is mandatory and cannot be empty"}
+	}
+	for _, link := range concept.Links {
+		if err := ValidateName(link.Concept); err != nil {
+			return &ValidationError{Field: "links.concept", Message: err.Error()}
+		}
+		if !gyrus.ValidRelationship(link.Rel) {
+			return &ValidationError{Field: "links.rel", Message: "invalid relationship type"}
+		}
+	}
+	if err := ValidateSegment("tenant", concept.Tenant); err != nil {
+		return err
+	}
+	if concept.Project != "" {
+		if err := ValidateSegment("project", concept.Project); err != nil {
+			return err
+		}
 	}
 	return nil
 }

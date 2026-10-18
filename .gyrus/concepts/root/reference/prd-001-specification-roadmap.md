@@ -1,20 +1,21 @@
 ---
-id: prd-001-specification-roadmap
 title: Gyrus Specification Implementation Roadmap
-category: technical
+id: prd-001-specification-roadmap
 type: prd
-format: ""
-tenant: root
-version: 16
+format: markdown
+category: technical
+version: 18
 status: active
+last_updated: 2026-10-16T18:32:57Z
+last_modified_by: ""
+tenant: root
 tags:
-  - roadmap
-  - release-phases
-  - specification
-  - terraform
-  - iac
-  - infrastructure
-dependencies: []
+    - roadmap
+    - release-phases
+    - specification
+    - terraform
+    - iac
+    - infrastructure
 ---
 
 # Gyrus Specification Implementation Roadmap
@@ -46,7 +47,7 @@ Target: Expand data providers, transport interfaces, backend provider IaC, test 
 - [x] **DevContainer Ollama Sidecar**: Implement DevContainer Docker Compose sidecar service (`ollama/ollama`) with pre-configured embedding models (`nomic-embed-text`) for zero-setup local vector search testing.
 
 ### 2.2 Core Refactoring & OOP Architecture
-- [x] **Refactor repo to OOP structure and cleanup**: Refactor Go core packages into clean layered OOP architectures (`internal/domain/okf`, `internal/domain/lifecycle`, `internal/format`, `internal/provider/{storage,search,index,graph}`, `internal/app`, `internal/cli`, `internal/mcp`), consolidate provider factories, add shared connection pools (`internal/provider/db`), and streamline packaging.
+- [x] **Refactor repo to OOP structure and cleanup**: Refactor Go core packages into clean layered OOP architectures (`internal/domain/okf`, `internal/domain/lifecycle`, `internal/format`, `internal/provider/{storage,search,index,graph}`, `internal/app`, `internal/cli`, `internal/mcp`), consolidate provider factories, add shared connection pools (`internal/persistence/db`), and streamline packaging.
 
 ### 2.3 Transport & Networking
 - [x] **Standard Stdio MCP Transport (`gyrus mcp serve`)**: High-performance, zero-latency Stdio (standard I/O) process transport for local agent integration (`agy`, Claude Code, Cursor, Copilot) and containerized MCP execution (`docker run -i ghcr.io/armckinney/gyrus:latest`).

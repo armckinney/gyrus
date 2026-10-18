@@ -3,17 +3,14 @@ package provider
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/armckinney/gyrus/internal/config"
+	graphokf "github.com/armckinney/gyrus/internal/provider/graph/okf"
 	graphpostgres "github.com/armckinney/gyrus/internal/provider/graph/postgres"
-	graphsqlite "github.com/armckinney/gyrus/internal/provider/graph/sqlite"
+	indexokf "github.com/armckinney/gyrus/internal/provider/index/okf"
 	indexpostgres "github.com/armckinney/gyrus/internal/provider/index/postgres"
-	indexsqlite "github.com/armckinney/gyrus/internal/provider/index/sqlite"
-	fts5search "github.com/armckinney/gyrus/internal/provider/search/fts5"
+	searchokf "github.com/armckinney/gyrus/internal/provider/search/okf"
 	postgresfts "github.com/armckinney/gyrus/internal/provider/search/postgres_fts"
-	vectorsearch "github.com/armckinney/gyrus/internal/provider/search/vector"
 	"github.com/armckinney/gyrus/internal/provider/storage/blob"
 	"github.com/armckinney/gyrus/internal/provider/storage/git"
 	"github.com/armckinney/gyrus/internal/provider/storage/localfs"
@@ -24,13 +21,18 @@ import (
 // NewConceptStore creates the appropriate gyrus.ConceptStore implementation
 // based on configuration settings in .gyrus.yaml.
 func NewConceptStore(cfg *config.Config, storageRoot string) (gyrus.ConceptStore, error) {
+	resolved, err := config.ResolveProviders(cfg)
+	if err != nil {
+		return nil, err
+	}
+	cfg = resolved
 	if cfg == nil {
 		cfg = &config.Config{}
 	}
 
 	prefix := cfg.StorageRoot()
 	if prefix == "" {
-		prefix = storageRoot
+		prefix = config.DefaultStorageRoot
 	}
 
 	switch cfg.StorageProvider() {
@@ -113,118 +115,61 @@ func NewConceptStore(cfg *config.Config, storageRoot string) (gyrus.ConceptStore
 	}
 }
 
-// NewIndexStore creates the appropriate gyrus.IndexStore implementation
-// based on index provider in .gyrus.yaml.
-func NewIndexStore(cfg *config.Config, storageRoot string) (gyrus.IndexStore, error) {
-	if cfg == nil {
-		cfg = &config.Config{}
+// NewIndexStore creates the configured index over the selected storage.
+func NewIndexStore(cfg *config.Config, storageRoot string, store gyrus.ConceptStore) (gyrus.IndexStore, error) {
+	cfg, err := config.ResolveProviders(cfg)
+	if err != nil {
+		return nil, err
 	}
-
 	switch cfg.IndexProvider() {
+	case "okf":
+		return indexokf.NewIndexer(store)
 	case "postgres":
 		if cfg.Postgres.ConnectionString == "" {
-			return nil, fmt.Errorf("postgres index provider selected but postgres.connection_string is empty")
+			return nil, fmt.Errorf("postgres index requires postgres.connection_string")
 		}
 		return indexpostgres.NewIndexer(context.Background(), cfg.Postgres.ConnectionString)
-
 	default:
-		dbPath := filepath.Join(storageRoot, "index.db")
-		return indexsqlite.NewIndexer(dbPath)
+		return nil, fmt.Errorf("unknown index provider %q", cfg.IndexProvider())
 	}
 }
 
-// NewGraphStore creates the appropriate gyrus.GraphStore implementation
-// based on graph or index provider in .gyrus.yaml.
-func NewGraphStore(cfg *config.Config, storageRoot string) (gyrus.GraphStore, error) {
-	if cfg == nil {
-		cfg = &config.Config{}
+// NewGraphStore reuses database indexes or persists links in the selected store.
+func NewGraphStore(cfg *config.Config, storageRoot string, store gyrus.ConceptStore, indexer gyrus.IndexStore) (gyrus.GraphStore, error) {
+	cfg, err := config.ResolveProviders(cfg)
+	if err != nil {
+		return nil, err
 	}
-
-	graphProvider := cfg.GraphProvider()
-	if graphProvider == "" {
-		graphProvider = cfg.IndexProvider()
-	}
-
-	switch graphProvider {
+	switch cfg.GraphProvider() {
+	case "okf":
+		return graphokf.NewGraphStore(store)
 	case "postgres":
-		if cfg.Postgres.ConnectionString == "" {
-			return nil, fmt.Errorf("postgres index provider selected but postgres.connection_string is empty")
+		idx, ok := indexer.(*indexpostgres.Indexer)
+		if !ok {
+			return nil, fmt.Errorf("postgres graph requires postgres index")
 		}
-		pgIndexer, err := indexpostgres.NewIndexer(context.Background(), cfg.Postgres.ConnectionString)
-		if err != nil {
-			return nil, err
-		}
-		return graphpostgres.NewGraphStore(pgIndexer.Pool()), nil
-
+		return graphpostgres.NewGraphStore(idx.Pool()), nil
 	default:
-		dbPath := filepath.Join(storageRoot, "index.db")
-		indexer, err := indexsqlite.NewIndexer(dbPath)
-		if err != nil {
-			return nil, err
-		}
-		return graphsqlite.NewGraphStore(indexer.DB()), nil
+		return nil, fmt.Errorf("unknown graph provider %q", cfg.GraphProvider())
 	}
 }
 
-// NewSearchProvider creates the appropriate gyrus.SearchProvider implementation
-// based on search provider in .gyrus.yaml.
-func NewSearchProvider(cfg *config.Config, storageRoot string) (gyrus.SearchProvider, error) {
-	if cfg == nil {
-		cfg = &config.Config{}
+// NewSearchProvider shares the selected storage and index dependencies.
+func NewSearchProvider(cfg *config.Config, storageRoot string, store gyrus.ConceptStore, indexer gyrus.IndexStore) (gyrus.SearchProvider, error) {
+	cfg, err := config.ResolveProviders(cfg)
+	if err != nil {
+		return nil, err
 	}
-
 	switch cfg.SearchProvider() {
-	case "vector":
-		dbPath := filepath.Join(storageRoot, "index.db")
-		sqliteStore, err := indexsqlite.NewIndexer(dbPath)
-		if err != nil {
-			return nil, err
-		}
-		var embedder vectorsearch.EmbeddingProvider
-		if cfg.Vector.EmbeddingProvider == "openai" {
-			embedder = vectorsearch.NewOpenAIEmbedder("")
-		} else {
-			endpoint := cfg.Vector.OllamaEndpoint
-			if endpoint == "" {
-				if host := os.Getenv("OLLAMA_HOST"); host != "" {
-					endpoint = host
-				} else {
-					endpoint = "http://localhost:11434/api/embeddings"
-				}
-			}
-			model := cfg.Vector.Model
-			if model == "" {
-				model = "nomic-embed-text"
-			}
-			embedder = vectorsearch.NewOllamaEmbedder(endpoint, model)
-		}
-		ftsAdapter := fts5search.NewSearchProvider(sqliteStore)
-		vStore := vectorsearch.NewStore(ftsAdapter, embedder)
-
-		store, err := NewConceptStore(cfg, storageRoot)
-		if err == nil {
-			if docs, err := sqliteStore.Search(context.Background(), gyrus.SearchQuery{MaxResults: 100}); err == nil {
-				for _, res := range docs {
-					if fullDoc, err := store.Get(context.Background(), res.Concept.ID); err == nil {
-						_ = vStore.AddConcept(context.Background(), fullDoc)
-					}
-				}
-			}
-		}
-		return vStore, nil
-
+	case "okf":
+		return searchokf.NewSearchProvider(store)
 	case "postgres_fts":
-		if cfg.Postgres.ConnectionString == "" {
-			return nil, fmt.Errorf("postgres_fts search provider selected but postgres.connection_string is empty")
+		idx, ok := indexer.(*indexpostgres.Indexer)
+		if !ok {
+			return nil, fmt.Errorf("postgres search requires postgres index")
 		}
-		return postgresfts.NewSearchProvider(context.Background(), cfg.Postgres.ConnectionString)
-
-	default: // "sqlite", "sqlite_fts5" or empty
-		dbPath := filepath.Join(storageRoot, "index.db")
-		indexer, err := indexsqlite.NewIndexer(dbPath)
-		if err != nil {
-			return nil, err
-		}
-		return fts5search.NewSearchProvider(indexer), nil
+		return postgresfts.NewSearchProviderWithPool(idx.Pool()), nil
+	default:
+		return nil, fmt.Errorf("unknown search provider %q", cfg.SearchProvider())
 	}
 }

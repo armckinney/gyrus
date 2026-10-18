@@ -1,16 +1,16 @@
 ---
-id: <unique-dashed-id>
 title: <Clean Document Title>
-category: product
+id: <unique-dashed-id>
 type: product
 format: markdown
-tenant: <team-owning-document>
+category: product
 version: 1
 status: proposed
-last_modified_by: <author-username>
 last_updated: YYYY-MM-DD
+last_modified_by: <author-username>
+tenant: <team-owning-document>
 tags: [product-landing, portal]
-dependencies: []
+links: []
 ---
 
 # Product Page: [Product Name]

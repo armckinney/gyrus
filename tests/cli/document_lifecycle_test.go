@@ -71,12 +71,12 @@ func TestCLI_CreateAndGet(t *testing.T) {
 		t.Fatalf("Create failed: %v", err)
 	}
 
-	if !strings.Contains(createOut.String(), "spec-crud-001") {
+	if !strings.Contains(createOut.String(), "platform/projects/default/spec-crud-001") {
 		t.Errorf("Expected output to mention 'spec-crud-001', got:\n%s", createOut.String())
 	}
 
 	// 2. Get with pure JSON output
-	getCmd := exec.Command(gyrusBinPath, "get", "spec-crud-001", "--json")
+	getCmd := exec.Command(gyrusBinPath, "get", "platform/projects/default/spec-crud-001", "--json")
 	getCmd.Dir = tempWorkspace
 	var getJSONOut bytes.Buffer
 	getCmd.Stdout = &getJSONOut
@@ -132,7 +132,7 @@ func TestCLI_Update(t *testing.T) {
 	}
 
 	// Update
-	updateCmd := exec.Command(gyrusBinPath, "update", "guide-crud-001",
+	updateCmd := exec.Command(gyrusBinPath, "update", "docs-team/projects/default/guide-crud-001",
 		"--title", "Updated Guide Title",
 		"--status", "active",
 		"--content", "Updated guide body content.",
@@ -144,7 +144,7 @@ func TestCLI_Update(t *testing.T) {
 	}
 
 	// Verify via Get --json
-	getCmd := exec.Command(gyrusBinPath, "get", "guide-crud-001", "--json")
+	getCmd := exec.Command(gyrusBinPath, "get", "docs-team/projects/default/guide-crud-001", "--json")
 	getCmd.Dir = tempWorkspace
 	var getOut bytes.Buffer
 	getCmd.Stdout = &getOut
@@ -200,7 +200,7 @@ func TestCLI_Archive(t *testing.T) {
 	}
 
 	// Archive
-	archiveCmd := exec.Command(gyrusBinPath, "archive", "spec-archive-001", "--json")
+	archiveCmd := exec.Command(gyrusBinPath, "archive", "platform/projects/default/spec-archive-001", "--json")
 	archiveCmd.Dir = tempWorkspace
 	var archiveOut bytes.Buffer
 	archiveCmd.Stdout = &archiveOut
@@ -213,7 +213,7 @@ func TestCLI_Archive(t *testing.T) {
 	}
 
 	// Verify that getting the archived document returns Exit Code 5 (document not found)
-	getCmd := exec.Command(gyrusBinPath, "get", "spec-archive-001")
+	getCmd := exec.Command(gyrusBinPath, "get", "platform/projects/default/spec-archive-001")
 	getCmd.Dir = tempWorkspace
 	err := getCmd.Run()
 	if err == nil {

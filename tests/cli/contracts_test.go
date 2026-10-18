@@ -115,7 +115,7 @@ func TestCLI_IllegalLifecycleTransition_ExitCode2(t *testing.T) {
 	}
 
 	// 3. Attempt illegal state transition: accepted -> proposed
-	updateCmd := exec.Command(gyrusBinPath, "update", "adr-storage-engine", "--status", "proposed")
+	updateCmd := exec.Command(gyrusBinPath, "update", "platform/projects/default/adr-storage-engine", "--status", "proposed")
 	updateCmd.Dir = tempWorkspace
 	var stderr bytes.Buffer
 	updateCmd.Stderr = &stderr
@@ -169,7 +169,7 @@ func TestCLI_ImmutabilityEnforcement_ExitCode2(t *testing.T) {
 	}
 
 	// 3. Attempt content mutation on accepted ADR
-	updateCmd := exec.Command(gyrusBinPath, "update", "adr-locked-decision", "--content", "Mutated illegal content.")
+	updateCmd := exec.Command(gyrusBinPath, "update", "platform/projects/default/adr-locked-decision", "--content", "Mutated illegal content.")
 	updateCmd.Dir = tempWorkspace
 	var stderr bytes.Buffer
 	updateCmd.Stderr = &stderr
@@ -222,7 +222,7 @@ func TestCLI_OptimisticConcurrencyConflict_ExitCode4(t *testing.T) {
 	}
 
 	// 3. Attempt update with wrong expected version (expected 99, actual 1)
-	updateCmd := exec.Command(gyrusBinPath, "update", "spec-storage-engine",
+	updateCmd := exec.Command(gyrusBinPath, "update", "platform/projects/default/spec-storage-engine",
 		"--title", "New Title",
 		"--expected-version", "99",
 	)
@@ -264,7 +264,7 @@ func TestCLI_DocumentNotFound_ExitCode5(t *testing.T) {
 	}
 
 	// 2. Attempt getting non-existent document
-	getCmd := exec.Command(gyrusBinPath, "get", "non-existent-doc-id-12345")
+	getCmd := exec.Command(gyrusBinPath, "get", "root/reference/non-existent-doc-id-12345")
 	getCmd.Dir = tempWorkspace
 	var stderr bytes.Buffer
 	getCmd.Stderr = &stderr

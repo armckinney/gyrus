@@ -171,7 +171,7 @@ func (m *mockSchemaStore) Create(ctx context.Context, doc gyrus.Concept) (gyrus.
 	return gyrus.ConceptRef{}, nil
 }
 func (m *mockSchemaStore) Get(ctx context.Context, id string) (gyrus.Concept, error) {
-	return gyrus.Concept{}, nil
+	return gyrus.Concept{Tenant: "root"}, nil
 }
 func (m *mockSchemaStore) Update(ctx context.Context, id string, patch gyrus.ConceptPatch, expectedVersion int) (gyrus.ConceptRef, error) {
 	return gyrus.ConceptRef{}, nil
@@ -309,7 +309,7 @@ func (m *mockStoreWithSearch) Get(ctx context.Context, id string) (gyrus.Concept
 	if doc, ok := m.docs[id]; ok {
 		return doc, nil
 	}
-	return gyrus.Concept{}, fmt.Errorf("concept not found: %s", id)
+	return gyrus.Concept{Tenant: "root"}, fmt.Errorf("concept not found: %s", id)
 }
 func (m *mockStoreWithSearch) Update(ctx context.Context, id string, patch gyrus.ConceptPatch, expectedVersion int) (gyrus.ConceptRef, error) {
 	return gyrus.ConceptRef{ID: id}, nil
@@ -321,7 +321,8 @@ func (m *mockStoreWithSearch) Delete(ctx context.Context, id string) error {
 func (m *mockStoreWithSearch) Archive(ctx context.Context, id string) error {
 	return nil
 }
-func (m *mockStoreWithSearch) Search(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
+func (m *mockStoreWithSearch) Search(ctx context.Context, request gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
+	filter := request.Filter
 	var results []gyrus.SearchResult
 	for _, doc := range m.docs {
 		if filter.Scope == "reference" && doc.Scope != "reference" {
@@ -358,15 +359,15 @@ func TestEngineSuggestContextWithProjectScopingAndDependencyExpansion(t *testing
 	}
 
 	wsDoc := gyrus.Concept{
-		ID:           "ticket-gyrus-202",
-		Title:        "Implement Project Scoping",
-		Category:     gyrus.CategoryProduct,
-		Type:         gyrus.TypePRD,
-		Tenant:       "root",
-		Scope:        "project",
-		Project:      "gyrus",
-		Dependencies: []string{"adr-002-simplified-directory-topology"},
-		Content:      "Implementation details for scoping.",
+		ID:       "ticket-gyrus-202",
+		Title:    "Implement Project Scoping",
+		Category: gyrus.CategoryProduct,
+		Type:     gyrus.TypePRD,
+		Tenant:   "root",
+		Scope:    "project",
+		Project:  "gyrus",
+		Links:    []gyrus.ConceptLink{{Concept: "root/reference/adr-002-simplified-directory-topology", Rel: gyrus.RelDependsOn}},
+		Content:  "Implementation details for scoping.", Name: "root/projects/gyrus/ticket-gyrus-202",
 	}
 	refDoc := gyrus.Concept{
 		ID:       "adr-002-simplified-directory-topology",
@@ -375,7 +376,7 @@ func TestEngineSuggestContextWithProjectScopingAndDependencyExpansion(t *testing
 		Type:     gyrus.TypeADR,
 		Tenant:   "root",
 		Scope:    "reference",
-		Content:  "Architecture for .gyrus/concepts layout.",
+		Content:  "Architecture for .gyrus/concepts layout.", Name: "root/reference/adr-002-simplified-directory-topology",
 	}
 	foreignWsDoc := gyrus.Concept{
 		ID:       "ticket-billing-001",
@@ -385,7 +386,7 @@ func TestEngineSuggestContextWithProjectScopingAndDependencyExpansion(t *testing
 		Tenant:   "root",
 		Scope:    "project",
 		Project:  "billing",
-		Content:  "Secret billing tasks.",
+		Content:  "Secret billing tasks.", Name: "root/projects/billing/ticket-billing-001",
 	}
 
 	mockStore.docs[wsDoc.ID] = wsDoc
@@ -403,7 +404,7 @@ func TestEngineSuggestContextWithProjectScopingAndDependencyExpansion(t *testing
 	if !strings.Contains(output, "[PROJECT CONTEXT: gyrus]") {
 		t.Errorf("Expected [PROJECT CONTEXT: gyrus] in output, got: %s", output)
 	}
-	if !strings.Contains(output, "ticket-gyrus-202") {
+	if !strings.Contains(output, "root/projects/gyrus/ticket-gyrus-202") {
 		t.Errorf("Expected ticket-gyrus-202 in output, got: %s", output)
 	}
 
@@ -411,12 +412,12 @@ func TestEngineSuggestContextWithProjectScopingAndDependencyExpansion(t *testing
 	if !strings.Contains(output, "[SHARED REFERENCE LAYER: root]") {
 		t.Errorf("Expected [SHARED REFERENCE LAYER: root] in output, got: %s", output)
 	}
-	if !strings.Contains(output, "adr-002-simplified-directory-topology") {
+	if !strings.Contains(output, "root/reference/adr-002-simplified-directory-topology") {
 		t.Errorf("Expected adr-002-simplified-directory-topology in output, got: %s", output)
 	}
 
 	// 3. Verify foreign project concept is excluded
-	if strings.Contains(output, "ticket-billing-001") {
+	if strings.Contains(output, "root/projects/billing/ticket-billing-001") {
 		t.Errorf("Did not expect foreign project concept ticket-billing-001 in output, got: %s", output)
 	}
 }

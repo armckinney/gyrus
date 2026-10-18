@@ -53,7 +53,7 @@ func TestCLI_LinkAndUnlink(t *testing.T) {
 	}
 
 	// 1. Link (prd-graph-001 -> adr-graph-001 with depends_on)
-	linkCmd := exec.Command(gyrusBinPath, "link", "prd-graph-001", "adr-graph-001", "--rel-type", "depends_on")
+	linkCmd := exec.Command(gyrusBinPath, "link", "product-team/projects/default/prd-graph-001", "platform-team/projects/default/adr-graph-001", "--rel-type", "depends_on")
 	linkCmd.Dir = tempWorkspace
 	var linkOut bytes.Buffer
 	linkCmd.Stdout = &linkOut
@@ -61,19 +61,19 @@ func TestCLI_LinkAndUnlink(t *testing.T) {
 		t.Fatalf("Link command failed: %v", err)
 	}
 
-	if !strings.Contains(linkOut.String(), "Linked") || !strings.Contains(linkOut.String(), "prd-graph-001") {
+	if !strings.Contains(linkOut.String(), "Linked") || !strings.Contains(linkOut.String(), "product-team/projects/default/prd-graph-001") {
 		t.Errorf("Expected link confirmation in stdout, got:\n%s", linkOut.String())
 	}
 
 	// 2. Link with implements relationship
-	linkImplCmd := exec.Command(gyrusBinPath, "link", "prd-graph-001", "adr-graph-001", "--rel-type", "implements")
+	linkImplCmd := exec.Command(gyrusBinPath, "link", "product-team/projects/default/prd-graph-001", "platform-team/projects/default/adr-graph-001", "--rel-type", "implements")
 	linkImplCmd.Dir = tempWorkspace
 	if out, err := linkImplCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Link implements failed: %v\nOutput: %s", err, string(out))
 	}
 
 	// 3. Unlink depends_on
-	unlinkCmd := exec.Command(gyrusBinPath, "unlink", "prd-graph-001", "adr-graph-001", "--rel-type", "depends_on")
+	unlinkCmd := exec.Command(gyrusBinPath, "unlink", "product-team/projects/default/prd-graph-001", "platform-team/projects/default/adr-graph-001", "--rel-type", "depends_on")
 	unlinkCmd.Dir = tempWorkspace
 	var unlinkOut bytes.Buffer
 	unlinkCmd.Stdout = &unlinkOut

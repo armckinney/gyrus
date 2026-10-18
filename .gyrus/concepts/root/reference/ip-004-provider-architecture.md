@@ -1,14 +1,14 @@
 ---
-id: ip-004-provider-architecture
 title: Pluggable Storage & Index Provider Architecture Proposal
-category: architecture
+id: ip-004-provider-architecture
 type: improvement-proposal
 format: ""
-tenant: root
+category: architecture
 version: 1
 status: active
-last_modified_by: ""
 last_updated: 2026-07-22T06:38:56Z
+last_modified_by: ""
+tenant: root
 ---
 
 # Gyrus providers

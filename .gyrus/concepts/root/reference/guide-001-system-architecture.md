@@ -1,14 +1,14 @@
 ---
-id: guide-001-system-architecture
 title: Gyrus Architecture Blueprint & Domain Topology
-category: architecture
+id: guide-001-system-architecture
 type: guide
-format: ""
-tenant: root
-version: 1
+format: markdown
+category: architecture
+version: 3
 status: active
+last_updated: 2026-10-17T23:57:58Z
 last_modified_by: ""
-last_updated: 2026-07-22T06:38:56Z
+tenant: root
 ---
 
 # Gyrus System Architecture
@@ -41,10 +41,10 @@ graph LR
     end
 
     subgraph Services ["Core Services & Provider Drivers"]
-        IndexSvc["Concept Index Service\n\nProviders:\n- OKF\n- SQLite\n- PostgreSQL"]
-        GraphSvc["Knowledge Graph Service\n\nProviders:\n- OKF\n- SQLite\n- PostgreSQL"]
-        SearchSvc["Search Service\n\nProviders:\n- SQLite FTS\n- PostgreSQL full-text search"]
-        PersistSvc["Concept Persistence Service\n\nProviders:\n- localfs\n- SQLite\n- Git Repo (GitHub, Bitbucket)\n- Blob Storage (S3, Azure SA)\n- PostgreSQL"]
+        IndexSvc["Concept Index Service\n\nProviders:\n- OKF\n- PostgreSQL"]
+        GraphSvc["Knowledge Graph Service\n\nProviders:\n- OKF\n- PostgreSQL"]
+        SearchSvc["Search Service\n\nProviders:\n- OKF keyword scan\n- PostgreSQL full-text search"]
+        PersistSvc["Concept Persistence Service\n\nProviders:\n- localfs\n- Git Repo (GitHub, Bitbucket)\n- Blob Storage (S3, Azure SA)\n- PostgreSQL"]
     end
 
     subgraph Storage ["Concept Storage Format"]
@@ -79,7 +79,7 @@ graph LR
         direction LR
         P1["1. OKF Parser and Lifecycle"] -->|Validate Schema and State| P2["2. DocumentStore"]
         P2 -->|Persist Payload| P3["3. IndexStore and Search"]
-        P3 -->|Index FTS5 and Extract Links| P4["4. GraphStore"]
+        P3 -->|Read qualified concept links| P4["4. GraphStore"]
     end
 ```
 
@@ -87,7 +87,7 @@ graph LR
 graph LR
     subgraph Retrieval ["Context Discovery Flow (suggest-context / search)"]
         direction LR
-        Q1["1. SearchProvider (FTS5)"] -->|Lexical Match| Q2["2. GraphStore"]
+        Q1["1. SearchProvider (OKF or PostgreSQL)"] -->|Lexical Match| Q2["2. GraphStore"]
         Q2 -->|Traverse Edges| Q3["3. DocumentStore"]
         Q3 -->|Hydrate Payload| Q4["4. Context Linearizer"]
     end
@@ -106,7 +106,8 @@ The public domain package exposing:
 
 ### B. Storage & Index Providers (`internal/provider`)
 - **`localfs`:** Handles atomic file operations over local filesystem storage directories.
-- **`sqlite`:** Uses `modernc.org/sqlite` (pure Go, CGO-free) to manage SQLite DDL migrations (`documents_index`, `documents_fts`, `document_edges`), FTS5 lexical queries, and edge traversals.
+- **`okf`:** Reads authoritative concepts and qualified typed links directly through scanner-capable localfs/Git/blob storage. Keyword requests default to ten matches with explicit limit overrides; metadata browsing is uncapped by default.
+- **`postgres`:** Provides database metadata indexing, native full-text search, and directed graph storage keyed by qualified concept names. SQLite provider adapters and the sync command/tool have been removed; shared internal SQLite persistence remains for future cache work.
 
 ### C. Open Knowledge Format (OKF) Parser (`internal/okf`)
 Extracts YAML frontmatter headers from Markdown files, enforces schema validation rules (such as ID regex `^[a-z0-9-_]+$`), and serializes documents back to Markdown.

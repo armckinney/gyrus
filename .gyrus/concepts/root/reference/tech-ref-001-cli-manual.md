@@ -1,14 +1,14 @@
 ---
-id: tech-ref-001-cli-manual
 title: Gyrus CLI Subcommand Reference Manual
-category: technical
+id: tech-ref-001-cli-manual
 type: technical-reference
-format: ""
-tenant: root
-version: 1
+format: markdown
+category: technical
+version: 7
 status: active
+last_updated: 2026-10-17T23:57:58Z
 last_modified_by: ""
-last_updated: 2026-07-22T06:38:56Z
+tenant: root
 ---
 
 # Gyrus CLI Command Reference Manual
@@ -69,10 +69,9 @@ gyrus create \
   --title "<title>" \
   --category "<category>" \
   --type "<type>" \
-  --owner-group "<owner_group>" \
+  --tenant "<tenant>" \
   [--status "<status>"] \
   [--tags "tag1,tag2"] \
-  [--dependencies "dep-1,dep-2"] \
   [--content "<markdown body>"] \
   [--content-file "<path-to-file>"]
 ```
@@ -82,17 +81,17 @@ Retrieves an OKF document payload by ID.
 
 ```bash
 # Output as raw Markdown
-gyrus get adr-001-storage
+gyrus get root/reference/adr-001-storage
 
 # Output as JSON envelope
-gyrus get adr-001-storage --json
+gyrus get root/reference/adr-001-storage --json
 ```
 
 ### 4. `gyrus update <id>`
 Updates an existing document fields or Markdown body content.
 
 ```bash
-gyrus update adr-001-storage \
+gyrus update root/reference/adr-001-storage \
   [--title "<new-title>"] \
   [--status "<new-status>"] \
   [--content "<new-body>"] \
@@ -103,28 +102,21 @@ gyrus update adr-001-storage \
 Creates a directed relationship edge between two documents.
 
 ```bash
-gyrus link adr-001-storage prd-002-context --rel-type "depends_on"
+gyrus link root/reference/adr-001-storage root/reference/prd-002-context --rel-type "depends_on"
 ```
 
 ### 6. `gyrus unlink <from-id> <to-id>`
 Removes a directed relationship edge between two documents.
 
 ```bash
-gyrus unlink adr-001-storage prd-002-context --rel-type "depends_on"
+gyrus unlink root/reference/adr-001-storage root/reference/prd-002-context --rel-type "depends_on"
 ```
 
 ### 7. `gyrus archive <id>`
 Archives (deletes) a document payload from storage and search index.
 
 ```bash
-gyrus archive adr-001-storage [--json]
-```
-
-### 7. `gyrus sync`
-Re-indexes filesystem documents, updates SQLite FTS5 indexes, and extracts dependencies automatically.
-
-```bash
-gyrus sync
+gyrus archive root/reference/adr-001-storage [--json]
 ```
 
 ### 8. `gyrus validate <file-path>`
@@ -135,7 +127,7 @@ gyrus validate docs/gyrus/okf/platform/reference/adr-001.md
 ```
 
 ### 9. `gyrus search`
-Executes an FTS5 lexical keyword search query over documents.
+Executes search through the selected OKF keyword or PostgreSQL full-text provider. Positive --max-results values pass through to the provider. Keyword queries default to ten matches; empty-query metadata browsing is unlimited by default. Vector search and its configuration are removed.
 
 ```bash
 gyrus search \
@@ -174,3 +166,17 @@ Starts the embedded Model Context Protocol (MCP) stdio server for GUI IDE integr
 ```bash
 gyrus mcp serve
 ```
+
+## OKF provider retrieval and maintenance
+
+File-backed profiles generate OKF index, graph, and search. The same defaults apply when secondary provider fields are omitted. `gyrus config show` displays effective selections. PostgreSQL retains native full-text matching. Unsupported profiles and unknown provider names fail through shared validation before initialization/writes.
+
+OKF keyword search returns the top ten matches; `gyrus search --query "" --scope all --json` browses the complete matching metadata collection. Keyword terms use case-insensitive Unicode substring matching with OR semantics; FTS expression syntax and stemming are not interpreted by OKF.
+
+OKF link/unlink persist source-owned {concept, rel} links with qualified concept names. Missing targets remain valid. Neighbors/traversal operate on persisted relationships. Version/Git/object-precondition conflicts map to exit code 4. Queries reject malformed collections with validation exit code 1. The sync command/tool has been removed; validate individual files with gyrus validate.
+
+For legacy SQLite data, use the packaged gyrus-migrate-sqlite-to-okf skill to back up and export database-only edges, prove qualified tuple parity, choose OKF for all three providers, and restart MCP processes. There is no gyrus migrate command, and SQLite provider selections are no longer supported.
+
+## Qualified-name arguments
+
+Create --id remains a local slug; tenant, scope, and project determine its canonical name. Existing-concept get/update/archive/link/unlink arguments must be fully qualified: root/reference/adr-example or root/projects/gyrus/ticket-003. There is no short-ID fallback. JSON concept envelopes and mutation references include name and local id. Text mutation/search output identifies concepts by name. Creation and update no longer accept --dependencies; manage relationships with link/unlink. The --rel-type flag retains its name; persisted link fields are concept and rel.

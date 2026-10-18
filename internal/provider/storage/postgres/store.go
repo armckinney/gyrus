@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
+	searchpostgres "github.com/armckinney/gyrus/internal/provider/search/postgres_fts"
 	"time"
 
 	"github.com/armckinney/gyrus/internal/domain/okf"
-	"github.com/armckinney/gyrus/internal/provider/db"
+	"github.com/armckinney/gyrus/internal/persistence/db"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -64,8 +64,6 @@ func (s *Store) initSchema(ctx context.Context) error {
 		from_concept_id TEXT NOT NULL REFERENCES concepts(id) ON DELETE CASCADE,
 		to_concept_id TEXT NOT NULL REFERENCES concepts(id) ON DELETE CASCADE,
 		relationship_type TEXT NOT NULL,
-		created_by TEXT,
-		created_at TIMESTAMPTZ DEFAULT NOW(),
 		PRIMARY KEY (from_concept_id, to_concept_id, relationship_type)
 	);
 	CREATE INDEX IF NOT EXISTS idx_edges_to ON concept_edges(to_concept_id);
@@ -97,6 +95,10 @@ func (s *Store) Close() {
 // --- ConceptStore ---
 
 func (s *Store) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRef, error) {
+	if err := okf.SetName(&doc, ""); err != nil {
+		return gyrus.ConceptRef{}, err
+	}
+
 	if doc.Version == 0 {
 		doc.Version = 1
 	}
@@ -104,7 +106,7 @@ func (s *Store) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRef
 		doc.LastUpdated = time.Now()
 	}
 
-	fm, err := json.Marshal(doc)
+	fm, err := okf.SerializeMetadata(doc)
 	if err != nil {
 		return gyrus.ConceptRef{}, err
 	}
@@ -117,7 +119,7 @@ func (s *Store) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRef
 
 	_, err = tx.Exec(ctx,
 		"INSERT INTO concepts (id, frontmatter, content) VALUES ($1, $2, $3)",
-		doc.ID, fm, doc.Content,
+		doc.Name, fm, doc.Content,
 	)
 	if err != nil {
 		return gyrus.ConceptRef{}, err
@@ -125,7 +127,7 @@ func (s *Store) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRef
 
 	_, err = tx.Exec(ctx,
 		"INSERT INTO concepts_history (id, version, frontmatter, content, modified_by, modified_at) VALUES ($1, $2, $3, $4, $5, $6)",
-		doc.ID, doc.Version, fm, doc.Content, doc.LastModifiedBy, doc.LastUpdated,
+		doc.Name, doc.Version, fm, doc.Content, doc.LastModifiedBy, doc.LastUpdated,
 	)
 	if err != nil {
 		return gyrus.ConceptRef{}, err
@@ -136,6 +138,7 @@ func (s *Store) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRef
 	}
 
 	return gyrus.ConceptRef{
+		Name:        doc.Name,
 		ID:          doc.ID,
 		Version:     doc.Version,
 		Status:      doc.Status,
@@ -144,6 +147,10 @@ func (s *Store) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRef
 }
 
 func (s *Store) Get(ctx context.Context, id string) (gyrus.Concept, error) {
+	if err := okf.ValidateName(id); err != nil {
+		return gyrus.Concept{}, err
+	}
+
 	var fm []byte
 	var content string
 
@@ -160,11 +167,18 @@ func (s *Store) Get(ctx context.Context, id string) (gyrus.Concept, error) {
 		return gyrus.Concept{}, err
 	}
 	doc.Content = content
+	if err := okf.SetName(&doc, ""); err != nil {
+		return gyrus.Concept{}, err
+	}
 
 	return doc, nil
 }
 
 func (s *Store) Update(ctx context.Context, id string, patch gyrus.ConceptPatch, expectedVersion int) (gyrus.ConceptRef, error) {
+	if err := okf.ValidateName(id); err != nil {
+		return gyrus.ConceptRef{}, err
+	}
+
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return gyrus.ConceptRef{}, err
@@ -183,9 +197,17 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.ConceptPatch,
 	if err := json.Unmarshal(fmBytes, &doc); err != nil {
 		return gyrus.ConceptRef{}, err
 	}
+	doc.Content = content
+	if err := okf.SetName(&doc, ""); err != nil {
+		return gyrus.ConceptRef{}, err
+	}
 
 	if expectedVersion != 0 && doc.Version != expectedVersion {
-		return gyrus.ConceptRef{}, fmt.Errorf("version mismatch: expected %d, got %d", expectedVersion, doc.Version)
+		return gyrus.ConceptRef{}, &gyrus.ConflictError{
+			ConceptID: id,
+			Operation: "update",
+			Err:       fmt.Errorf("expected version %d, got %d", expectedVersion, doc.Version),
+		}
 	}
 
 	if patch.Title != nil {
@@ -197,8 +219,8 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.ConceptPatch,
 	if patch.Tags != nil {
 		doc.Tags = *patch.Tags
 	}
-	if patch.Dependencies != nil {
-		doc.Dependencies = *patch.Dependencies
+	if patch.Links != nil {
+		doc.Links = *patch.Links
 	}
 	if patch.Content != nil {
 		doc.Content = *patch.Content
@@ -207,7 +229,7 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.ConceptPatch,
 	doc.Version++
 	doc.LastUpdated = time.Now()
 
-	newFmBytes, err := json.Marshal(doc)
+	newFmBytes, err := okf.SerializeMetadata(doc)
 	if err != nil {
 		return gyrus.ConceptRef{}, err
 	}
@@ -219,7 +241,7 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.ConceptPatch,
 
 	_, err = tx.Exec(ctx,
 		"INSERT INTO concepts_history (id, version, frontmatter, content, modified_by, modified_at) VALUES ($1, $2, $3, $4, $5, $6)",
-		doc.ID, doc.Version, newFmBytes, doc.Content, doc.LastModifiedBy, doc.LastUpdated,
+		doc.Name, doc.Version, newFmBytes, doc.Content, doc.LastModifiedBy, doc.LastUpdated,
 	)
 	if err != nil {
 		return gyrus.ConceptRef{}, err
@@ -230,6 +252,7 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.ConceptPatch,
 	}
 
 	return gyrus.ConceptRef{
+		Name:        doc.Name,
 		ID:          doc.ID,
 		Version:     doc.Version,
 		Status:      doc.Status,
@@ -238,6 +261,10 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.ConceptPatch,
 }
 
 func (s *Store) Delete(ctx context.Context, id string) error {
+	if err := okf.ValidateName(id); err != nil {
+		return err
+	}
+
 	res, err := s.pool.Exec(ctx, "DELETE FROM concepts WHERE id = $1", id)
 	if err != nil {
 		return err
@@ -249,6 +276,10 @@ func (s *Store) Delete(ctx context.Context, id string) error {
 }
 
 func (s *Store) Archive(ctx context.Context, id string) error {
+	if err := okf.ValidateName(id); err != nil {
+		return err
+	}
+
 	patch := gyrus.ConceptPatch{
 		Status: func() *string { s := "archived"; return &s }(),
 		Reason: "archived",
@@ -260,7 +291,11 @@ func (s *Store) Archive(ctx context.Context, id string) error {
 // --- IndexStore ---
 
 func (s *Store) Index(ctx context.Context, doc gyrus.Concept) error {
-	fm, err := json.Marshal(doc)
+	if err := okf.SetName(&doc, ""); err != nil {
+		return err
+	}
+
+	fm, err := okf.SerializeMetadata(doc)
 	if err != nil {
 		return err
 	}
@@ -269,25 +304,31 @@ func (s *Store) Index(ctx context.Context, doc gyrus.Concept) error {
 		INSERT INTO concepts (id, frontmatter, content)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (id) DO UPDATE SET frontmatter = EXCLUDED.frontmatter, content = EXCLUDED.content
-	`, doc.ID, fm, doc.Content)
+	`, doc.Name, fm, doc.Content)
 	return err
 }
 
 func (s *Store) Remove(ctx context.Context, id string) error {
+	if err := okf.ValidateName(id); err != nil {
+		return err
+	}
+
 	return s.Delete(ctx, id)
 }
 
-func (s *Store) Sync(ctx context.Context, storageRoot string) (gyrus.SyncReport, error) {
-	return gyrus.SyncReport{}, nil
-}
-
 func (s *Store) Search(ctx context.Context, query gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
-	return s.SearchFTS(ctx, query.Query, query.Filter)
+	return searchpostgres.NewSearchProviderWithPool(s.pool).Search(ctx, query)
 }
 
 // --- GraphStore ---
 
 func (s *Store) UpsertEdges(ctx context.Context, edges []gyrus.ConceptEdge) error {
+	for _, edge := range edges {
+		if err := okf.ValidateEdge(edge); err != nil {
+			return err
+		}
+	}
+
 	if len(edges) == 0 {
 		return nil
 	}
@@ -299,12 +340,15 @@ func (s *Store) UpsertEdges(ctx context.Context, edges []gyrus.ConceptEdge) erro
 	defer tx.Rollback(ctx)
 
 	for _, e := range edges {
+		if err := okf.ValidateEdge(e); err != nil {
+			return err
+		}
 		_, err := tx.Exec(ctx, `
-			INSERT INTO concept_edges (from_concept_id, to_concept_id, relationship_type, created_by, created_at)
-			VALUES ($1, $2, $3, $4, $5)
+			INSERT INTO concept_edges (from_concept_id, to_concept_id, relationship_type)
+			VALUES ($1, $2, $3)
 			ON CONFLICT (from_concept_id, to_concept_id, relationship_type) 
-			DO UPDATE SET created_by = EXCLUDED.created_by, created_at = EXCLUDED.created_at
-		`, e.FromConceptID, e.ToConceptID, e.RelationshipType, e.CreatedBy, e.CreatedAt)
+			DO NOTHING
+		`, e.FromConceptID, e.ToConceptID, e.RelationshipType)
 		if err != nil {
 			return err
 		}
@@ -314,6 +358,10 @@ func (s *Store) UpsertEdges(ctx context.Context, edges []gyrus.ConceptEdge) erro
 }
 
 func (s *Store) DeleteEdges(ctx context.Context, fromID string, toID string, relType gyrus.RelationshipType) error {
+	if err := okf.ValidateEdge(gyrus.ConceptEdge{FromConceptID: fromID, ToConceptID: toID, RelationshipType: relType}); err != nil {
+		return err
+	}
+
 	_, err := s.pool.Exec(ctx, `
 		DELETE FROM concept_edges 
 		WHERE from_concept_id = $1 AND to_concept_id = $2 AND relationship_type = $3
@@ -322,6 +370,10 @@ func (s *Store) DeleteEdges(ctx context.Context, fromID string, toID string, rel
 }
 
 func (s *Store) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilter) ([]gyrus.ConceptEdge, error) {
+	if err := okf.ValidateName(id); err != nil {
+		return nil, err
+	}
+
 	var rows pgx.Rows
 	var err error
 
@@ -338,15 +390,15 @@ func (s *Store) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilte
 	}
 
 	if dir == "outgoing" {
-		rows, err = s.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE from_concept_id = $1"+whereClause, args...)
+		rows, err = s.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type FROM concept_edges WHERE from_concept_id = $1"+whereClause, args...)
 	} else if dir == "incoming" {
-		rows, err = s.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE to_concept_id = $1"+whereClause, args...)
+		rows, err = s.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type FROM concept_edges WHERE to_concept_id = $1"+whereClause, args...)
 	} else {
 		// both
 		if filter.RelationshipType != "" {
-			rows, err = s.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE (from_concept_id = $1 OR to_concept_id = $1) AND relationship_type = $2", id, filter.RelationshipType)
+			rows, err = s.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type FROM concept_edges WHERE (from_concept_id = $1 OR to_concept_id = $1) AND relationship_type = $2", id, filter.RelationshipType)
 		} else {
-			rows, err = s.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type, created_by, created_at FROM concept_edges WHERE from_concept_id = $1 OR to_concept_id = $1", id)
+			rows, err = s.pool.Query(ctx, "SELECT from_concept_id, to_concept_id, relationship_type FROM concept_edges WHERE from_concept_id = $1 OR to_concept_id = $1", id)
 		}
 	}
 
@@ -358,7 +410,7 @@ func (s *Store) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilte
 	var edges []gyrus.ConceptEdge
 	for rows.Next() {
 		var e gyrus.ConceptEdge
-		if err := rows.Scan(&e.FromConceptID, &e.ToConceptID, &e.RelationshipType, &e.CreatedBy, &e.CreatedAt); err != nil {
+		if err := rows.Scan(&e.FromConceptID, &e.ToConceptID, &e.RelationshipType); err != nil {
 			return nil, err
 		}
 		edges = append(edges, e)
@@ -368,6 +420,10 @@ func (s *Store) Neighbors(ctx context.Context, id string, filter gyrus.EdgeFilte
 }
 
 func (s *Store) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.GraphPath, error) {
+	if err := okf.ValidateName(query.StartID); err != nil {
+		return nil, err
+	}
+
 	var paths []gyrus.GraphPath
 
 	if query.MaxDepth <= 0 {
@@ -408,6 +464,9 @@ func (s *Store) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.G
 		nodes := make(map[string]bool)
 		nodes[query.StartID] = true
 		for _, e := range edges {
+			if err := okf.ValidateEdge(e); err != nil {
+				return nil, err
+			}
 			nodes[e.FromConceptID] = true
 			nodes[e.ToConceptID] = true
 		}
@@ -432,99 +491,6 @@ func (s *Store) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.G
 }
 
 // --- SearchProvider ---
-
-// SearchFTS is the underlying implementation for SearchProvider.Search
-func (s *Store) SearchFTS(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
-	whereClauses := []string{"1=1"}
-	args := []any{}
-	argCount := 1
-
-	if filter.Category != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'category' = $%d", argCount))
-		args = append(args, string(filter.Category))
-		argCount++
-	}
-	if filter.Type != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'type' = $%d", argCount))
-		args = append(args, string(filter.Type))
-		argCount++
-	}
-	if filter.Status != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'status' = $%d", argCount))
-		args = append(args, filter.Status)
-		argCount++
-	}
-	if filter.Tenant != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->>'tenant' = $%d", argCount))
-		args = append(args, filter.Tenant)
-		argCount++
-	}
-	if filter.Tag != "" {
-		whereClauses = append(whereClauses, fmt.Sprintf("frontmatter->'tags' @> $%d", argCount))
-		args = append(args, fmt.Sprintf(`["%s"]`, filter.Tag))
-		argCount++
-	}
-
-	ftsClause := ""
-	scoreSelect := "0::float8 AS score"
-	if query != "" {
-		queryTsQuery := strings.ReplaceAll(query, " ", " | ") // basic text search conversion
-		ftsClause = fmt.Sprintf(" AND search_vector @@ to_tsquery('english', $%d)", argCount)
-		scoreSelect = fmt.Sprintf("ts_rank_cd(search_vector, to_tsquery('english', $%d)) AS score", argCount)
-		args = append(args, queryTsQuery)
-		argCount++
-	}
-
-	whereSql := strings.Join(whereClauses, " AND ") + ftsClause
-
-	sql := fmt.Sprintf(`
-		SELECT frontmatter, content, %s
-		FROM concepts
-		WHERE %s
-		ORDER BY score DESC
-		LIMIT 50
-	`, scoreSelect, whereSql)
-
-	rows, err := s.pool.Query(ctx, sql, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var results []gyrus.SearchResult
-	for rows.Next() {
-		var fm []byte
-		var content string
-		var score float64
-
-		if err := rows.Scan(&fm, &content, &score); err != nil {
-			return nil, err
-		}
-
-		var doc gyrus.Concept
-		if err := json.Unmarshal(fm, &doc); err != nil {
-			return nil, err
-		}
-		doc.Content = content
-
-		results = append(results, gyrus.SearchResult{
-			Concept:     doc,
-			Score:       score,
-			MatchReason: "FTS Match",
-		})
-	}
-
-	return results, nil
-}
-
-func (s *Store) SearchProviderSearch(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
-	return s.SearchFTS(ctx, query, filter)
-}
-
-// Wrapper for the exact interface method
-func (s *Store) SearchConcepts(ctx context.Context, query string, filter gyrus.SearchFilter) ([]gyrus.SearchResult, error) {
-	return s.SearchFTS(ctx, query, filter)
-}
 
 // --- SchemaStore ---
 

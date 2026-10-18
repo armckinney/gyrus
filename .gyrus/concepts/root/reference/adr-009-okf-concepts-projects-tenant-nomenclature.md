@@ -1,17 +1,27 @@
 ---
-id: adr-009-okf-concepts-projects-tenant-nomenclature
 title: OKF Concepts, Projects, and Tenant Nomenclature Refactoring
-category: architecture
+id: adr-009-okf-concepts-projects-tenant-nomenclature
 type: adr
 format: markdown
-tenant: root
-version: 1
+category: architecture
+version: 3
 status: accepted
-immutable: true
+last_updated: 2026-10-16T16:47:49Z
 last_modified_by: antigravity
-last_updated: 2026-10-16T03:30:00Z
-tags: ["nomenclature", "okf", "concepts", "projects", "tenant", "cleanup"]
-dependencies: ["adr-002-simplified-directory-topology", "adr-007-repository-context-and-reference-scoping"]
+tenant: root
+tags:
+    - nomenclature
+    - okf
+    - concepts
+    - projects
+    - tenant
+    - cleanup
+links:
+    - concept: root/reference/adr-002-simplified-directory-topology
+      rel: depends_on
+    - concept: root/reference/adr-007-repository-context-and-reference-scoping
+      rel: depends_on
+immutable: true
 ---
 
 # ADR 009: OKF Concepts, Projects, and Tenant Nomenclature Refactoring
@@ -101,4 +111,3 @@ The filesystem directory structure is updated:
 ### Superseded Records
 - `adr-002-simplified-directory-topology`: Replaced directory layout `.gyrus/docs/` with `.gyrus/concepts/`.
 - `adr-007-repository-context-and-reference-scoping`: Replaced scoping path `.gyrus/docs/<tenant>/workspaces/<name>/` with `.gyrus/concepts/<tenant>/projects/<name>/`.
-

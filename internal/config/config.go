@@ -9,7 +9,6 @@ type Config struct {
 	} `yaml:"storage" json:"storage"`
 	Index struct {
 		Provider string `yaml:"provider" json:"provider"`
-		DSN      string `yaml:"dsn" json:"dsn"`
 	} `yaml:"index" json:"index"`
 	Graph struct {
 		Provider string `yaml:"provider" json:"provider"`
@@ -41,11 +40,6 @@ type Config struct {
 	GCS struct {
 		BucketName string `yaml:"bucket_name" json:"bucket_name"`
 	} `yaml:"gcs" json:"gcs"`
-	Vector struct {
-		EmbeddingProvider string `yaml:"embedding_provider" json:"embedding_provider"`
-		Model             string `yaml:"model" json:"model"`
-		OllamaEndpoint    string `yaml:"ollama_endpoint" json:"ollama_endpoint"`
-	} `yaml:"vector" json:"vector"`
 	Postgres struct {
 		ConnectionString string `yaml:"connection_string" json:"connection_string"`
 	} `yaml:"postgres" json:"postgres"`
@@ -58,33 +52,32 @@ type Config struct {
 // StorageProvider returns the configured storage provider.
 func (c *Config) StorageProvider() string {
 	if c == nil {
-		return ""
+		return DefaultStorageProvider
 	}
-	return c.Storage.Provider
+	return storageName(c.Storage.Provider)
 }
 
 // IndexProvider returns the configured index provider.
-func (c *Config) IndexProvider() string {
-	if c == nil {
-		return ""
-	}
-	return c.Index.Provider
-}
+func (c *Config) IndexProvider() string { return c.effectiveIndex() }
 
 // SearchProvider returns the configured search provider.
 func (c *Config) SearchProvider() string {
-	if c == nil {
-		return ""
+	if c != nil && c.Search.Provider != "" {
+		return c.Search.Provider
 	}
-	return c.Search.Provider
+	switch c.effectiveIndex() {
+	case "postgres":
+		return "postgres_fts"
+	}
+	return "okf"
 }
 
 // GraphProvider returns the configured graph provider.
 func (c *Config) GraphProvider() string {
-	if c == nil {
-		return ""
+	if c != nil && c.Graph.Provider != "" {
+		return c.Graph.Provider
 	}
-	return c.Graph.Provider
+	return c.effectiveIndex()
 }
 
 // StorageRoot returns the configured storage root path.

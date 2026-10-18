@@ -3,31 +3,27 @@ package integration_test
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"testing"
 	"time"
 
-	graphsqlite "github.com/armckinney/gyrus/internal/provider/graph/sqlite"
-	indexsqlite "github.com/armckinney/gyrus/internal/provider/index/sqlite"
-	searchfts5 "github.com/armckinney/gyrus/internal/provider/search/fts5"
+	graphokf "github.com/armckinney/gyrus/internal/provider/graph/okf"
+	searchokf "github.com/armckinney/gyrus/internal/provider/search/okf"
+	"github.com/armckinney/gyrus/internal/provider/storage/localfs"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Performance Benchmark
-// [Purpose]: Benchmarks high-throughput document indexing into SQLite FTS5 index.
-// [Execution Surface]: Real In-Memory / Local SQLite Database
+// [Purpose]: Benchmarks durable creation of OKF concepts.
+// [Execution Surface]: Local filesystem with interprocess locking and atomic writes.
 // [Assertions]: Measures ns/op and allocs/op for document indexing.
 // -----------------------------------------------------------------------------
 func BenchmarkDocumentIndexing(b *testing.B) {
 	tempDir := b.TempDir()
-	dbPath := filepath.Join(tempDir, "bench_index.db")
-
-	indexer, err := indexsqlite.NewIndexer(dbPath)
+	store, err := localfs.NewStore(tempDir)
 	if err != nil {
 		b.Fatalf("Failed creating indexer: %v", err)
 	}
-	defer indexer.Close()
 
 	ctx := context.Background()
 
@@ -42,9 +38,10 @@ func BenchmarkDocumentIndexing(b *testing.B) {
 			Version:     1,
 			Status:      "active",
 			LastUpdated: time.Now(),
-			Content:     "High performance benchmark document body content with indexing terms.",
+			Content:     "High performance benchmark document body content with indexing terms.", Name: "benchmarks/reference/" +
+				fmt.Sprintf("bench-doc-%d", i),
 		}
-		if err := indexer.Index(ctx, doc); err != nil {
+		if _, err := store.Create(ctx, doc); err != nil {
 			b.Fatalf("Index failed at iteration %d: %v", i, err)
 		}
 	}
@@ -52,19 +49,16 @@ func BenchmarkDocumentIndexing(b *testing.B) {
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Performance Benchmark
-// [Purpose]: Benchmarks lexical FTS5 search query latency against pre-populated corpus.
-// [Execution Surface]: Real In-Memory / Local SQLite Database
+// [Purpose]: Benchmarks OKF keyword retrieval over a pre-populated collection.
+// [Execution Surface]: Authoritative local concept files.
 // [Assertions]: Measures query latency and memory allocations during search execution.
 // -----------------------------------------------------------------------------
-func BenchmarkFTS5Search(b *testing.B) {
+func BenchmarkOKFSearch(b *testing.B) {
 	tempDir := b.TempDir()
-	dbPath := filepath.Join(tempDir, "bench_search.db")
-
-	indexer, err := indexsqlite.NewIndexer(dbPath)
+	store, err := localfs.NewStore(tempDir)
 	if err != nil {
 		b.Fatalf("Failed creating indexer: %v", err)
 	}
-	defer indexer.Close()
 
 	ctx := context.Background()
 
@@ -79,16 +73,22 @@ func BenchmarkFTS5Search(b *testing.B) {
 			Version:     1,
 			Status:      "accepted",
 			LastUpdated: time.Now(),
-			Content:     "PostgreSQL and SQLite storage engine with FTS5 lexical ranking.",
+			Content:     "PostgreSQL and SQLite storage engine with FTS5 lexical ranking.", Name: "platform/reference/" +
+				fmt.Sprintf("seed-doc-%d", i),
 		}
-		_ = indexer.Index(ctx, doc)
+		if _, err := store.Create(ctx, doc); err != nil {
+			b.Fatal(err)
+		}
 	}
 
-	searcher := searchfts5.NewSearchProvider(indexer)
+	searcher, err := searchokf.NewSearchProvider(store)
+	if err != nil {
+		b.Fatal(err)
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		results, err := searcher.Search(ctx, "PostgreSQL", gyrus.SearchFilter{})
+		results, err := searcher.Search(ctx, gyrus.SearchQuery{Query: "PostgreSQL"})
 		if err != nil {
 			b.Fatalf("Search failed: %v", err)
 		}
@@ -101,38 +101,41 @@ func BenchmarkFTS5Search(b *testing.B) {
 // -----------------------------------------------------------------------------
 // [Test Level]: Performance Benchmark
 // [Purpose]: Benchmarks multi-hop graph traversal latency across directed edge relationships.
-// [Execution Surface]: Real In-Memory / Local SQLite Database
+// [Execution Surface]: Persisted OKF typed links.
 // [Assertions]: Measures traversal latency across chained graph nodes.
 // -----------------------------------------------------------------------------
 func BenchmarkGraphTraversal(b *testing.B) {
 	tempDir := b.TempDir()
-	dbPath := filepath.Join(tempDir, "bench_graph.db")
-
-	indexer, err := indexsqlite.NewIndexer(dbPath)
+	store, err := localfs.NewStore(tempDir)
 	if err != nil {
 		b.Fatalf("Failed creating indexer: %v", err)
 	}
-	defer indexer.Close()
-
-	graphStore := graphsqlite.NewGraphStore(indexer.DB())
+	graphStore, err := graphokf.NewGraphStore(store)
+	if err != nil {
+		b.Fatal(err)
+	}
 	ctx := context.Background()
 
 	// Seed a chain of 50 graph edges
 	var edges []gyrus.ConceptEdge
 	for i := 0; i < 50; i++ {
+		if _, err := store.Create(ctx, okfConcept(fmt.Sprintf("node-%d", i))); err != nil {
+			b.Fatal(err)
+		}
 		edges = append(edges, gyrus.ConceptEdge{
-			FromConceptID:    fmt.Sprintf("node-%d", i),
-			ToConceptID:      fmt.Sprintf("node-%d", i+1),
+			FromConceptID:    fmt.Sprintf("root/reference/node-%d", i),
+			ToConceptID:      fmt.Sprintf("root/reference/node-%d", i+1),
 			RelationshipType: gyrus.RelDependsOn,
-			CreatedAt:        time.Now(),
 		})
 	}
-	_ = graphStore.UpsertEdges(ctx, edges)
+	if err := graphStore.UpsertEdges(ctx, edges); err != nil {
+		b.Fatal(err)
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := graphStore.Traverse(ctx, gyrus.GraphQuery{
-			StartID:  "node-0",
+			StartID:  "root/reference/node-0",
 			MaxDepth: 10,
 		})
 		if err != nil {

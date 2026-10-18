@@ -1,17 +1,17 @@
 ---
-id: <unique-dashed-id>
 title: <Clean Document Title>
-category: architecture
+id: <unique-dashed-id>
 type: adr
 format: markdown
-tenant: <team-owning-document>
+category: architecture
 version: 1
 status: proposed
-immutable: true
-last_modified_by: <author-username>
 last_updated: YYYY-MM-DD
+last_modified_by: <author-username>
+tenant: <team-owning-document>
 tags: []
-dependencies: []
+links: []
+immutable: true
 ---
 
 # Architecture Decision Record: [Short Title of Decision]

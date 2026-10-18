@@ -1,14 +1,14 @@
 ---
-id: adr-006-native-mcp-workspace-discovery-and-lifecycle-cli-refactor
 title: Native MCP Architecture, Multi-Tier Workspace Discovery, and Client Lifecycle CLI Refactor
-category: architecture
+id: adr-006-native-mcp-workspace-discovery-and-lifecycle-cli-refactor
 type: adr
 format: markdown
-tenant: root
+category: architecture
 version: 3
 status: superseded
-last_modified_by: "antigravity"
 last_updated: 2026-10-16T01:24:00Z
+last_modified_by: "antigravity"
+tenant: root
 ---
 
 # ADR 006: Native MCP Architecture, Multi-Tier Workspace Discovery, and Client Lifecycle CLI Refactor

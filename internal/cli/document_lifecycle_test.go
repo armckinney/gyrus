@@ -57,7 +57,7 @@ func TestCLIInitAndCreateAndGet(t *testing.T) {
 	rootCmd.SetArgs([]string{
 		"--json",
 		"get",
-		"adr-2026-cli",
+		"platform/projects/default/adr-2026-cli",
 	})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("gyrus get failed: %v", err)

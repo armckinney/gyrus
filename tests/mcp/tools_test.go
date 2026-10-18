@@ -71,7 +71,7 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 		},
 	})
 	textA := parseToolContent(t, createRespA)
-	if !strings.Contains(textA, "prd-mcp-e2e-001") {
+	if !strings.Contains(textA, "platform-eng/projects/default/prd-mcp-e2e-001") {
 		t.Errorf("Expected doc ID in create response, got: %s", textA)
 	}
 
@@ -94,7 +94,7 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 	getResp := client.Call(t, "tools/call", map[string]any{
 		"name": "gyrus_get",
 		"arguments": map[string]any{
-			"id": "prd-mcp-e2e-001",
+			"id": "platform-eng/projects/default/prd-mcp-e2e-001",
 		},
 	})
 	getText := parseToolContent(t, getResp)
@@ -106,7 +106,7 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 	updateResp := client.Call(t, "tools/call", map[string]any{
 		"name": "gyrus_update",
 		"arguments": map[string]any{
-			"id":               "prd-mcp-e2e-001",
+			"id":               "platform-eng/projects/default/prd-mcp-e2e-001",
 			"title":            "MCP Interface Spec v2",
 			"expected_version": 1,
 		},
@@ -122,7 +122,7 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 		},
 	})
 	searchText := parseToolContent(t, searchResp)
-	if !strings.Contains(searchText, "adr-mcp-e2e-001") {
+	if !strings.Contains(searchText, "platform-eng/projects/default/adr-mcp-e2e-001") {
 		t.Errorf("Expected adr-mcp-e2e-001 in search results, got:\n%s", searchText)
 	}
 
@@ -142,8 +142,8 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 	linkResp := client.Call(t, "tools/call", map[string]any{
 		"name": "gyrus_link",
 		"arguments": map[string]any{
-			"from_id":  "prd-mcp-e2e-001",
-			"to_id":    "adr-mcp-e2e-001",
+			"from_id":  "platform-eng/projects/default/prd-mcp-e2e-001",
+			"to_id":    "platform-eng/projects/default/adr-mcp-e2e-001",
 			"rel_type": "depends_on",
 		},
 	})
@@ -156,12 +156,12 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 	neighborsResp := client.Call(t, "tools/call", map[string]any{
 		"name": "gyrus_neighbors",
 		"arguments": map[string]any{
-			"id":        "prd-mcp-e2e-001",
+			"id":        "platform-eng/projects/default/prd-mcp-e2e-001",
 			"direction": "outgoing",
 		},
 	})
 	neighborsText := parseToolContent(t, neighborsResp)
-	if !strings.Contains(neighborsText, "adr-mcp-e2e-001") {
+	if !strings.Contains(neighborsText, "platform-eng/projects/default/adr-mcp-e2e-001") {
 		t.Errorf("Expected neighbor edge in response, got: %s", neighborsText)
 	}
 
@@ -169,12 +169,12 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 	traverseResp := client.Call(t, "tools/call", map[string]any{
 		"name": "gyrus_traverse",
 		"arguments": map[string]any{
-			"start_id":  "prd-mcp-e2e-001",
+			"start_id":  "platform-eng/projects/default/prd-mcp-e2e-001",
 			"max_depth": 2,
 		},
 	})
 	traverseText := parseToolContent(t, traverseResp)
-	if !strings.Contains(traverseText, "adr-mcp-e2e-001") {
+	if !strings.Contains(traverseText, "platform-eng/projects/default/adr-mcp-e2e-001") {
 		t.Errorf("Expected traversal path to adr-mcp-e2e-001, got: %s", traverseText)
 	}
 
@@ -182,8 +182,8 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 	unlinkResp := client.Call(t, "tools/call", map[string]any{
 		"name": "gyrus_unlink",
 		"arguments": map[string]any{
-			"from_id":  "prd-mcp-e2e-001",
-			"to_id":    "adr-mcp-e2e-001",
+			"from_id":  "platform-eng/projects/default/prd-mcp-e2e-001",
+			"to_id":    "platform-eng/projects/default/adr-mcp-e2e-001",
 			"rel_type": "depends_on",
 		},
 	})
@@ -192,18 +192,11 @@ func TestMCP_All11ToolsEndToEnd(t *testing.T) {
 		t.Errorf("Expected unlink confirmation, got: %s", unlinkText)
 	}
 
-	// 11. gyrus_sync
-	syncResp := client.Call(t, "tools/call", map[string]any{
-		"name":      "gyrus_sync",
-		"arguments": map[string]any{},
-	})
-	parseToolContent(t, syncResp)
-
 	// 12. gyrus_archive
 	archiveResp := client.Call(t, "tools/call", map[string]any{
 		"name": "gyrus_archive",
 		"arguments": map[string]any{
-			"id": "adr-mcp-e2e-001",
+			"id": "platform-eng/projects/default/adr-mcp-e2e-001",
 		},
 	})
 	archiveText := parseToolContent(t, archiveResp)

@@ -30,8 +30,8 @@ func TestLoadDefaultsOnly(t *testing.T) {
 	if rc.StorageRoot != expectedRoot {
 		t.Errorf("Expected storage root '%s', got '%s'", expectedRoot, rc.StorageRoot)
 	}
-	if rc.Config.StorageProvider() != "" {
-		t.Errorf("Expected empty default storage provider, got '%s'", rc.Config.StorageProvider())
+	if rc.Config.StorageProvider() != "localfs" {
+		t.Errorf("Expected localfs default storage provider, got '%s'", rc.Config.StorageProvider())
 	}
 	if rc.Config.TenantName() != "root" {
 		t.Errorf("Expected default tenant 'root', got '%s'", rc.Config.TenantName())
@@ -91,9 +91,9 @@ func TestLoadProjectOnly(t *testing.T) {
   provider: localfs
   root: .my-store
 index:
-  provider: sqlite
+  provider: okf
 search:
-  provider: sqlite
+  provider: okf
 tenant: project-team
 `
 	if err := os.WriteFile(filepath.Join(tempWork, ".gyrus.yaml"), []byte(wsYaml), 0644); err != nil {
@@ -498,7 +498,6 @@ func TestWriteConfigFileProfiles(t *testing.T) {
 		{config.ProfileAzure, "provider: azure_blob"},
 		{config.ProfileGCS, "provider: gcs"},
 		{config.ProfilePostgres, "provider: postgres"},
-		{config.ProfileVector, "provider: vector"},
 	}
 
 	for _, p := range profiles {

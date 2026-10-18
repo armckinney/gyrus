@@ -6,14 +6,13 @@ storage:
   root: ./.gyrus
 
 index:
-  provider: sqlite
-  dsn: ./.gyrus/index.db
+  provider: okf
 
 graph:
-  provider: sqlite
+  provider: okf
 
 search:
-  provider: sqlite_fts5
+  provider: okf
 
 ui:
   client: antigravity

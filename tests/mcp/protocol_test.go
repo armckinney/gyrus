@@ -251,7 +251,7 @@ func TestMCP_CapabilitiesListing(t *testing.T) {
 	expectedTools := []string{
 		"gyrus_create", "gyrus_get", "gyrus_update", "gyrus_archive",
 		"gyrus_search", "gyrus_suggest_context", "gyrus_link", "gyrus_unlink",
-		"gyrus_neighbors", "gyrus_traverse", "gyrus_sync",
+		"gyrus_neighbors", "gyrus_traverse",
 		"gyrus_schema_get", "gyrus_schema_set", "gyrus_schema_list", "gyrus_schema_delete",
 	}
 
@@ -264,6 +264,9 @@ func TestMCP_CapabilitiesListing(t *testing.T) {
 		if !toolMap[exp] {
 			t.Errorf("Missing expected MCP tool: %s", exp)
 		}
+	}
+	if toolMap["gyrus_sync"] {
+		t.Error("removed sync tool is still registered")
 	}
 
 	// 2. resources/list

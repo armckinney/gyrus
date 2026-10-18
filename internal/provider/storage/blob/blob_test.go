@@ -2,7 +2,9 @@ package blob
 
 import (
 	"context"
+	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -31,14 +33,14 @@ func TestBlobStore(t *testing.T) {
 	}
 	defer bucket.Close()
 
-	store := NewStoreWithBucket(bucket, "testprefix")
+	store := NewStoreWithBucket(bucket, "testprefix", WithFileRoot(dir))
 
 	now := time.Now().Truncate(time.Second)
 	concept := gyrus.Concept{
 		ID:             "adr-2026-001",
 		Title:          "Test ADR",
 		Category:       gyrus.CategoryArchitecture,
-		Type:           gyrus.TypeADR,
+		Type:           gyrus.TypeGuide,
 		Format:         "markdown",
 		Tenant:         "platform",
 		Version:        1,
@@ -46,7 +48,7 @@ func TestBlobStore(t *testing.T) {
 		LastModifiedBy: "tester",
 		LastUpdated:    now,
 		Tags:           []string{"test"},
-		Content:        "# Hello World\nThis is a test.",
+		Content:        "# Hello World\nThis is a test.", Name: "platform/reference/adr-2026-001",
 	}
 
 	// Test Create
@@ -59,7 +61,7 @@ func TestBlobStore(t *testing.T) {
 	}
 
 	// Test Get
-	fetched, err := store.Get(ctx, concept.ID)
+	fetched, err := store.Get(ctx, concept.Name)
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
 	}
@@ -79,7 +81,7 @@ func TestBlobStore(t *testing.T) {
 		Title: &newTitle,
 	}
 
-	updRef, err := store.Update(ctx, concept.ID, patch, 1)
+	updRef, err := store.Update(ctx, concept.Name, patch, 1)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
@@ -87,7 +89,7 @@ func TestBlobStore(t *testing.T) {
 		t.Errorf("expected version 2, got %d", updRef.Version)
 	}
 
-	fetched2, err := store.Get(ctx, concept.ID)
+	fetched2, err := store.Get(ctx, concept.Name)
 	if err != nil {
 		t.Fatalf("Get after update failed: %v", err)
 	}
@@ -96,12 +98,12 @@ func TestBlobStore(t *testing.T) {
 	}
 
 	// Test Archive
-	err = store.Archive(ctx, concept.ID)
+	err = store.Archive(ctx, concept.Name)
 	if err != nil {
 		t.Fatalf("Archive failed: %v", err)
 	}
 
-	fetched3, err := store.Get(ctx, concept.ID)
+	fetched3, err := store.Get(ctx, concept.Name)
 	if err != nil {
 		t.Fatalf("Get after archive failed: %v", err)
 	}
@@ -110,12 +112,12 @@ func TestBlobStore(t *testing.T) {
 	}
 
 	// Test Delete
-	err = store.Delete(ctx, concept.ID)
+	err = store.Delete(ctx, concept.Name)
 	if err != nil {
 		t.Fatalf("Delete failed: %v", err)
 	}
 
-	_, err = store.Get(ctx, concept.ID)
+	_, err = store.Get(ctx, concept.Name)
 	if err == nil {
 		t.Fatalf("expected error getting deleted concept")
 	}
@@ -142,7 +144,7 @@ func TestBlobSchemaStore(t *testing.T) {
 	}
 	defer bucket.Close()
 
-	store := NewStoreWithBucket(bucket, "testprefix")
+	store := NewStoreWithBucket(bucket, "testprefix", WithFileRoot(dir))
 	var schemaStore gyrus.SchemaStore = store
 
 	// 1. Initial list empty
@@ -198,5 +200,43 @@ status: active
 	_, err = schemaStore.GetSchema(ctx, "spec")
 	if err == nil {
 		t.Fatal("expected error getting deleted schema, got nil")
+	}
+}
+
+func TestBlobCanonicalScopeAndScanErrors(t *testing.T) {
+	ctx := context.Background()
+	root := t.TempDir()
+	store, err := NewStore(ctx, "file://"+filepath.ToSlash(root), "prefix/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	doc := gyrus.Concept{ID: "scoped", Title: "Scoped", Category: gyrus.CategoryTechnical, Type: gyrus.TypeGuide, Tenant: "root", Project: "demo", Scope: "project", Version: 1, Status: "active", Name: "root/projects/demo/scoped"}
+	if _, err := store.Create(ctx, doc); err != nil {
+		t.Fatal(err)
+	}
+	got, err := store.Get(ctx, doc.Name)
+	if err != nil || got.Scope != "project" || got.Project != "demo" || got.FilePath != "prefix/concepts/root/projects/demo/scoped.md" {
+		t.Fatalf("canonical scope: %+v %v", got, err)
+	}
+	if err := store.bucket.WriteAll(ctx, "prefix/concepts/root/reference/bad.md", []byte("bad payload"), nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.bucket.WriteAll(ctx, "ignored.md", []byte("bad payload"), nil); err != nil {
+		t.Fatal(err)
+	}
+	report, err := store.Scan(ctx, func(gyrus.Concept) error { return nil })
+	if err != nil || report.ScannedFiles != 2 || report.IndexedFiles != 1 || len(report.Errors) != 1 {
+		t.Fatalf("scan: %+v %v", report, err)
+	}
+	conflictDoc := doc
+	conflictDoc.Project = "another"
+	if _, err := store.Create(ctx, conflictDoc); err != nil {
+		t.Fatal("same local ID at another qualified name rejected", err)
+	}
+	cancelled, cancel := context.WithCancel(ctx)
+	cancel()
+	if _, err := store.Scan(cancelled, func(gyrus.Concept) error { return nil }); !errors.Is(err, context.Canceled) {
+		t.Fatalf("cancelled scan: %v", err)
 	}
 }

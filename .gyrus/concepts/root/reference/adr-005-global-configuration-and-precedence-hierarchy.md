@@ -1,14 +1,14 @@
 ---
-id: adr-005-global-configuration-and-precedence-hierarchy
 title: Global Configuration and Simplified Precedence Hierarchy
-category: architecture
+id: adr-005-global-configuration-and-precedence-hierarchy
 type: adr
 format: ""
-tenant: root
+category: architecture
 version: 1
 status: accepted
-last_modified_by: ""
 last_updated: 2026-09-30T21:41:45Z
+last_modified_by: ""
+tenant: root
 ---
 
 # ADR 005: Global Configuration and Simplified Precedence Hierarchy

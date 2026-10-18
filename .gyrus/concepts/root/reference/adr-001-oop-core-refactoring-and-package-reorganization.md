@@ -1,14 +1,14 @@
 ---
-id: adr-001-oop-core-refactoring-and-package-reorganization
 title: OOP Core Refactoring & Package Reorganization
-category: architecture
+id: adr-001-oop-core-refactoring-and-package-reorganization
 type: adr
 format: ""
-tenant: root
+category: architecture
 version: 1
 status: accepted
-last_modified_by: root
 last_updated: 2026-08-12T04:14:35Z
+last_modified_by: root
+tenant: root
 tags:
     - adr
     - refactoring

@@ -1,66 +1,61 @@
-# OKF Document Schemas Reference
+# Gyrus concept contract — quick reference
 
-This reference documents all 11 Open Knowledge Format (OKF) document types, their YAML frontmatter specifications, allowed lifecycle states, and mutability rules.
+Use `gyrus schema get <type>` for a template. Code defines validation; custom templates do not change it. Required metadata and typed links are Gyrus extensions to upstream OKF.
 
-## 📋 Allowed Document Types & Categories
-
-### Categories (`--category`)
-- `architecture`: Software architecture, design patterns, decisions, infrastructure topology.
-- `business-logic`: Requirements, specifications, domain logic, product features.
-- `product`: Value proposition, positioning, roadmaps, release schedules.
-- `operations`: Runbooks, deployment guides, monitoring, incident response.
-- `technical`: Developer guides, codebase standards, API documentation, technical reference.
-
-### Document Types (`--type`)
-1. `adr`: Architecture Design Record (Immutable once accepted).
-2. `prd`: Product Requirement Document (Living context).
-3. `specification`: Technical Specification (Living context).
-4. `guide`: Developer or Operational Guide (Living context).
-5. `standards`: Engineering Standards & Coding Guidelines (Living context).
-6. `technical-reference`: System Architecture & Component Reference (Living context).
-7. `product`: Product Vision & Feature Spec (Living context).
-8. `release-note`: Release Notes (Immutable log).
-9. `improvement-proposal`: Improvement Proposal (Immutable once accepted).
-10. `glossary`: Domain Glossary & Terminology (Living context).
-11. `freeform`: General Unstructured Markdown (Living context).
-
----
-
-## 📜 YAML Frontmatter Schema
-
-Every OKF document starts with YAML frontmatter:
+## Frontmatter
 
 ```yaml
 ---
-id: adr-001-storage-engine
-title: SQLite FTS5 for Local Search
-category: architecture
+title: Storage decision
+id: adr-storage
 type: adr
 format: markdown
-tenant: platform
+category: architecture
 version: 1
-status: accepted
-last_modified_by: root
-last_updated: 2026-07-23T20:00:00Z
-immutable: true
-tags:
-  - storage
-  - sqlite
-dependencies:
-  - prd-001-master-spec
+status: proposed
+last_updated: 2026-10-16T00:00:00Z
+last_modified_by: developer
+tenant: root
+tags: [storage]
+links:
+  - concept: root/reference/spec-004-core-engine
+    rel: depends_on
 ---
 
-# Document Title
-Markdown content goes here...
+# Storage decision
 ```
 
----
+| Rule | Contract |
+| --- | --- |
+| Required | Nonempty `title`, `id`, `type`, `category`, `status`, `tenant`; integer `version >= 1`. |
+| Local ID | `^[a-z0-9-_]+$`; equals filename without extension; safe path segment. |
+| Optional | `format`, `last_updated`, `last_modified_by`, `tags`, `links`, `immutable`. |
+| Write order | As shown above; additional fields (e.g. `immutable`) follow `links`. |
+| Categories | `architecture`, `business-logic`, `product`, `operations`, `technical`. |
+| Types | `adr`, `prd`, `guide`, `improvement-proposal`, `release-note`, `specification`, `standards`, `technical-reference`, `product`, `glossary`, `freeform`. |
 
-## ⚙️ Lifecycle State Transitions
+## Identity and links
 
-| Document Type | Allowed Statuses | Valid Transitions |
-| :--- | :--- | :--- |
-| `adr` | `draft`, `proposed`, `accepted`, `rejected`, `deprecated`, `superseded` | `draft` ➔ `proposed` ➔ `accepted`/`rejected` ➔ `deprecated`/`superseded` |
-| `improvement-proposal` | `draft`, `proposed`, `accepted`, `rejected`, `withdrawn` | `draft` ➔ `proposed` ➔ `accepted`/`rejected`/`withdrawn` |
-| `release-note` | `draft`, `published` | `draft` ➔ `published` |
-| Living Docs (`prd`, `spec`, etc.) | `draft`, `proposed`, `active`, `deprecated`, `archived` | `draft` ➔ `proposed` ➔ `active` ➔ `deprecated`/`archived` |
+- **Name:** `tenant/reference/id` or `tenant/projects/project/id`. Case-sensitive, no leading slash/extension. Local IDs may repeat; names cannot.
+- **Location:** `concepts/<name>.md`; tenant/filename match metadata. Omit derived `name`, `scope`, `project`, `filepath` from YAML.
+- **Create:** local `id` + tenant/scope/project; returns local `id` and qualified `name`.
+- **Existing-concept operations:** qualified names only. Moves do not rewrite links.
+- **Link:** exactly `{concept: <qualified-name>, rel: <relation>}`. Relations: `depends_on`, `implements`, `supersedes`, `mitigates`. Source is implicit; incoming queries derive backlinks.
+- **OKF graph:** cycles/self-links/missing targets allowed; duplicate tuples normalize to one edge.
+- **Rejected:** `dependencies`, old link keys `target_id`/`rel_type`, per-link creation metadata, other unknown link keys. CLI `--rel-type` and MCP `rel_type` arguments remain valid.
+
+## Lifecycle
+
+| Type | Allowed transitions |
+| --- | --- |
+| ADR | proposed → accepted/rejected; accepted → superseded/deprecated |
+| Improvement proposal | draft → reviewing/abandoned; reviewing → approved/rejected/abandoned; approved → implemented/abandoned |
+| Others | draft → active/archived; active → deprecated/archived; deprecated → archived |
+
+Same-state updates are allowed. Preserve finalized ADR/proposal/release-note bodies. `immutable: true` locks bodies outside draft/proposed; metadata stays editable. Initial status validation checks nonemptiness; updates check transitions. Use link/unlink for relationships and expected versions for updates.
+
+## Persistence and legacy data
+
+Normal typed serialization drops unknown top-level fields/comments and trims surrounding body whitespace.
+
+Use `gyrus-migrate-sqlite-to-okf` for legacy data and database-only edges. SQLite index/graph/search providers and the sync command/tool have been removed. OKF reads the collection directly; validate individual files with `gyrus validate <filepath> --json`.

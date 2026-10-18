@@ -2,11 +2,11 @@ package gyrus_test
 
 import (
 	"encoding/json"
+	"gopkg.in/yaml.v3"
 	"testing"
 	"time"
 
 	"github.com/armckinney/gyrus/pkg/gyrus"
-	"gopkg.in/yaml.v3"
 )
 
 // -----------------------------------------------------------------------------
@@ -29,8 +29,8 @@ func TestConceptJSONSerialization(t *testing.T) {
 		LastModifiedBy: "developer-joe",
 		LastUpdated:    now,
 		Tags:           []string{"storage", "sqlite"},
-		Dependencies:   []string{"prd-context-manager"},
-		Content:        "# Test Content",
+		Links:          []gyrus.ConceptLink{{Concept: "root/reference/prd-context-manager", Rel: gyrus.RelDependsOn}},
+		Content:        "# Test Content", Name: "platform-engineering/reference/adr-2026-001",
 	}
 
 	data, err := json.Marshal(concept)
@@ -71,7 +71,7 @@ func TestConceptYAMLFrontmatterSerialization(t *testing.T) {
 		Version:        1,
 		Status:         "draft",
 		LastModifiedBy: "pm-jane",
-		Tags:           []string{"prd", "specs"},
+		Tags:           []string{"prd", "specs"}, Name: "product/projects/gyrus/prd-2026-001",
 	}
 
 	data, err := yaml.Marshal(concept)

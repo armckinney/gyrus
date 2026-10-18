@@ -1,6 +1,9 @@
 package gyrus
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // Category represents a top-level category classification.
 type Category string
@@ -32,27 +35,29 @@ const (
 
 // Concept represents an Open Knowledge Format (OKF) contract concept.
 type Concept struct {
-	ID             string      `json:"id" yaml:"id"`
-	Title          string      `json:"title" yaml:"title"`
-	Category       Category    `json:"category" yaml:"category"`
-	Type           ConceptType `json:"type" yaml:"type"`
-	Format         string      `json:"format" yaml:"format"`
-	Tenant         string      `json:"tenant" yaml:"tenant"`
-	Version        int         `json:"version" yaml:"version"`
-	Status         string      `json:"status" yaml:"status"`
-	Immutable      bool        `json:"immutable,omitempty" yaml:"immutable,omitempty"`
-	LastModifiedBy string      `json:"last_modified_by" yaml:"last_modified_by"`
-	LastUpdated    time.Time   `json:"last_updated" yaml:"last_updated"`
-	Tags           []string    `json:"tags,omitempty" yaml:"tags,omitempty"`
-	Dependencies   []string    `json:"dependencies,omitempty" yaml:"dependencies,omitempty"`
-	Scope          string      `json:"scope,omitempty" yaml:"-"`
-	Project        string      `json:"project,omitempty" yaml:"-"`
-	FilePath       string      `json:"filepath,omitempty" yaml:"-"`
-	Content        string      `json:"content" yaml:"-"`
+	Name           string        `json:"name,omitempty" yaml:"-"`
+	ID             string        `json:"id" yaml:"id"`
+	Title          string        `json:"title" yaml:"title"`
+	Category       Category      `json:"category" yaml:"category"`
+	Type           ConceptType   `json:"type" yaml:"type"`
+	Format         string        `json:"format" yaml:"format"`
+	Tenant         string        `json:"tenant" yaml:"tenant"`
+	Version        int           `json:"version" yaml:"version"`
+	Status         string        `json:"status" yaml:"status"`
+	Immutable      bool          `json:"immutable,omitempty" yaml:"immutable,omitempty"`
+	LastModifiedBy string        `json:"last_modified_by" yaml:"last_modified_by"`
+	LastUpdated    time.Time     `json:"last_updated" yaml:"last_updated"`
+	Tags           []string      `json:"tags,omitempty" yaml:"tags,omitempty"`
+	Links          []ConceptLink `json:"links,omitempty" yaml:"links,omitempty"`
+	Scope          string        `json:"scope,omitempty" yaml:"-"`
+	Project        string        `json:"project,omitempty" yaml:"-"`
+	FilePath       string        `json:"filepath,omitempty" yaml:"-"`
+	Content        string        `json:"content" yaml:"-"`
 }
 
 // ConceptRef holds lightweight reference metadata returned after a mutation.
 type ConceptRef struct {
+	Name        string    `json:"name"`
 	ID          string    `json:"id"`
 	Version     int       `json:"version"`
 	Status      string    `json:"status"`
@@ -61,12 +66,12 @@ type ConceptRef struct {
 
 // ConceptPatch represents a mutation request to update concept fields.
 type ConceptPatch struct {
-	Title        *string   `json:"title,omitempty"`
-	Status       *string   `json:"status,omitempty"`
-	Tags         *[]string `json:"tags,omitempty"`
-	Dependencies *[]string `json:"dependencies,omitempty"`
-	Content      *string   `json:"content,omitempty"`
-	Reason       string    `json:"reason"`
+	Title   *string        `json:"title,omitempty"`
+	Status  *string        `json:"status,omitempty"`
+	Tags    *[]string      `json:"tags,omitempty"`
+	Links   *[]ConceptLink `json:"links,omitempty"`
+	Content *string        `json:"content,omitempty"`
+	Reason  string         `json:"reason"`
 }
 
 // SearchFilter specifies filter constraints for lexical and metadata queries.
@@ -87,6 +92,19 @@ type SearchQuery struct {
 	MaxResults int          `json:"max_results"`
 }
 
+const DefaultSearchLimit = 10
+
+// Limit leaves empty-query browsing unlimited unless a positive limit is supplied.
+func (q SearchQuery) Limit() int {
+	if q.MaxResults > 0 {
+		return q.MaxResults
+	}
+	if strings.TrimSpace(q.Query) != "" {
+		return DefaultSearchLimit
+	}
+	return 0
+}
+
 // SearchResult represents a matching concept result from search execution.
 type SearchResult struct {
 	Concept     Concept `json:"concept"`
@@ -96,6 +114,12 @@ type SearchResult struct {
 
 // RelationshipType specifies valid edge linkage types between concepts.
 type RelationshipType string
+
+// ConceptLink is a source-owned directed relationship in OKF frontmatter.
+type ConceptLink struct {
+	Concept string           `json:"concept" yaml:"concept"`
+	Rel     RelationshipType `json:"rel" yaml:"rel"`
+}
 
 const (
 	RelSupersedes RelationshipType = "supersedes"
@@ -109,8 +133,6 @@ type ConceptEdge struct {
 	FromConceptID    string           `json:"from_concept_id"`
 	ToConceptID      string           `json:"to_concept_id"`
 	RelationshipType RelationshipType `json:"relationship_type"`
-	CreatedBy        string           `json:"created_by"`
-	CreatedAt        time.Time        `json:"created_at"`
 }
 
 // EdgeFilter represents parameters to query concept relationship edges.

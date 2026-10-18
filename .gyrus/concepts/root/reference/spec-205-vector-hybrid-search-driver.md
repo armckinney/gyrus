@@ -1,14 +1,14 @@
 ---
+title: Deferred semantic search backend
 id: spec-205-vector-hybrid-search-driver
-title: 'GYRUS-205: Semantic Vector Embedding & Hybrid Search Driver'
-category: technical
 type: specification
-format: ""
-tenant: root
-version: 1
-status: completed
+format: markdown
+category: technical
+version: 3
+status: deprecated
+last_updated: 2026-10-18T00:00:28Z
 last_modified_by: ""
-last_updated: 2026-07-23T21:23:12Z
+tenant: root
 tags:
     - phase-2.1
     - search-provider
@@ -17,19 +17,16 @@ tags:
     - openai
 ---
 
-# GYRUS-205: Semantic Vector Embedding & Hybrid Search Driver
+# Deferred semantic search backend
 
-## 1. Overview & Objective
-Implement a semantic vector embedding search provider under `internal/provider/vector` supporting hybrid lexical + vector search using Reciprocal Rank Fusion (RRF).
+The in-process vector/hybrid search prototype has been retired. This deprecated specification is retained as context for future backend planning, not as a description of a supported Gyrus provider.
 
-## 2. Requirements & Constraints
-- Must implement `gyrus.SearchProvider` interface.
-- Provide a pluggable `EmbeddingProvider` interface (`Embed(ctx, text) ([]float32, error)`).
-- Implement built-in client for **Local Ollama** (e.g. `http://localhost:11434/api/embeddings` using `nomic-embed-text`) for zero-infra local execution.
-- Implement built-in client for **OpenAI** (`text-embedding-3-small`).
-- Use `pgvector` or local cosine similarity to score vector distances.
-- Merge BM25 lexical search results with vector similarity ranks using Reciprocal Rank Fusion (RRF).
+## Current implementation
 
-## 3. Key Test Verification
-- Vector search test suite in `internal/provider/vector/vector_test.go`.
-- Mock embedding provider tests verifying RRF hybrid rank fusion score calculations.
+Supported search providers are OKF keyword scanning and PostgreSQL full-text search. PostgreSQL tsvector remains part of its native full-text implementation. There is no runtime vector contract or compatibility handling; configuration uses shared provider/profile validation and standard YAML decoding.
+
+## Future work
+
+Semantic retrieval, vectorization, embedding lifecycle, and service integration are deferred to a future backend design. That work must define ownership, freshness, failure isolation, and integration contracts before implementation. No embedding API, model default, or vector configuration is promised by this specification.
+
+See the accepted decision root/reference/adr-013-defer-vector-search for the removal rationale. Historical ADR bodies are retained unchanged.

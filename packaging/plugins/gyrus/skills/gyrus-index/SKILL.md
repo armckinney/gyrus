@@ -35,6 +35,6 @@ Formulate a concise, synthesized proposal of 3-4 core living documents for the r
   - `id`, `title`, `category`, `type`, `tenant`, `version: 1`, `status: active`.
 - Ensure documents capture **high-level intent and boundaries**, not line-by-line function implementations.
 
-### Step 5: Index & Synchronize
-- Run `gyrus sync` to parse documents, build the SQLite FTS search index, and construct dependency edges.
+### Step 5: Verify retrieval
+- Run `gyrus search --query "" --scope all --max-results 0 --json` and compare the complete qualified-name inventory with the created concepts. OKF providers read concepts and links directly; no sync command or SQLite index is required.
 - Inform the developer that Gyrus is primed and ready to provide architectural context to all AI agents.

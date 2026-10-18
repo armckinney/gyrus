@@ -1,14 +1,14 @@
 ---
-id: tech-ref-003-context-engine-market-comparison
 title: Gyrus Context Engine Market & Solution Comparison Matrix
-category: technical
+id: tech-ref-003-context-engine-market-comparison
 type: technical-reference
 format: ""
-tenant: root
+category: technical
 version: 1
 status: active
-last_modified_by: ""
 last_updated: 2026-07-23T20:05:10Z
+last_modified_by: ""
+tenant: root
 tags:
     - competitive-analysis
     - market-comparison

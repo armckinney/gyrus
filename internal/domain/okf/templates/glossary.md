@@ -1,16 +1,16 @@
 ---
-id: <unique-dashed-id>
 title: <Clean Document Title>
-category: business-logic
+id: <unique-dashed-id>
 type: glossary
 format: markdown
-tenant: <team-owning-document>
+category: business-logic
 version: 1
 status: proposed
-last_modified_by: <author-username>
 last_updated: YYYY-MM-DD
+last_modified_by: <author-username>
+tenant: <team-owning-document>
 tags: [glossary, terminology]
-dependencies: []
+links: []
 ---
 
 # System Glossary: [Product / Domain Name]

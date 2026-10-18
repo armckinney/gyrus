@@ -1,14 +1,14 @@
 ---
-id: spec-204-postgres-fts-search-driver
 title: 'GYRUS-204: PostgreSQL Full-Text Search Engine'
-category: technical
+id: spec-204-postgres-fts-search-driver
 type: specification
 format: ""
-tenant: root
+category: technical
 version: 1
 status: completed
-last_modified_by: ""
 last_updated: 2026-07-23T21:23:12Z
+last_modified_by: ""
+tenant: root
 tags:
     - phase-2.1
     - search-provider

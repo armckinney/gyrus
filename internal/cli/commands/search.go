@@ -57,13 +57,9 @@ func NewSearchCmd(application *app.App) *cobra.Command {
 				Project:  effectiveProject,
 			}
 
-			results, err := engine.Search(context.Background(), queryStr, filter)
+			results, err := engine.SearchQuery(context.Background(), gyrus.SearchQuery{Query: queryStr, Filter: filter, MaxResults: maxResults})
 			if err != nil {
 				return err
-			}
-
-			if maxResults > 0 && len(results) > maxResults {
-				results = results[:maxResults]
 			}
 
 			if GlobalJSONOutput {
@@ -78,7 +74,7 @@ func NewSearchCmd(application *app.App) *cobra.Command {
 						scopeTag = "project:" + doc.Project
 					}
 					fmt.Printf("  %d. [%s] %s (%s, %s, status: %s, scope: %s, score: %.1f)\n",
-						i+1, doc.ID, doc.Title, doc.Type, doc.Category, doc.Status, scopeTag, res.Score)
+						i+1, doc.Name, doc.Title, doc.Type, doc.Category, doc.Status, scopeTag, res.Score)
 				}
 			}
 
@@ -94,7 +90,7 @@ func NewSearchCmd(application *app.App) *cobra.Command {
 	cmd.Flags().StringVar(&tenant, "tenant", "", "Filter by tenant")
 	cmd.Flags().StringVar(&scope, "scope", "", "Filter by scope (project, reference, all)")
 	cmd.Flags().StringVar(&project, "project", "", "Filter by project name")
-	cmd.Flags().IntVar(&maxResults, "max-results", 10, "Maximum number of results to return")
+	cmd.Flags().IntVar(&maxResults, "max-results", 0, "Maximum results (default: 10 for keyword search, unlimited for empty-query browsing)")
 
 	return cmd
 }

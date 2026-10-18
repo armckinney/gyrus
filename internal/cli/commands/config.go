@@ -128,7 +128,7 @@ func NewConfigInitCmd(application *app.App) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&profile, "profile", "p", "local", "Configuration profile: local, git, blob, s3, azure, gcs, postgres, vector")
+	cmd.Flags().StringVarP(&profile, "profile", "p", "local", "Configuration profile: local, git, blob, s3, azure, gcs, postgres")
 	cmd.Flags().StringVarP(&tenant, "tenant", "t", "root", "Default tenant for context concepts")
 	cmd.Flags().StringVarP(&project, "project", "P", "default", "Default project for context concepts")
 	cmd.Flags().BoolVarP(&global, "global", "g", false, "Write configuration to global ~/.gyrus.yaml instead of project")

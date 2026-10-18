@@ -25,11 +25,10 @@ version: 1
 project: gyrus
 storage:
   provider: localfs
-  localfs:
-    path: .gyrus/concepts
+  root: .gyrus
 tenant: test-core
 search:
-  provider: sqlite_fts5
+  provider: okf
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, ".gyrus.yaml"), []byte(cfgContent), 0644); err != nil {
 		t.Fatalf("failed writing config: %v", err)

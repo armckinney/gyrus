@@ -12,7 +12,7 @@ import (
 // [Execution Surface]: In-Memory Cobra Command Tree (internal/cli)
 // [Assertions]: Commands execute without errors and mutate memory/storage.
 // -----------------------------------------------------------------------------
-func TestCLILinkAndSyncAndValidate(t *testing.T) {
+func TestCLILinkAndValidate(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Setenv("HOME", tempDir)
 	origWd, _ := os.Getwd()
@@ -64,19 +64,11 @@ func TestCLILinkAndSyncAndValidate(t *testing.T) {
 	// 2. gyrus link
 	rootCmd.SetArgs([]string{
 		"link",
-		"doc-1", "doc-2",
+		"team/reference/doc-1", "team/reference/doc-2",
 		"--rel-type", "depends_on",
 	})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("link failed: %v", err)
-	}
-
-	// 3. gyrus sync
-	rootCmd.SetArgs([]string{
-		"sync",
-	})
-	if err := rootCmd.Execute(); err != nil {
-		t.Fatalf("sync failed: %v", err)
 	}
 
 	// 4. gyrus validate file

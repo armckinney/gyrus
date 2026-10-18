@@ -144,7 +144,7 @@ tenant: workspace-team
 
 	foundInCustom := false
 	_ = filepath.Walk(customDocsDir, func(path string, info os.FileInfo, err error) error {
-		if err == nil && strings.Contains(path, "doc-precedence-001") {
+		if err == nil && strings.Contains(path, "workspace-team/reference/doc-precedence-001") {
 			foundInCustom = true
 		}
 		return nil
@@ -155,7 +155,7 @@ tenant: workspace-team
 
 	foundInGlobal := false
 	_ = filepath.Walk(globalDocsDir, func(path string, info os.FileInfo, err error) error {
-		if err == nil && strings.Contains(path, "doc-precedence-001") {
+		if err == nil && strings.Contains(path, "workspace-team/projects/gyrus/doc-precedence-001") {
 			foundInGlobal = true
 		}
 		return nil

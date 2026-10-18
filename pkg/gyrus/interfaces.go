@@ -2,7 +2,13 @@ package gyrus
 
 import "context"
 
-// ConceptStore manages durable CRUD persistence for concept payloads.
+// ConceptScanner visits validated concepts from an authoritative collection.
+type ConceptScanner interface {
+	Scan(ctx context.Context, visit func(Concept) error) (SyncReport, error)
+}
+
+// ConceptStore manages durable CRUD persistence. Existing-concept id arguments
+// require a qualified name; Create accepts the local ID and logical location.
 type ConceptStore interface {
 	Create(ctx context.Context, doc Concept) (ConceptRef, error)
 	Get(ctx context.Context, id string) (Concept, error)
@@ -16,10 +22,9 @@ type IndexStore interface {
 	Index(ctx context.Context, doc Concept) error
 	Remove(ctx context.Context, id string) error
 	Search(ctx context.Context, query SearchQuery) ([]SearchResult, error)
-	Sync(ctx context.Context, storageRoot string) (SyncReport, error)
 }
 
-// GraphStore manages concept linkages and lineage traversals.
+// GraphStore manages directed relationships whose endpoints are qualified names.
 type GraphStore interface {
 	UpsertEdges(ctx context.Context, edges []ConceptEdge) error
 	DeleteEdges(ctx context.Context, fromID string, toID string, relType RelationshipType) error
@@ -27,9 +32,9 @@ type GraphStore interface {
 	Traverse(ctx context.Context, query GraphQuery) ([]GraphPath, error)
 }
 
-// SearchProvider handles lexical or semantic text search queries.
+// SearchProvider handles keyword or full-text queries with metadata filters.
 type SearchProvider interface {
-	Search(ctx context.Context, query string, filter SearchFilter) ([]SearchResult, error)
+	Search(ctx context.Context, query SearchQuery) ([]SearchResult, error)
 }
 
 // StorageProvider is the main repository abstraction wrapper over storage and indexing providers.

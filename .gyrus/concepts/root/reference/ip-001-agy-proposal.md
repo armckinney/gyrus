@@ -1,14 +1,14 @@
 ---
-id: ip-001-agy-proposal
 title: Google Antigravity Context Layer Proposal
-category: architecture
+id: ip-001-agy-proposal
 type: improvement-proposal
 format: ""
-tenant: root
+category: architecture
 version: 1
 status: active
-last_modified_by: ""
 last_updated: 2026-07-22T06:38:56Z
+last_modified_by: ""
+tenant: root
 ---
 
 # Unified Context Layer (UCL) Specification Index

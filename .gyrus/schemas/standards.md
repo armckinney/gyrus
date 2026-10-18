@@ -1,16 +1,16 @@
 ---
-id: <unique-dashed-id>
 title: <Clean Document Title>
-category: operations
+id: <unique-dashed-id>
 type: standards
 format: markdown
-tenant: <team-owning-document>
+category: operations
 version: 1
 status: proposed
-last_modified_by: <author-username>
 last_updated: YYYY-MM-DD
+last_modified_by: <author-username>
+tenant: <team-owning-document>
 tags: []
-dependencies: []
+links: []
 ---
 
 # Process & Engineering Standard: [Standard Name]

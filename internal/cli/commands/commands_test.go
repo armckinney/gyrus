@@ -87,7 +87,7 @@ func TestCommandsRegistrationAndExecution(t *testing.T) {
 	}
 
 	// 3. gyrus get
-	rootCmd.SetArgs([]string{"get", "doc-cmd-001"})
+	rootCmd.SetArgs([]string{"get", "platform/projects/default/doc-cmd-001"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("Get command failed: %v", err)
 	}

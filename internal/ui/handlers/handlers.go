@@ -148,7 +148,7 @@ func (h *Handlers) getDocScopeMap() map[string]string {
 		}
 		parts := strings.Split(filepath.ToSlash(rel), "/")
 		if len(parts) >= 3 {
-			id := strings.TrimSuffix(filepath.Base(path), ".md")
+			id := strings.TrimSuffix(filepath.ToSlash(rel), ".md")
 			if parts[1] == "reference" {
 				scopeMap[id] = "reference"
 			} else if parts[1] == "projects" && len(parts) >= 4 {
@@ -168,7 +168,7 @@ func (h *Handlers) determineDocScope(doc *gyrus.Concept, scopeMap map[string]str
 		return "reference"
 	}
 	if scopeMap != nil {
-		if s, ok := scopeMap[doc.ID]; ok && s != "" {
+		if s, ok := scopeMap[doc.Name]; ok && s != "" {
 			return s
 		}
 	}

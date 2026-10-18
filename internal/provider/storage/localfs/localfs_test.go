@@ -3,6 +3,7 @@ package localfs_test
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/armckinney/gyrus/internal/provider/storage/localfs"
@@ -38,7 +39,7 @@ func TestLocalfsStoreCRUD(t *testing.T) {
 		Version:        1,
 		Status:         "active",
 		LastModifiedBy: "sec-engineer",
-		Content:        "# OAuth2 Guide\n\nInstructions here.",
+		Content:        "# OAuth2 Guide\n\nInstructions here.", Name: "security/reference/guide-2026-auth",
 	}
 
 	// Create
@@ -51,7 +52,7 @@ func TestLocalfsStoreCRUD(t *testing.T) {
 	}
 
 	// Get
-	fetched, err := store.Get(ctx, concept.ID)
+	fetched, err := store.Get(ctx, concept.Name)
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
 	}
@@ -67,7 +68,7 @@ func TestLocalfsStoreCRUD(t *testing.T) {
 	patch := gyrus.ConceptPatch{
 		Title: &newTitle,
 	}
-	updatedRef, err := store.Update(ctx, concept.ID, patch, 1)
+	updatedRef, err := store.Update(ctx, concept.Name, patch, 1)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
@@ -76,18 +77,18 @@ func TestLocalfsStoreCRUD(t *testing.T) {
 	}
 
 	// Concurrency conflict test
-	_, err = store.Update(ctx, concept.ID, patch, 1)
+	_, err = store.Update(ctx, concept.Name, patch, 1)
 	if err == nil {
 		t.Fatal("Expected concurrency error for outdated version 1, got nil")
 	}
 
 	// Delete
-	if err := store.Delete(ctx, concept.ID); err != nil {
+	if err := store.Delete(ctx, concept.Name); err != nil {
 		t.Fatalf("Delete failed: %v", err)
 	}
 
 	// Verify deleted
-	_, err = store.Get(ctx, concept.ID)
+	_, err = store.Get(ctx, concept.Name)
 	if err == nil {
 		t.Fatal("Expected error fetching deleted concept, got nil")
 	}
@@ -198,7 +199,7 @@ func TestLocalfsStoreProjectScoping(t *testing.T) {
 		Tenant:   "root",
 		Version:  1,
 		Status:   "active",
-		Content:  "# Implementation Ticket",
+		Content:  "# Implementation Ticket", Name: "root/projects/gyrus/ticket-101",
 	}
 
 	if _, err := store.Create(ctx, wsConcept); err != nil {
@@ -215,7 +216,7 @@ func TestLocalfsStoreProjectScoping(t *testing.T) {
 		Scope:    "reference",
 		Version:  1,
 		Status:   "proposed",
-		Content:  "# ADR 007",
+		Content:  "# ADR 007", Name: "root/reference/adr-007",
 	}
 
 	if _, err := store.Create(ctx, refConcept); err != nil {
@@ -223,19 +224,19 @@ func TestLocalfsStoreProjectScoping(t *testing.T) {
 	}
 
 	// Verify file path on disk for wsConcept
-	expectedWsPath := tempDir + "/concepts/root/projects/gyrus/ticket-101.md"
+	expectedWsPath := filepath.Join(tempDir, "concepts/root/projects/gyrus/ticket-101.md")
 	if _, err := os.Stat(expectedWsPath); err != nil {
 		t.Fatalf("Expected project file at %s, got: %v", expectedWsPath, err)
 	}
 
 	// Verify file path on disk for refConcept
-	expectedRefPath := tempDir + "/concepts/root/reference/adr-007.md"
+	expectedRefPath := filepath.Join(tempDir, "concepts/root/reference/adr-007.md")
 	if _, err := os.Stat(expectedRefPath); err != nil {
 		t.Fatalf("Expected reference file at %s, got: %v", expectedRefPath, err)
 	}
 
 	// 3. Test Get() parses scope and project
-	fetchedWs, err := store.Get(ctx, "ticket-101")
+	fetchedWs, err := store.Get(ctx, "root/projects/gyrus/ticket-101")
 	if err != nil {
 		t.Fatalf("Get wsConcept failed: %v", err)
 	}
@@ -246,7 +247,7 @@ func TestLocalfsStoreProjectScoping(t *testing.T) {
 		t.Errorf("Expected Project 'gyrus', got '%s'", fetchedWs.Project)
 	}
 
-	fetchedRef, err := store.Get(ctx, "adr-007")
+	fetchedRef, err := store.Get(ctx, "root/reference/adr-007")
 	if err != nil {
 		t.Fatalf("Get refConcept failed: %v", err)
 	}

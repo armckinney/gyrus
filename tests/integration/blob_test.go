@@ -30,7 +30,7 @@ func TestIntegration_BlobProfile(t *testing.T) {
 	}
 	defer bucket.Close()
 
-	store := storageblob.NewStoreWithBucket(bucket, "gyrus-docs")
+	store := storageblob.NewStoreWithBucket(bucket, "gyrus-docs", storageblob.WithFileRoot(blobDir))
 	ctx := context.Background()
 
 	doc := gyrus.Concept{
@@ -41,7 +41,7 @@ func TestIntegration_BlobProfile(t *testing.T) {
 		Tenant:   "cloud-eng",
 		Version:  1,
 		Status:   "active",
-		Content:  "Cloud-native object storage envelope bundle.",
+		Content:  "Cloud-native object storage envelope bundle.", Name: "cloud-eng/reference/spec-blob-001",
 	}
 
 	ref, err := store.Create(ctx, doc)
@@ -52,7 +52,7 @@ func TestIntegration_BlobProfile(t *testing.T) {
 		t.Errorf("Expected Ref ID %s, got %s", doc.ID, ref.ID)
 	}
 
-	fetched, err := store.Get(ctx, doc.ID)
+	fetched, err := store.Get(ctx, doc.Name)
 	if err != nil {
 		t.Fatalf("Blob store Get failed: %v", err)
 	}

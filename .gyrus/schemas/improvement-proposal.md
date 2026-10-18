@@ -1,17 +1,17 @@
 ---
-id: <unique-dashed-id>
 title: <Clean Document Title>
-category: technical
+id: <unique-dashed-id>
 type: improvement-proposal
 format: markdown
-tenant: <team-owning-document>
+category: technical
 version: 1
 status: proposed
-immutable: true
-last_modified_by: <author-username>
 last_updated: YYYY-MM-DD
+last_modified_by: <author-username>
+tenant: <team-owning-document>
 tags: []
-dependencies: []
+links: []
+immutable: true
 ---
 
 # Improvement Proposal: [Title]

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/armckinney/gyrus/pkg/gyrus"
@@ -96,12 +97,17 @@ func (h *Handlers) APIGraph(w http.ResponseWriter, r *http.Request) {
 	}
 
 	nodeMap := make(map[string]bool)
+	sources := make([]string, 0, len(results))
 	for _, res := range results {
 		doc := res.Concept
-		nodeMap[doc.ID] = true
+		if nodeMap[doc.Name] {
+			continue
+		}
+		nodeMap[doc.Name] = true
+		sources = append(sources, doc.Name)
 
 		payload.Nodes = append(payload.Nodes, GraphNodeJSON{
-			ID:       doc.ID,
+			ID:       doc.Name,
 			Title:    doc.Title,
 			Category: string(doc.Category),
 			Type:     string(doc.Type),
@@ -109,31 +115,48 @@ func (h *Handlers) APIGraph(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	// Fetch all edges for the nodes
-	for docID := range nodeMap {
+	sort.Strings(sources)
+	type edgeKey struct {
+		source, target string
+		rel            gyrus.RelationshipType
+	}
+	seenEdges := make(map[edgeKey]bool)
+	for _, docID := range sources {
 		edges, err := h.engine.Neighbors(ctx, docID, gyrus.EdgeFilter{Direction: "outgoing"})
-		if err == nil {
-			for _, edge := range edges {
-				// If target node does not exist in our active concept index, inject an external ghost node
-				if !nodeMap[edge.ToConceptID] {
-					nodeMap[edge.ToConceptID] = true
-					payload.Nodes = append(payload.Nodes, GraphNodeJSON{
-						ID:       edge.ToConceptID,
-						Title:    edge.ToConceptID,
-						Category: "external",
-						Type:     "reference",
-						Status:   "external",
-					})
-				}
-
-				payload.Edges = append(payload.Edges, GraphEdgeJSON{
-					Source:           edge.FromConceptID,
-					Target:           edge.ToConceptID,
-					RelationshipType: string(edge.RelationshipType),
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to load graph edges: %v", err), http.StatusInternalServerError)
+			return
+		}
+		for _, edge := range edges {
+			key := edgeKey{edge.FromConceptID, edge.ToConceptID, edge.RelationshipType}
+			if seenEdges[key] {
+				continue
+			}
+			seenEdges[key] = true
+			if !nodeMap[edge.ToConceptID] {
+				nodeMap[edge.ToConceptID] = true
+				payload.Nodes = append(payload.Nodes, GraphNodeJSON{
+					ID: edge.ToConceptID, Title: edge.ToConceptID,
+					Category: "external", Type: "reference", Status: "external",
 				})
 			}
+			payload.Edges = append(payload.Edges, GraphEdgeJSON{
+				Source: edge.FromConceptID, Target: edge.ToConceptID,
+				RelationshipType: string(edge.RelationshipType),
+			})
 		}
 	}
+	sort.Slice(payload.Nodes, func(i, j int) bool { return payload.Nodes[i].ID < payload.Nodes[j].ID })
+	sort.Slice(payload.Edges, func(i, j int) bool {
+		a, b := payload.Edges[i], payload.Edges[j]
+		if a.Source != b.Source {
+			return a.Source < b.Source
+		}
+		if a.Target != b.Target {
+			return a.Target < b.Target
+		}
+		return a.RelationshipType < b.RelationshipType
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(payload); err != nil {

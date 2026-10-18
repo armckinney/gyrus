@@ -1,14 +1,14 @@
 ---
-id: ticket-gyrus-203
 title: GYRUS-203 SQLite Graph & Sync Provider
-category: product
+id: ticket-gyrus-203
 type: freeform
 format: ""
-tenant: root
+category: product
 version: 1
 status: active
-last_modified_by: ""
 last_updated: 2026-07-22T06:43:33Z
+last_modified_by: ""
+tenant: root
 ---
 
 # [GYRUS-203] SQLite Edge Graph & Incremental File Sync

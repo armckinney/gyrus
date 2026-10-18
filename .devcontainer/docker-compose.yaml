@@ -5,8 +5,6 @@ services:
       context: ..
     volumes:
       - ..:/workspaces/gyrus:cached
-    environment:
-      OLLAMA_HOST: "http://ollama:11434"
     command: sleep infinity
 
   postgres:
@@ -25,20 +23,5 @@ services:
     volumes:
       - gyrus-postgres-data:/var/lib/postgresql/data
 
-  ollama:
-    build:
-      context: .
-      dockerfile: Dockerfile.ollama
-    container_name: gyrus-ollama
-    restart: always
-    profiles:
-      - testing
-      - sidecars
-    ports:
-      - "11434:11434"
-    volumes:
-      - gyrus-ollama-data:/root/.ollama
-
 volumes:
   gyrus-postgres-data:
-  gyrus-ollama-data:

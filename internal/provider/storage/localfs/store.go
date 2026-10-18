@@ -2,7 +2,9 @@ package localfs
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -12,255 +14,235 @@ import (
 
 	"github.com/armckinney/gyrus/internal/domain/lifecycle"
 	"github.com/armckinney/gyrus/internal/domain/okf"
+	"github.com/armckinney/gyrus/internal/persistence/fileio"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
-// Store implements gyrus.ConceptStore over the local filesystem.
+// Store implements concept and schema persistence on a local filesystem.
 type Store struct {
-	rootDir        string
-	defaultProject string
-	mu             sync.RWMutex
+	rootDir, defaultProject string
+	mu                      sync.RWMutex
 }
 
-// NewStore initializes a new localfs ConceptStore at rootDir.
-func NewStore(rootDir string) (*Store, error) {
-	return NewStoreWithProject(rootDir, "")
-}
-
-// NewStoreWithProject initializes a new localfs ConceptStore at rootDir with default project.
-func NewStoreWithProject(rootDir string, defaultProject string) (*Store, error) {
-	absPath, err := filepath.Abs(rootDir)
+func NewStore(root string) (*Store, error) { return NewStoreWithProject(root, "") }
+func NewStoreWithProject(root, project string) (*Store, error) {
+	abs, err := filepath.Abs(root)
 	if err != nil {
-		return nil, fmt.Errorf("invalid storage root path: %w", err)
+		return nil, err
 	}
-	if err := os.MkdirAll(absPath, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create storage root directory: %w", err)
-	}
-	return &Store{
-		rootDir:        absPath,
-		defaultProject: defaultProject,
-	}, nil
-}
-
-func parseScopeFromPath(filePath string) (scope string, project string) {
-	clean := filepath.ToSlash(filePath)
-	idxConcepts := strings.Index(clean, "/concepts/")
-	if idxConcepts != -1 {
-		sub := clean[idxConcepts+len("/concepts/"):] // "<tenant>/projects/<name>/..." or "<tenant>/reference/..."
-		parts := strings.Split(sub, "/")
-		if len(parts) >= 3 && parts[1] == "reference" {
-			return "reference", ""
-		}
-		if len(parts) >= 3 && parts[1] == "projects" && parts[2] != "" {
-			return "project", parts[2]
+	if project != "" {
+		if err := okf.ValidateSegment("project", project); err != nil {
+			return nil, err
 		}
 	}
-	if strings.Contains(clean, "/reference/") {
-		return "reference", ""
+	if err := os.MkdirAll(abs, fileio.DirectoryMode); err != nil {
+		return nil, err
 	}
-	if idx := strings.LastIndex(clean, "/projects/"); idx != -1 {
-		rest := clean[idx+len("/projects/"):]
-		parts := strings.Split(rest, "/")
-		if len(parts) >= 1 && parts[0] != "" {
-			return "project", parts[0]
-		}
+	abs, err = filepath.EvalSymlinks(abs)
+	if err != nil {
+		return nil, err
 	}
-	return "reference", ""
+	return &Store{rootDir: abs, defaultProject: project}, nil
 }
 
-func (s *Store) getConceptPath(concept *gyrus.Concept) string {
-	tenant := concept.Tenant
-	if tenant == "" {
-		tenant = "default"
-	}
-
-	var subdir string
-	if concept.Project != "" {
-		subdir = filepath.Join("projects", concept.Project)
-	} else if concept.Scope == "reference" {
-		subdir = "reference"
-	} else if s.defaultProject != "" {
-		subdir = filepath.Join("projects", s.defaultProject)
-	} else if concept.Category == gyrus.CategoryBusinessLogic || concept.Category == gyrus.CategoryProduct {
-		subdir = "projects/gyrus"
-	} else {
-		subdir = "reference"
-	}
-
-	return filepath.Join(s.rootDir, "concepts", tenant, subdir, fmt.Sprintf("%s.md", concept.ID))
-}
-
-func (s *Store) getConceptPathByID(id string) (string, error) {
-	var found string
-	err := filepath.Walk(s.rootDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
+func (s *Store) paths() ([]string, error) {
+	var paths []string
+	err := filepath.WalkDir(filepath.Join(s.rootDir, "concepts"), func(name string, e fs.DirEntry, err error) error {
+		if errors.Is(err, os.ErrNotExist) && name == filepath.Join(s.rootDir, "concepts") {
 			return nil
 		}
-		if !info.IsDir() && info.Name() == fmt.Sprintf("%s.md", id) {
-			found = path
-			return filepath.SkipAll
+		if err != nil {
+			return err
+		}
+		if e.Type()&os.ModeSymlink != 0 {
+			return fmt.Errorf("concept collection contains symlink: %s", name)
+		}
+		if !e.IsDir() && strings.HasSuffix(name, ".md") && !strings.HasPrefix(e.Name(), ".") {
+			paths = append(paths, name)
 		}
 		return nil
 	})
+	return paths, err
+}
+
+func (s *Store) getConceptPathByID(id string) (string, error) {
+	if err := okf.ValidateName(id); err != nil {
+		return "", err
+	}
+	name, err := fileio.SafePath(s.rootDir, "concepts/"+id+".md")
 	if err != nil {
 		return "", err
 	}
-	if found == "" {
-		return "", fmt.Errorf("concept '%s' not found in storage root", id)
+	if _, err = os.Stat(name); err != nil {
+		return "", err
 	}
-	return found, nil
+	return name, nil
 }
-
-func (s *Store) Create(ctx context.Context, concept gyrus.Concept) (gyrus.ConceptRef, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if err := okf.Validate(&concept); err != nil {
-		return gyrus.ConceptRef{}, fmt.Errorf("validation error: %w", err)
-	}
-
-	conceptPath := s.getConceptPath(&concept)
-	if _, err := os.Stat(conceptPath); err == nil {
-		return gyrus.ConceptRef{}, fmt.Errorf("concept '%s' already exists", concept.ID)
-	}
-
-	if err := os.MkdirAll(filepath.Dir(conceptPath), 0755); err != nil {
-		return gyrus.ConceptRef{}, fmt.Errorf("failed to create parent directories: %w", err)
-	}
-
-	concept.LastUpdated = time.Now().Truncate(time.Second)
-	payload, err := okf.SerializeMarkdown(&concept)
-	if err != nil {
-		return gyrus.ConceptRef{}, fmt.Errorf("failed to serialize concept: %w", err)
-	}
-
-	if err := os.WriteFile(conceptPath, payload, 0644); err != nil {
-		return gyrus.ConceptRef{}, fmt.Errorf("failed to write concept file: %w", err)
-	}
-
-	return gyrus.ConceptRef{
-		ID:          concept.ID,
-		Version:     concept.Version,
-		Status:      concept.Status,
-		LastUpdated: concept.LastUpdated,
-	}, nil
-}
-
-func (s *Store) Get(ctx context.Context, id string) (gyrus.Concept, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	conceptPath, err := s.getConceptPathByID(id)
+func (s *Store) get(id string) (gyrus.Concept, error) {
+	name, err := s.getConceptPathByID(id)
 	if err != nil {
 		return gyrus.Concept{}, err
 	}
-
-	data, err := os.ReadFile(conceptPath)
+	data, err := os.ReadFile(name)
 	if err != nil {
-		return gyrus.Concept{}, fmt.Errorf("failed to read concept file: %w", err)
+		return gyrus.Concept{}, err
 	}
-
-	concept, err := okf.ParseMarkdown(data)
+	doc, err := okf.ParseMarkdown(data)
 	if err != nil {
-		return gyrus.Concept{}, fmt.Errorf("failed to parse concept file: %w", err)
+		return gyrus.Concept{}, err
 	}
-
-	scope, project := parseScopeFromPath(conceptPath)
-	concept.FilePath = conceptPath
-	concept.Scope = scope
-	concept.Project = project
-
-	return *concept, nil
+	if doc.ID != filepath.Base(id) {
+		return gyrus.Concept{}, fmt.Errorf("concept ID does not match filename: %s", name)
+	}
+	if err := okf.SetLocation(doc, filepath.ToSlash(name)); err != nil {
+		return gyrus.Concept{}, err
+	}
+	if err := okf.Validate(doc); err != nil {
+		return gyrus.Concept{}, err
+	}
+	return *doc, nil
 }
 
-func (s *Store) Update(ctx context.Context, id string, patch gyrus.ConceptPatch, expectedVersion int) (gyrus.ConceptRef, error) {
+func ref(doc gyrus.Concept) gyrus.ConceptRef {
+	return gyrus.ConceptRef{Name: doc.Name, ID: doc.ID, Version: doc.Version, Status: doc.Status, LastUpdated: doc.LastUpdated}
+}
+
+func (s *Store) Create(ctx context.Context, doc gyrus.Concept) (gyrus.ConceptRef, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-	conceptPath, err := s.getConceptPathByID(id)
+	unlock, err := fileio.Lock(ctx, s.rootDir)
 	if err != nil {
 		return gyrus.ConceptRef{}, err
 	}
-
-	data, err := os.ReadFile(conceptPath)
-	if err != nil {
-		return gyrus.ConceptRef{}, fmt.Errorf("failed to read concept file: %w", err)
-	}
-
-	concept, err := okf.ParseMarkdown(data)
-	if err != nil {
-		return gyrus.ConceptRef{}, fmt.Errorf("failed to parse concept file: %w", err)
-	}
-
-	if expectedVersion > 0 && concept.Version != expectedVersion {
-		return gyrus.ConceptRef{}, fmt.Errorf("concurrency error: expected version %d, but current version is %d", expectedVersion, concept.Version)
-	}
-
-	// Validate lifecycle transition and content immutability
-	contentChanged := patch.Content != nil && *patch.Content != concept.Content
-	if err := lifecycle.ValidateMutation(concept.Type, concept.Status, concept.Immutable, contentChanged); err != nil {
+	defer unlock()
+	if err := okf.SetName(&doc, s.defaultProject); err != nil {
 		return gyrus.ConceptRef{}, err
 	}
-
-	// Apply patch fields
-	if patch.Title != nil {
-		concept.Title = *patch.Title
+	if err := okf.Validate(&doc); err != nil {
+		return gyrus.ConceptRef{}, err
 	}
-	if patch.Status != nil {
-		if err := lifecycle.ValidateTransition(concept.Type, concept.Status, *patch.Status); err != nil {
-			return gyrus.ConceptRef{}, err
-		}
-		concept.Status = *patch.Status
+	if _, err := s.getConceptPathByID(doc.Name); err == nil {
+		return gyrus.ConceptRef{}, &gyrus.ConflictError{ConceptID: doc.Name, Operation: "create", Err: os.ErrExist}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return gyrus.ConceptRef{}, err
 	}
-	if patch.Tags != nil {
-		concept.Tags = *patch.Tags
-	}
-	if patch.Dependencies != nil {
-		concept.Dependencies = *patch.Dependencies
-	}
-	if patch.Content != nil {
-		concept.Content = *patch.Content
-	}
-
-	concept.Version++
-	concept.LastUpdated = time.Now().Truncate(time.Second)
-
-	if err := okf.Validate(concept); err != nil {
-		return gyrus.ConceptRef{}, fmt.Errorf("validation error after patch: %w", err)
-	}
-
-	payload, err := okf.SerializeMarkdown(concept)
+	relative, err := okf.ConceptPath(doc, s.defaultProject)
 	if err != nil {
-		return gyrus.ConceptRef{}, fmt.Errorf("failed to serialize updated concept: %w", err)
+		return gyrus.ConceptRef{}, err
 	}
-
-	if err := os.WriteFile(conceptPath, payload, 0644); err != nil {
-		return gyrus.ConceptRef{}, fmt.Errorf("failed to write updated concept file: %w", err)
+	doc.LastUpdated = time.Now().UTC().Truncate(time.Second)
+	data, err := okf.SerializeMarkdown(&doc)
+	if err != nil {
+		return gyrus.ConceptRef{}, err
 	}
+	if err := fileio.Write(filepath.Join(s.rootDir, filepath.FromSlash(relative)), data); err != nil {
+		return gyrus.ConceptRef{}, err
+	}
+	return ref(doc), nil
+}
 
-	return gyrus.ConceptRef{
-		ID:          concept.ID,
-		Version:     concept.Version,
-		Status:      concept.Status,
-		LastUpdated: concept.LastUpdated,
-	}, nil
+func (s *Store) Get(ctx context.Context, id string) (gyrus.Concept, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	unlock, err := fileio.Lock(ctx, s.rootDir)
+	if err != nil {
+		return gyrus.Concept{}, err
+	}
+	defer unlock()
+	return s.get(id)
+}
+
+func (s *Store) Update(ctx context.Context, id string, patch gyrus.ConceptPatch, version int) (gyrus.ConceptRef, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	unlock, err := fileio.Lock(ctx, s.rootDir)
+	if err != nil {
+		return gyrus.ConceptRef{}, err
+	}
+	defer unlock()
+	doc, err := s.get(id)
+	if err != nil {
+		return gyrus.ConceptRef{}, err
+	}
+	if version > 0 && version != doc.Version {
+		return gyrus.ConceptRef{}, &gyrus.ConflictError{ConceptID: id, Operation: "update", Err: fmt.Errorf("expected version %d, got %d", version, doc.Version)}
+	}
+	if err := lifecycle.ApplyPatch(&doc, patch); err != nil {
+		return gyrus.ConceptRef{}, err
+	}
+	data, err := okf.SerializeMarkdown(&doc)
+	if err != nil {
+		return gyrus.ConceptRef{}, err
+	}
+	if err := fileio.Write(filepath.FromSlash(doc.FilePath), data); err != nil {
+		return gyrus.ConceptRef{}, err
+	}
+	return ref(doc), nil
 }
 
 func (s *Store) Delete(ctx context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-	conceptPath, err := s.getConceptPathByID(id)
+	unlock, err := fileio.Lock(ctx, s.rootDir)
 	if err != nil {
 		return err
 	}
-
-	return os.Remove(conceptPath)
+	defer unlock()
+	name, err := s.getConceptPathByID(id)
+	if err != nil {
+		return err
+	}
+	return os.Remove(name)
 }
+func (s *Store) Archive(ctx context.Context, id string) error { return s.Delete(ctx, id) }
 
-func (s *Store) Archive(ctx context.Context, id string) error {
-	// For localfs, archiving deletes the concept file from disk
-	return s.Delete(ctx, id)
+// Scan takes a detached snapshot under the same lock used by mutations.
+func (s *Store) Scan(ctx context.Context, visit func(gyrus.Concept) error) (gyrus.SyncReport, error) {
+	docs, report, err := s.snapshot(ctx)
+	if err != nil {
+		return report, err
+	}
+	return okf.Visit(ctx, docs, report, visit)
+}
+func (s *Store) snapshot(ctx context.Context) ([]gyrus.Concept, gyrus.SyncReport, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var report gyrus.SyncReport
+	unlock, err := fileio.Lock(ctx, s.rootDir)
+	if err != nil {
+		return nil, report, err
+	}
+	defer unlock()
+	paths, err := s.paths()
+	if err != nil {
+		return nil, report, err
+	}
+	var docs []gyrus.Concept
+	for _, name := range paths {
+		if err := ctx.Err(); err != nil {
+			return nil, report, err
+		}
+		report.ScannedFiles++
+		data, err := os.ReadFile(name)
+		if err != nil {
+			return nil, report, err
+		}
+		doc, err := okf.ParseMarkdown(data)
+		if err != nil {
+			report.Errors = append(report.Errors, fmt.Sprintf("%s: %v", name, err))
+			continue
+		}
+		if err := okf.SetLocation(doc, filepath.ToSlash(name)); err != nil {
+			report.Errors = append(report.Errors, fmt.Sprintf("%s: %v", name, err))
+			continue
+		}
+		if doc.ID+".md" != filepath.Base(name) {
+			report.Errors = append(report.Errors, fmt.Sprintf("%s: concept ID does not match filename", name))
+			continue
+		}
+		docs = append(docs, *doc)
+	}
+	return docs, report, nil
 }
 
 func (s *Store) schemasDir() string {
@@ -295,6 +277,11 @@ func (s *Store) GetSchema(ctx context.Context, conceptType string) (string, erro
 func (s *Store) SaveSchema(ctx context.Context, conceptType string, content string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	release, err := fileio.Lock(ctx, s.rootDir)
+	if err != nil {
+		return err
+	}
+	defer release()
 
 	if err := okf.ValidateSchemaContent(conceptType, content); err != nil {
 		return err
@@ -310,7 +297,7 @@ func (s *Store) SaveSchema(ctx context.Context, conceptType string, content stri
 		return err
 	}
 
-	if err := os.WriteFile(targetPath, []byte(content), 0644); err != nil {
+	if err := fileio.Write(targetPath, []byte(content)); err != nil {
 		return fmt.Errorf("failed writing schema file: %w", err)
 	}
 
@@ -346,6 +333,11 @@ func (s *Store) ListSchemas(ctx context.Context) ([]string, error) {
 func (s *Store) DeleteSchema(ctx context.Context, conceptType string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	release, err := fileio.Lock(ctx, s.rootDir)
+	if err != nil {
+		return err
+	}
+	defer release()
 
 	targetPath := s.schemaPath(conceptType)
 	if err := okf.ValidateSchemaPath(filepath.ToSlash(targetPath)); err != nil {

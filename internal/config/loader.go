@@ -22,9 +22,7 @@ import (
 func Load() (*ResolvedConfig, error) {
 	// 0. Check GYRUS_CONFIG
 	if envCfg := os.Getenv("GYRUS_CONFIG"); envCfg != "" {
-		if res, err := LoadWithConfig(envCfg); err == nil && res != nil {
-			return res, nil
-		}
+		return LoadWithConfig(envCfg)
 	}
 
 	pwd, err := os.Getwd()
@@ -37,7 +35,11 @@ func Load() (*ResolvedConfig, error) {
 	if envProject := os.Getenv("GYRUS_PROJECT"); envProject != "" {
 		if !inTemp || isTempDirectory(envProject) {
 			home, _ := os.UserHomeDir()
-			if res, err := LoadFrom(envProject, home); err == nil && res.Source == SourceProject {
+			res, err := LoadFrom(envProject, home)
+			if err != nil {
+				return nil, err
+			}
+			if res.Source == SourceProject {
 				return res, nil
 			}
 		}
@@ -172,7 +174,7 @@ func LoadFrom(workingDir, homeDir string) (*ResolvedConfig, error) {
 	}
 
 	return &ResolvedConfig{
-		Config:      &Config{},
+		Config:      defaultResolvedConfig(),
 		Source:      SourceDefault,
 		SourcePath:  "",
 		StorageRoot: defaultRoot,
@@ -261,25 +263,14 @@ func expandAndAbsRelative(path string, baseDir string) (string, error) {
 }
 
 func validate(cfg *Config, sourcePath string) error {
+	resolved, err := ResolveProviders(cfg)
+	if err != nil {
+		return fmt.Errorf("%s: %w", sourcePath, err)
+	}
 	if cfg == nil {
 		return nil
 	}
-	if p := cfg.StorageProvider(); p != "" && !isValidProvider(p, ValidStorageProviders) {
-		return fmt.Errorf("unknown storage provider '%s' in %s. Valid: %s",
-			p, sourcePath, strings.Join(ValidStorageProviders, ", "))
-	}
-	if p := cfg.IndexProvider(); p != "" && !isValidProvider(p, ValidIndexProviders) {
-		return fmt.Errorf("unknown index provider '%s' in %s. Valid: %s",
-			p, sourcePath, strings.Join(ValidIndexProviders, ", "))
-	}
-	if p := cfg.SearchProvider(); p != "" && !isValidProvider(p, ValidSearchProviders) {
-		return fmt.Errorf("unknown search provider '%s' in %s. Valid: %s",
-			p, sourcePath, strings.Join(ValidSearchProviders, ", "))
-	}
-	if p := cfg.GraphProvider(); p != "" && !isValidProvider(p, ValidGraphProviders) {
-		return fmt.Errorf("unknown graph provider '%s' in %s. Valid: %s",
-			p, sourcePath, strings.Join(ValidGraphProviders, ", "))
-	}
+	*cfg = *resolved
 	return nil
 }
 

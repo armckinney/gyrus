@@ -1,161 +1,50 @@
 ---
+title: Core SDK Provider Architecture
 id: spec-004-core-engine
-title: Core SDK Provider Architecture & SQLite Engine Specs
-category: technical
 type: specification
-format: ""
-tenant: root
-version: 1
+format: markdown
+category: technical
+version: 8
 status: active
+last_updated: 2026-10-17T23:57:58Z
 last_modified_by: ""
-last_updated: 2026-07-22T06:38:56Z
+tenant: root
 ---
 
-# Specification 04: Core Engine SDK & Validation
+Gyrus composes ConceptStore, IndexStore, GraphStore, and SearchProvider through the application container. Storage is constructed once, then injected into the selected providers. Effective provider validation runs before opening storage/database/network resources.
 
-The core logic of Gyrus is engineered as the **Gyrus Core SDK**—a standalone Go library (`pkg/gyrus`) independent of CLI or MCP presentation layers. The SDK handles contract schema enforcement, lifecycle transition checks, full-text search indexing, and relationship edge traversals by composing pluggable provider implementations.
+## Provider contracts
 
----
+ConceptStore provides Create, Get, version-checked Update, Delete, and Archive. Optional ConceptScanner.Scan(context.Context, func(Concept) error) (SyncReport, error) enumerates authoritative validated concepts. Localfs, Git, and blob implement this capability; PostgreSQL storage does not in this release.
 
-## 1. Gyrus Core SDK Abstraction Interfaces
+IndexStore exposes Index, Remove, and Search. GraphStore exposes UpsertEdges, DeleteEdges, Neighbors, and Traverse. SearchProvider accepts SearchQuery including Query, Filter, and MaxResults. Engine.Search retains the default-limit convenience method; Engine.SearchQuery accepts explicit limits. PostgreSQL storage/index/search delegate to one shared full-text query implementation. SQLite index/graph/search adapters and CLI/MCP sync operations have been removed; internal/persistence/db retains SQLite connection support for future cache work.
 
-The Gyrus Core SDK decouples storage, indexing, knowledge graph, and search operations using clean Go interfaces:
+## Direct-scan OKF providers
 
-```go
-// DocumentStore manages durable CRUD persistence for document payloads.
-type DocumentStore interface {
-    Create(ctx context.Context, doc Document) (DocumentRef, error)
-    Get(ctx context.Context, id string) (Document, error)
-    Update(ctx context.Context, id string, patch DocumentPatch) (DocumentRef, error)
-    Delete(ctx context.Context, id string) error // Soft-delete or archive
-}
+OKF index/search share filtering and ranking over ephemeral snapshots. Index and Remove validate requests without mutating storage. Scanner errors include record locations; queries fail explicitly rather than returning partial results. Keyword requests default to ten results; positive MaxResults values override the default. Empty-query browsing is unlimited unless capped explicitly. CLI and MCP pass limits to the provider before retrieval; PostgreSQL applies the same scope/project filters. Vector search, embedding clients/configuration, and its profile have been removed; shared SQLite persistence remains for future cache work.
 
-// IndexStore manages metadata indexing and search retrieval.
-type IndexStore interface {
-    Index(ctx context.Context, doc Document) error
-    Remove(ctx context.Context, id string) error
-    Search(ctx context.Context, query SearchQuery) ([]SearchResult, error)
-    Sync(ctx context.Context, storageRoot string) (SyncReport, error)
-}
+Graph reads derive source-owned {concept, rel} links keyed by qualified concept names. Neighbors supports incoming/outgoing/both, defaulting to both. Traverse follows outgoing edges breadth-first and returns one GraphPath of reached nodes/edges, with deterministic ordering and cycle detection. Nonpositive depth defaults to one. Missing target nodes remain visible and are not expanded.
 
-// GraphStore manages document linkages and lineage traversals.
-type GraphStore interface {
-    UpsertEdges(ctx context.Context, edges []DocumentEdge) error
-    DeleteEdges(ctx context.Context, fromID string, toID string, relType string) error
-    Neighbors(ctx context.Context, id string, filter EdgeFilter) ([]DocumentEdge, error)
-    Traverse(ctx context.Context, query GraphQuery) ([]GraphPath, error)
-}
+## Mutations and consistency
 
-// SearchProvider handles lexical or semantic text search queries.
-type SearchProvider interface {
-    Search(ctx context.Context, query string, filter SearchFilter) ([]SearchResult, error)
-}
-```
+Localfs/fileblob serialize cooperating processes with a stable root lock and replace complete payloads atomically. Git refreshes before scans/mutations and pushes without force; rejected pushes are conflicts and cannot leak unconfirmed data. S3/Azure/GCS updates and deletes require the observed ETag/generation; creates require nonexistence. A token comes from the same object read as the content. Unsupported conditional mutation capabilities fail explicitly.
 
+Positive expected versions are checked before mutation. Conflicts map to CLI code 4. Multi-source graph batches preflight sources, then apply one patch per source in qualified-name order; later failure reports already-applied sources. There is no cross-concept transaction, automatic retry, cloud-wide snapshot, or automatic cross-concept transaction. Local IDs may repeat across tenants/projects; duplicate qualified names and inconsistent locations fail queries.
 
----
+PostgreSQL checks expected versions under its row lock and returns gyrus.ConflictError with the qualified name, update operation, and expected/actual versions. Rejection rolls back without concept/history writes; MCP returns a tool error and CLI returns code 4.
 
-## 2. Complete SQLite Index & Edge DDL Schemas
+The UI graph reads outgoing edges only for a fixed list of originally visible concepts. Immediate filtered/missing targets are display-only ghosts, never traversal sources. Nodes are unique by qualified name; edges are unique by source/target/relation. Both collections are sorted deterministically. Edge-query errors return HTTP 500 before any partial graph is encoded.
 
-In the Local Profile (OKF storage mode), Gyrus uses a local SQLite database (`index.db` inside the Gyrus storage directory) for fast indexing, search, and relationship mapping:
+Context suggestions expand depends_on edges from the selected graph provider for project concepts, including PostgreSQL database-only edges. Other relation types do not automatically expand context. OKF graph mutations refresh an explicitly selected PostgreSQL metadata index; a post-persistence indexing failure is reported as requiring repair without rolling back source data.
 
-```sql
--- 1. Metadata Index Table
-CREATE TABLE IF NOT EXISTS documents_index (
-    id                VARCHAR(255) PRIMARY KEY,
-    title             VARCHAR(500) NOT NULL,
-    category          VARCHAR(100) NOT NULL,
-    type              VARCHAR(100) NOT NULL,
-    format            VARCHAR(50)  NOT NULL DEFAULT 'markdown',
-    owner_group       VARCHAR(255) NOT NULL,
-    version           INTEGER      NOT NULL DEFAULT 1,
-    status            VARCHAR(100) NOT NULL,
-    last_modified_by  VARCHAR(255) NOT NULL,
-    last_updated      TIMESTAMP    NOT NULL,
-    tags_json         TEXT,        -- JSON array of tags e.g. ["sqlite","storage"]
-    dependencies_json TEXT,        -- JSON array of document IDs e.g. ["prd-001"]
-    file_path         TEXT         NOT NULL,
-    content_hash      VARCHAR(64)  NOT NULL
-);
+## Lifecycle
 
--- 2. Full-Text Search (FTS5) Virtual Table
-CREATE VIRTUAL TABLE IF NOT EXISTS documents_fts USING fts5(
-    id UNINDEXED,
-    title,
-    tags,
-    content,
-    tokenize = 'porter ascii'
-);
+ADR transitions: proposed to accepted/rejected; accepted to superseded/deprecated. Improvement proposals: draft to reviewing/abandoned; reviewing to approved/rejected/abandoned; approved to implemented/abandoned. Other types: draft to active/archived; active to deprecated/archived; deprecated to archived. Same-state updates are accepted. Finalized immutable bodies are protected; metadata updates remain permitted.
 
--- 3. SQL Edge-Table Relationship Graph
-CREATE TABLE IF NOT EXISTS document_edges (
-    from_document_id   VARCHAR(255) NOT NULL,
-    to_document_id     VARCHAR(255) NOT NULL,
-    relationship_type  VARCHAR(100) NOT NULL, -- 'supersedes', 'depends_on', 'implements', 'mitigates'
-    created_by         VARCHAR(255) NOT NULL,
-    created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (from_document_id, to_document_id, relationship_type)
-);
+## Qualified concept identity
 
--- Secondary Indexes for Fast Traversal & Filtering
-CREATE INDEX IF NOT EXISTS idx_docs_category ON documents_index(category);
-CREATE INDEX IF NOT EXISTS idx_docs_type ON documents_index(type);
-CREATE INDEX IF NOT EXISTS idx_docs_status ON documents_index(status);
-CREATE INDEX IF NOT EXISTS idx_edges_to ON document_edges(to_document_id);
-```
+Creation accepts a local ID and tenant/scope/project. All existing-concept operations require tenant/reference/id or tenant/projects/project/id. Concept envelopes and mutation references expose the derived name alongside the local id. Storage paths, database keys/history, graph endpoints, UI routes, search identity ranking, and context deduplication use the qualified name. Short IDs are rejected. Persist only links with concept and rel; relationship creation metadata and the dependencies field are removed.
 
-### Relationship Extraction (OKF vs Enterprise DB):
-* **Open Knowledge Format (Local Profile):** Gyrus automatically extracts edges from document frontmatter attributes (`dependencies: [...]`, `supersedes: [...]`) during indexing and populates `document_edges`. Explicit CLI/MCP `link` commands update the frontmatter and the `document_edges` table.
-* **Enterprise DB (Team/Enterprise Profile):** Relationships are stored directly in PostgreSQL/Cosmos DB edge tables, independent of whether the document body contains frontmatter array fields.
+## Shared package boundaries
 
----
-
-## 3. Comprehensive Lifecycle State-Transition Machine
-
-Gyrus enforces strict lifecycle validations for ALL supported document types. Any state update violating these transition matrices is **rejected with exit code 2 (`TRANSITION_ERROR`)**.
-
-```
-ADR Lifecycle:
-  [proposed] ──► [accepted] ──► [superseded]
-      │              │
-      ▼              ▼
-  [rejected]     [deprecated]
-
-Improvement Proposal Lifecycle:
-  [draft] ──► [reviewing] ──► [approved] ──► [implemented]
-                  │               │
-                  ▼               ▼
-              [rejected]      [abandoned]
-
-General Document Lifecycle (PRD, Spec, Guide, Standards, Technical-Ref, Product, Glossary, Release-Note, Freeform):
-  [draft] ──► [active] ──► [deprecated] ──► [archived]
-```
-
-### Transition Validation Matrix
-
-| Document Type | Current Status | Legal Next Statuses |
-| :--- | :--- | :--- |
-| **`adr`** | `proposed` | `accepted`, `rejected` |
-| | `accepted` | `superseded`, `deprecated` |
-| | `superseded` | None (Immutable) |
-| | `deprecated` | None (Immutable) |
-| | `rejected` | None (Immutable) |
-| **`improvement-proposal`** | `draft` | `reviewing`, `abandoned` |
-| | `reviewing` | `approved`, `rejected` |
-| | `approved` | `implemented`, `abandoned` |
-| | `implemented` | None (Immutable) |
-| | `rejected` | `draft` (If re-opened) |
-| | `abandoned` | `draft` (If re-opened) |
-| **General Types**<br>(`prd`, `specification`, `guide`, `standards`, `technical-reference`, `product`, `glossary`, `release-note`, `freeform`) | `draft` | `active`, `archived` |
-| | `active` | `deprecated`, `archived` |
-| | `deprecated` | `archived` |
-| | `archived` | `draft` (If unarchived) |
-
----
-
-## 4. Optimistic Concurrency Control
-
-When an update is submitted:
-1. Gyrus fetches the existing record and compares its stored `version` against the client's `expected_version`.
-2. If `expected_version != version`, Gyrus aborts the update and returns exit code 4 (`CONCURRENCY_CONFLICT`).
-3. If versions match, Gyrus increments `version = version + 1`, updates `last_updated` and `last_modified_by`, persists changes, and updates the search index.
+Provider contracts remain in pkg/gyrus. internal/persistence/fileio supplies local locking, safe paths, and atomic file replacement; internal/persistence/db manages shared SQLite/PostgreSQL connections. These are concrete infrastructure packages, not providers or a second persistence interface. internal/provider/shared/okf supplies scanner validation, snapshots, filtering, and ranking used by the independent OKF adapters. Legacy conversion is an agent-led procedure in the packaged gyrus-migrate-sqlite-to-okf skill, using installed Gyrus and available file/database tools. It has no Go helper package or runtime imports and does not require a Go installation or source checkout. The packaged gyrus-test-lifecycle skill likewise verifies public CLI, MCP, and HTTP behavior through agent instructions without a bundled language runtime.

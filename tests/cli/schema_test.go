@@ -61,7 +61,7 @@ tenant: <team-owning-document>
 version: 1
 status: active
 tags: []
-dependencies: []
+links: []
 ---
 
 # Runbook: [Service/Procedure Name]

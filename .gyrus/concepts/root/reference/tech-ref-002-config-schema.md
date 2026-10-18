@@ -1,145 +1,65 @@
 ---
-id: tech-ref-002-config-schema
 title: Gyrus YAML Configuration Reference & Schema
-category: technical
+id: tech-ref-002-config-schema
 type: technical-reference
-format: ""
-tenant: root
-version: 1
+format: markdown
+category: technical
+version: 5
 status: active
+last_updated: 2026-10-17T23:57:58Z
 last_modified_by: ""
-last_updated: 2026-07-22T06:38:56Z
+tenant: root
 ---
 
-# Gyrus Configuration Reference Manual (`.gyrus.yaml`)
+# Gyrus configuration reference
 
-This document provides a detailed reference for all configuration options supported in workspace `.gyrus.yaml` or user-wide global `~/.gyrus.yaml`.
-
----
-
-## 1. Example Configuration File
+Use `gyrus config init --profile local` to generate a project configuration, or add `--global` for the user-wide configuration. Profiles are local, git, blob, s3, azure, gcs, and postgres. Unsupported profiles fail before writing files. Inspect effective normalized provider selections with `gyrus config show`.
 
 ```yaml
+tenant: root
+project: my-project
 storage:
-  provider: localfs # localfs | git | blob | s3 | azure_blob | gcs | postgres
-  root: .gyrus      # Path to storage directory (relative to config file)
-
+  provider: localfs
+  root: .gyrus
 index:
-  provider: sqlite  # sqlite | postgres
-  dsn: .gyrus/index.db
-
+  provider: okf
 graph:
-  provider: sqlite  # sqlite | postgres
-
+  provider: okf
 search:
-  provider: sqlite_fts5 # sqlite | sqlite_fts5 | postgres_fts | vector
-
-default_owner_group: root
+  provider: okf
 ```
 
----
+## Provider settings
 
-## 2. Configuration Field Reference
+| Setting | Choices and behavior |
+| --- | --- |
+| storage.provider | localfs (default), git, blob, s3, azure_blob, gcs, postgres |
+| storage.root | local root relative to the configuration file; default .gyrus; blob stores use their configured prefix/root |
+| index.provider | okf, postgres; file-backed default okf |
+| graph.provider | okf, postgres; omitted value follows effective index |
+| search.provider | okf, postgres_fts; omitted value follows effective index |
+| tenant | Default tenant; root when omitted |
+| project | Explicit project scope; paths determine stored concept scope |
+| ui.client / ui.command | Existing UI agent selection and optional command |
 
-### Root Settings
+Git uses git.repo_url and git.branch. Blob uses blob.bucket_url and optional blob.prefix. Cloud profiles use s3.bucket_name/region, azure_blob.storage_account/container_name, or gcs.bucket_name. PostgreSQL uses postgres.connection_string. Unknown provider names fail through shared provider validation before opening storage. Unrecognized YAML sections are ignored by the standard decoder. Credentials continue to use existing SDK/environment discovery.
 
-| Property | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| **`version`** | Integer | `1` | Configuration schema version identifier. Must be set to `1`. |
-| **`profile`** | String | `small` | Preset deployment profile. Options: `test`, `local_full`, `small`, `medium`, `large`. |
-| **`schemas_path`** | String | `""` | *(Obsolete / Deprecated)* Schemas are now stored directly in the persistence layer under `.gyrus/schemas/`. |
+Storage aliases: aws_s3 → s3; azure → azure_blob; gcp/gcp_gcs → gcs. SQLite index/graph/search names and aliases have been removed and fail validation.
 
+## Defaults and constraints
 
+File-backed profiles default to OKF index/graph/search. Explicit PostgreSQL index selects PostgreSQL graph/FTS. The PostgreSQL storage profile remains postgres/postgres/postgres_fts. No embedding service is required.
 
----
+OKF index requires OKF graph/search. PostgreSQL index supports PostgreSQL or OKF graph and PostgreSQL FTS/OKF search. All OKF components require localfs/Git/blob storage; PostgreSQL storage has no scanner in v1. Incompatible/unknown settings fail before I/O. Shared SQLite persistence remains internal infrastructure reserved for future cache work.
 
-### Storage Settings (`storage`)
+## OKF behavior
 
-Controls document payload persistence.
+No database or index DSN is required. Queries scan canonical concepts, reject invalid/duplicate records, and derive scope from paths. Empty queries browse all matching metadata; keyword queries default to ten results. CLI --max-results and MCP max_results pass positive limits through to the provider. Search matches lowercase Unicode keyword substrings in ID/title/tags/body with OR semantics, exact metadata filters, project/reference prioritization, and deterministic name ties. FTS operators/stemming are not supported by OKF. The sync command/tool has been removed.
 
-| Property | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| **`storage.provider`** | String | `localfs` | Driver for document persistence. Options: `localfs`, `git`, `blob`, `sqlite`, `postgres`. |
-| **`storage.root`** | String | `~/.gyrus/` | Target filesystem directory path for storing OKF Markdown bundles. Supports `~` home directory expansion. |
+OKF graph mutations persist only typed frontmatter links with concept and rel. Cooperating local processes use interprocess locks, Git pushes reject conflicts, and cloud writes/deletes require ETag/generation conditions. Unsupported conditional writes fail rather than overwriting unconditionally.
 
----
+Before upgrading an existing SQLite configuration, run the packaged gyrus-migrate-sqlite-to-okf workflow to preserve database-only graph edges. Keep backups and the old database, verify normalized tuple parity while discarding legacy edge audit metadata, then switch all three fields to OKF and restart MCP processes.
 
-### Index Settings (`index`)
+## Configuration discovery
 
-Controls structured metadata indexing.
-
-| Property | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| **`index.provider`** | String | `sqlite` | Metadata indexing engine. Options: `okf` (direct frontmatter scan), `sqlite`, `postgres`. |
-| **`index.dsn`** | String | `~/.gyrus/index.db` | Data Source Name (DSN) or database file path for the metadata index database. |
-
----
-
-### Knowledge Graph Settings (`graph`)
-
-Controls document relationship edge traversals (`depends_on`, `supersedes`, `implements`, `mitigates`).
-
-| Property | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| **`graph.provider`** | String | `sqlite` | Driver for relationship edge queries. Options: `okf` (frontmatter dependencies), `sqlite` (edge tables), `postgres`. |
-
----
-
-### Search Settings (`search`)
-
-Controls full-text lexical and semantic search indexing.
-
-| Property | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| **`search.provider`** | String | `sqlite_fts5` | Full-text search engine. Options: `none`, `okf_scan`, `sqlite_fts5`, `postgres_fts`. |
-
----
-
-### Automation & Agent Lifecycle Settings (`automation`)
-
-Controls autonomous agent integration and lifecycle hook behaviors (`PreInvocation`, `Stop`).
-
-| Property | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| **`automation.hooks_enabled`** | Boolean | `true` | Master switch to enable or disable all Gyrus agent lifecycle hooks. Set to `false` to completely disable hooks without uninstalling the plugin. |
-| **`automation.auto_context`** | Boolean | `true` | Automatically injects relevant high-level context (PRDs, living specs, ADRs) and SDLC directives into the agent's turn on `PreInvocation`. |
-| **`automation.architectural_check`** | Boolean | `true` | Checks uncommitted changes on `Stop`. Prompts the agent to reflect on whether architectural decisions (`adr`) or living specs (`specification`) should be recorded when code changes. Features a single-prompt escape hatch to prevent infinite loops. |
-| **`automation.ignored_paths`** | Array of Strings | *(See defaults)* | Glob patterns ignored during architectural checks. Defaults: `tests/**`, `*_test.go`, `*.test.*`, `*.spec.*`, `*.lock`, `go.sum`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `.git/**`, `.agents/**`, `.vscode/**`, `vendor/**`, `node_modules/**`, `tmp/**`. |
-
-> [!TIP]
-> **Quick Override via Environment Variable**: You can temporarily disable all hook execution in any shell or CI environment by running:
-> ```bash
-> export GYRUS_HOOKS_ENABLED=false
-> ```
-
-
-## 3. Provider Capability Matrix
-
-The table below indicates which provider drivers are **Implemented** versus **Planned**:
-
-| Provider Type | Driver Name | Status | Description & Use Case |
-| :--- | :--- | :--- | :--- |
-| **Storage** | `localfs` | `IMPLEMENTED` | Local filesystem storage supporting OKF directory bundles. |
-| **Storage** | `git` | `PLANNED` | Remote Git repository persistence via GitHub/Bitbucket APIs. |
-| **Storage** | `blob` | `PLANNED` | Cloud object storage (AWS S3, Azure Blob Storage, GCP Bucket). |
-| **Storage** | `postgres` | `PLANNED` | Centralized relational database document storage. |
-| **Index** | `sqlite` | `IMPLEMENTED` | Embedded SQLite `documents_index` metadata table (CGO-free). |
-| **Index** | `okf` | `IMPLEMENTED` | Direct YAML frontmatter schema parsing and validation. |
-| **Index** | `postgres` | `PLANNED` | PostgreSQL document index backend. |
-| **Graph** | `sqlite` | `IMPLEMENTED` | Embedded SQLite `document_edges` table with traversal & BFS support. |
-| **Graph** | `okf` | `IMPLEMENTED` | Frontmatter dependency links extraction (`dependencies: [...]`). |
-| **Graph** | `postgres` | `PLANNED` | PostgreSQL edge relationship tables. |
-| **Search** | `sqlite_fts5` | `IMPLEMENTED` | FTS5 full-text lexical keyword search engine with ranking. |
-| **Search** | `okf_scan` | `IMPLEMENTED` | Direct filesystem scan matching metadata filters. |
-| **Search** | `postgres_fts`| `PLANNED` | PostgreSQL full-text search query engine. |
-
-
----
-
-## 4. Storage & Configuration Precedence Hierarchy
-
-Gyrus resolves configuration files using a strictly file-driven 3-tier priority order with full override semantics (highest priority first):
-
-1. **Repository Workspace Config:** `.gyrus.yaml` located in current working directory or any parent repository directory. If present, workspace configuration completely overrides global configuration. Relative `storage.root` paths resolve relative to the directory containing `.gyrus.yaml`.
-2. **Global User Config:** `~/.gyrus.yaml` in the user's home directory. Applies user-wide defaults across all repositories when no workspace configuration is found. Relative `storage.root` paths resolve relative to `$HOME`.
-3. **Default Fallback:** Built-in defaults utilizing LocalFS storage driver rooted at `~/.gyrus/`.
+Explicit GYRUS_CONFIG and GYRUS_PROJECT selectors are supported by the loader. Otherwise project configuration is discovered from the working directory upward, then user ~/.gyrus.yaml, then built-in defaults. Project configuration replaces global configuration rather than merging it. Relative local storage roots resolve from their configuration file's directory. Removed lifecycle hook settings are not part of the active schema.

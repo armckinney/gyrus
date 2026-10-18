@@ -19,7 +19,7 @@ func NewOKFFormat() *OKFFormat {
 
 // Serialize converts a gyrus.Concept into YAML frontmatter + Markdown bytes.
 func (f *OKFFormat) Serialize(doc *gyrus.Concept) ([]byte, error) {
-	yamlData, err := yaml.Marshal(doc)
+	yamlData, err := MarshalFrontmatter(doc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal frontmatter to YAML: %w", err)
 	}
@@ -53,6 +53,13 @@ func (f *OKFFormat) Deserialize(data []byte) (*gyrus.Concept, error) {
 	bodyContent := strings.TrimPrefix(rest[closeIdx+4:], "\n")
 
 	var doc gyrus.Concept
+	var fields map[string]any
+	if err := yaml.Unmarshal([]byte(frontmatterYAML), &fields); err != nil {
+		return nil, err
+	}
+	if err := validateRelationships(fields); err != nil {
+		return nil, err
+	}
 	if err := yaml.Unmarshal([]byte(frontmatterYAML), &doc); err != nil {
 		return nil, fmt.Errorf("failed to parse YAML frontmatter: %w", err)
 	}

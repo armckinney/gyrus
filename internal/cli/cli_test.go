@@ -31,6 +31,7 @@ func TestMapErrorToExitCode(t *testing.T) {
 		{&okf.ValidationError{Field: "id", Message: "invalid"}, ExitValidationError},
 		{&lifecycle.TransitionError{DocType: gyrus.TypeADR, CurrentStatus: "accepted", NewStatus: "proposed"}, ExitTransitionError},
 		{errors.New("concurrency error: expected version mismatch"), ExitConcurrencyError},
+		{&gyrus.ConflictError{ConceptID: "root/reference/example", Operation: "update", Err: errors.New("observed revision changed")}, ExitConcurrencyError},
 		{errors.New("permission denied: unauthorized group"), ExitAuthError},
 		{errors.New("disk storage read error"), ExitStorageError},
 	}

@@ -1,17 +1,17 @@
 ---
-id: <unique-dashed-id>
 title: <Clean Document Title>
-category: operations
+id: <unique-dashed-id>
 type: release-note
 format: markdown
-tenant: <team-owning-document>
+category: operations
 version: 1
 status: published
-immutable: true
-last_modified_by: <author-username>
 last_updated: YYYY-MM-DD
+last_modified_by: <author-username>
+tenant: <team-owning-document>
 tags: []
-dependencies: []
+links: []
+immutable: true
 ---
 
 # Release Notes: [Project Name] v[Version]

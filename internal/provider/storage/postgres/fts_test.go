@@ -3,10 +3,10 @@ package postgres
 import (
 	"context"
 	"encoding/json"
+	"github.com/pashagolub/pgxmock/v4"
 	"testing"
 
 	"github.com/armckinney/gyrus/pkg/gyrus"
-	"github.com/pashagolub/pgxmock/v4"
 )
 
 // -----------------------------------------------------------------------------
@@ -27,20 +27,20 @@ func TestStore_SearchFTS(t *testing.T) {
 	doc := gyrus.Concept{
 		ID:       "doc-1",
 		Title:    "Postgres FTS Search",
-		Category: gyrus.CategoryTechnical,
+		Category: gyrus.CategoryTechnical, Tenant: "root", Name: "root/reference/doc-1",
 	}
 	fmBytes, _ := json.Marshal(doc)
 
 	// Since we construct raw SQL string, we need a flexible matcher or exact query.
 	// For this test we will just match the prefix with Regex.
-	mock.ExpectQuery("SELECT frontmatter, content").
-		WithArgs("technical", "postgres | search").
-		WillReturnRows(pgxmock.NewRows([]string{"frontmatter", "content", "score"}).AddRow(fmBytes, "Some content here", 0.9))
+	mock.ExpectQuery("SELECT id, frontmatter, content").
+		WithArgs("technical", "postgres OR search", gyrus.DefaultSearchLimit).
+		WillReturnRows(pgxmock.NewRows([]string{"id", "frontmatter", "content", "score"}).AddRow(doc.Name, fmBytes, "Some content here", 0.9))
 
 	filter := gyrus.SearchFilter{
 		Category: gyrus.CategoryTechnical,
 	}
-	results, err := store.SearchFTS(context.Background(), "postgres search", filter)
+	results, err := store.Search(context.Background(), gyrus.SearchQuery{Query: "postgres search", Filter: filter})
 	if err != nil {
 		t.Errorf("error was not expected while searching: %s", err)
 	}

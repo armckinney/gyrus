@@ -1,24 +1,26 @@
 ---
-id: guide-005-installation-and-initialization
 title: Gyrus Installation & Initialization Guide
-category: operations
+id: guide-005-installation-and-initialization
 type: guide
 format: markdown
-tenant: root
-version: 4
+category: operations
+version: 10
 status: active
+last_updated: 2026-10-18T00:00:28Z
 last_modified_by: antigravity
-last_updated: 2026-10-16T01:25:00Z
+tenant: root
 tags:
-  - installation
-  - initialization
-  - setup
-  - quickstart
-  - marketplace
-  - plugins
-dependencies:
-  - prd-001-specification-roadmap
-  - adr-008-native-client-plugin-marketplace-distribution
+    - installation
+    - initialization
+    - setup
+    - quickstart
+    - marketplace
+    - plugins
+links:
+    - concept: root/reference/adr-008-native-client-plugin-marketplace-distribution
+      rel: depends_on
+    - concept: root/reference/prd-001-specification-roadmap
+      rel: depends_on
 ---
 
 # Gyrus Installation & Initialization Guide
@@ -78,22 +80,22 @@ gyrus config init --global
 
 | Flag | Shorthand | Description | Default |
 | :--- | :--- | :--- | :--- |
-| `--profile` | `-p` | Configuration profile (`local`, `git`, `blob`, `s3`, `azure`, `gcs`, `postgres`, `vector`). | `local` |
-| `--owner-group` | `-o` | Default security owner group for documents. | `root` |
+| `--profile` | `-p` | Configuration profile (`local`, `git`, `blob`, `s3`, `azure`, `gcs`, `postgres`). Unsupported values fail before writing files. | `local` |
+| `--tenant` | `-t` | Default tenant for concepts. | `root` |
+| `--project` | `-P` | Default project for context concepts. | `default` |
 | `--global` | `-g` | Write user-wide configuration to `~/.gyrus.yaml`. | `false` |
 | `--force` | `-f` | Overwrite existing configuration file without prompting. | `false` |
 
 ### Storage Profile Options (`--profile`)
 
 ```bash
-gyrus config init --profile local     # LocalFS Storage + SQLite FTS5 (default)
+gyrus config init --profile local     # LocalFS storage + OKF index/graph/search (default)
 gyrus config init --profile git       # Remote Git Repository Persistence
 gyrus config init --profile s3        # AWS S3 Bucket Storage
 gyrus config init --profile azure     # Azure Blob Container Storage
 gyrus config init --profile gcs       # Google Cloud Storage Bucket
 gyrus config init --profile blob      # Cloud Blob Storage
 gyrus config init --profile postgres  # PostgreSQL Database Backend
-gyrus config init --profile vector    # Semantic Vector Search Profile
 ```
 
 ### Required Cloud Storage Permissions
@@ -145,30 +147,12 @@ claude plugin install gyrus@armckinney
 
 ---
 
-## 🎛️ 5. Configuring Automation & Lifecycle Hooks
+## 5. Verify the installed configuration
 
-Gyrus packages lifecycle hooks (`PreInvocation` and `Stop`) into the Agent Plugin bundle to automate context retrieval and encourage documentation compliance without nagging on routine code changes.
+Run `gyrus config show --json` and verify the resolved storage target before creating concepts. File-backed profiles use OKF keyword scanning; PostgreSQL uses native full-text search. Keyword searches default to ten results, while empty-query browsing is unlimited unless capped explicitly.
 
-You can configure, enable, or disable this functionality at multiple levels:
+The runtime does not support an automation configuration block or hook environment switches. Configure agent behavior through the installed harness and packaged skills. Use the gyrus-test-lifecycle skill for isolated CLI, MCP, and UI verification.
 
-### In Workspace Configuration (`.gyrus.yaml`)
-To customize or disable hooks for your repository, add the `automation` block:
+## Qualified concepts and minimal links
 
-```yaml
-automation:
-  hooks_enabled: true         # Master switch (set to false to disable all hooks)
-  auto_context: true          # Inject high-level context before agent reasoning
-  architectural_check: true   # Prompt agent on stop if architectural contracts change
-  ignored_paths:              # Files and directories ignored during checks
-    - "tests/**"
-    - "*_test.go"
-    - "*.lock"
-    - "vendor/**"
-    - "node_modules/**"
-```
-
-### Temporary Shell Override (Environment Variable)
-To temporarily disable all hook execution without modifying configuration:
-```bash
-export GYRUS_HOOKS_ENABLED=false
-```
+Creation retains a local id and returns its qualified name. Address existing concepts with tenant/reference/id or tenant/projects/project/id across SDK, CLI, MCP, and UI. API envelopes include name; YAML frontmatter does not persist it. Relationships use only links with concept and rel. Dependency arrays, old link keys, per-link creation metadata, and short lookup IDs are rejected. Local IDs may repeat across tenants/projects. Incoming neighbors provide backlinks; relationship types and general cycle-safe graph traversal remain unchanged. Use the migration skill for legacy concepts or SQLite graph exports; retain backups and rebuild obsolete identity databases explicitly. Restart cached MCP processes after upgrading.

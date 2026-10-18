@@ -1,28 +1,36 @@
 ---
-id: standards-002-testing-strategy
 title: Gyrus Testing Strategy & QA Standards
-category: technical
+id: standards-002-testing-strategy
 type: standards
 format: markdown
-tenant: root
-version: 5
+category: technical
+version: 9
 status: active
+last_updated: 2026-10-17T23:57:58Z
+last_modified_by: ""
+tenant: root
 tags:
-  - testing
-  - qa
-  - standards
-  - integration
-  - mcp
-  - cli
-  - agents
-  - phase-2.4
-dependencies:
-  - prd-001-specification-roadmap
-  - standards-001-doc-strategy
-  - spec-001-contract-schema
-  - spec-002-cli-interface
-  - spec-003-mcp-interface
-  - spec-004-core-engine
+    - testing
+    - qa
+    - standards
+    - integration
+    - mcp
+    - cli
+    - agents
+    - phase-2.4
+links:
+    - concept: root/reference/prd-001-specification-roadmap
+      rel: depends_on
+    - concept: root/reference/spec-001-contract-schema
+      rel: depends_on
+    - concept: root/reference/spec-002-cli-interface
+      rel: depends_on
+    - concept: root/reference/spec-003-mcp-interface
+      rel: depends_on
+    - concept: root/reference/spec-004-core-engine
+      rel: depends_on
+    - concept: root/reference/standards-001-doc-strategy
+      rel: depends_on
 ---
 
 # Gyrus Testing Strategy & QA Standards
@@ -49,8 +57,8 @@ graph TD
 
     subgraph "Layer 2: Provider Infrastructure Matrix (Integration)"
         P1["Storage: LocalFS, Git, Postgres, Blob Mock"]
-        P2["Index & Search: SQLite FTS5, Postgres FTS, Vector Embeddings"]
-        P3["Graph: SQLite & Postgres Directed Edge Stores"]
+        P2["Index & Search: OKF Keyword Scan, Postgres FTS"]
+        P3["Graph: OKF Links & Postgres Directed Edge Stores"]
     end
 
     subgraph "Layer 3: CLI Binary & Protocol Contract (Product E2E)"
@@ -149,15 +157,15 @@ Gyrus supports seamless integration testing against live cloud infrastructure an
 
 ### 1. PostgreSQL (Neon, Supabase, AWS RDS, Azure Flexible Server, Docker)
 
-Integration tests in [`tests/integration/postgres_test.go`](file:///workspaces/gyrus/tests/integration/postgres_test.go) auto-detect PostgreSQL connection strings via `POSTGRES_URL`. When set, the test automatically connects, applies database migrations, seeds documents, executes `tsvector` / `tsquery` full-text search, and tests directed relationship graph edges.
+PostgreSQL integration is opt-in through GYRUS_TEST_POSTGRES_URL pointing to an isolated test database. The suite creates fixture concepts, checks native tsvector full-text matching and scope/project filters, and verifies qualified graph edges. Without that explicit target it skips. Mocked transaction tests verify typed version conflicts, rollback, and no concept/history writes; CLI maps those conflicts to code 4 and MCP reports a tool error.
 
 ```bash
 # Local Docker Container
-export POSTGRES_URL="postgres://postgres:postgres@localhost:5432/gyrus?sslmode=disable"
+export GYRUS_TEST_POSTGRES_URL="postgres://postgres:postgres@localhost:5432/gyrus_test?sslmode=disable"
 go test -v ./tests/integration -run TestIntegration_PostgresLive
 
 # Managed Cloud Postgres (Neon / Supabase / AWS Aurora / Azure)
-export POSTGRES_URL="postgres://user:password@ep-sample.us-east-2.aws.neon.tech/neondb?sslmode=require"
+export GYRUS_TEST_POSTGRES_URL="<isolated-test-database-DSN>"
 go test -v ./tests/integration -run TestIntegration_PostgresLive
 ```
 
@@ -185,19 +193,11 @@ export GCS_BUCKET="my-gyrus-gcs-bucket"
 go test -v ./tests/integration -run TestIntegration_BlobProfile
 ```
 
-### 3. Semantic Vector Search & Ollama Embeddings
+### 3. Search removal and UI graph regressions
 
-Vector integration tests in [`tests/integration/vector_test.go`](file:///workspaces/gyrus/tests/integration/vector_test.go) automatically ping local or sidecar Ollama services. When reachable, tests generate live 768-dimensional float32 embeddings using `nomic-embed-text` and assert cosine similarity rankings:
+Search supports OKF keyword scanning and PostgreSQL full-text matching. Verify unknown profiles and provider names fail through shared validation before writes or storage access, while every supported profile generates a valid configuration. Unrecognized YAML sections follow standard decoding behavior.
 
-```bash
-# Local Ollama or DevContainer sidecar (Default: http://localhost:11434)
-export OLLAMA_HOST="http://localhost:11434"
-go test -v ./tests/integration -run TestIntegration_OllamaVectorLive
-
-# OpenAI Semantic Vector Embeddings (Optional)
-export OPENAI_API_KEY="sk-..."
-go test -v ./tests/integration -run TestIntegration_VectorHybrid
-```
+UI graph regression tests use visible concepts linked to filtered concepts with onward edges. Assert that only visible sources expand, immediate targets remain display-only ghosts, duplicate nodes/edges collapse, self-links/cycles/missing targets remain represented, and repeated responses have identical ordering. Edge-query failures must return HTTP 500 without partial graph JSON.
 
 ---
 
@@ -222,7 +222,7 @@ go test -v ./tests/integration -run TestIntegration_VectorHybrid
 ---
 
 ## 2. Infrastructure-Backed Multi-Provider Suite (`internal/provider/{storage,index,search,graph}`)
-*Integration tests verifying real backing infrastructure across storage, search engines, vector embeddings, and graph databases.*
+*Integration tests verifying storage, lexical/full-text search, and graph providers.*
 
 - [x] **Real Infrastructure Storage Drivers (`storage`)**:
   - `localfs`: Full filesystem CRUD, nested directory auto-creation (`.gyrus/docs/...`), atomic writes, file permissions.
@@ -230,11 +230,11 @@ go test -v ./tests/integration -run TestIntegration_VectorHybrid
   - `postgres`: Real PostgreSQL backend testing via Docker container (`pgx/v5`), transaction isolation, reconnection pooling.
   - `blob`: Cloud Object Storage (S3, Azure Blob, GCS) via `gocloud.dev/blob` mock server, chunked writes, key prefixing.
 - [x] **Real Infrastructure Search & Index Drivers (`search`, `index`)**:
-  - `sqlite` / `fts5`: FTS5 full-text indexing, BM25 relevance ranking, special character sanitization (`"`, `'`, `-`, `*`), full re-index on `gyrus sync`.
-  - `postgres_fts`: `tsvector` generation, `tsquery` execution, relevance scoring.
-  - `vector`: Semantic vector embeddings (Local Ollama sidecar, OpenAI mock), Reciprocal Rank Fusion (RRF) score blending, distance thresholding.
+  - `okf`: Authoritative scans, malformed-file recovery, qualified identity ranking, exact metadata/scope/project filters, default ten keyword matches, explicit CLI/MCP limit passthrough, uncapped metadata browsing.
+  - `postgres_fts`: Shared storage/index/search query implementation, tsvector matching, scope/project filters, deterministic ranking, and default/explicit limits. Unit tests use mocks; live integration requires GYRUS_TEST_POSTGRES_URL pointing to an isolated test database.
+  - Unknown profiles/providers must fail through shared validation; default OKF retrieval requires no external search service.
 - [x] **Real Infrastructure Graph Drivers (`graph`)**:
-  - Directed edge creation (`depends_on`, `supersedes`, `implements`, `mitigates`) in `sqlite` & `postgres`.
+  - Directed edge creation (`depends_on`, `supersedes`, `implements`, `mitigates`) in `okf` and `postgres`.
   - Circular dependency detection and resolution.
   - Cascade unlink and orphaned link cleanup on document archiving.
 
@@ -247,7 +247,7 @@ go test -v ./tests/integration -run TestIntegration_VectorHybrid
   - `gyrus suggest-context`: Prompt relevance ranking, `--max-tokens` budgeting & line truncation, empty prompt handling.
   - `gyrus search`: Keyword search filtering (`--category`, `--type`, `--status`, `--tag`, `--max-results`), structured `--json` output envelopes.
   - CRUD & Topology: `get`, `create`, `update`, `link`, `unlink`, `archive`, `sync`, `validate`, `schema`, `config show`.
-  - Installation & Setup: `gyrus init config` (verifying profile matrices `--profile local|git|blob|s3|azure|gcs|postgres|vector`, `--global`, `--force`), `gyrus init client` (`--target antigravity|claude|codex|copilot`, `--mode stdio|docker`, `--global`), and `gyrus config show` (`--json`).
+  - Configuration: gyrus config init with local/git/blob/s3/azure/gcs/postgres profiles, --global, --force, and config show --json. Unsupported profiles fail without replacing files. Agent integrations use native client plugin installation rather than retired gyrus init/client commands.
 - [x] **Exit Code Protocol Enforcement**:
   - `0`: Success
   - `1`: Frontmatter schema / validation / ID error
@@ -268,7 +268,7 @@ go test -v ./tests/integration -run TestIntegration_VectorHybrid
 - [x] **MCP Container Serving (`docker run -i ghcr.io/armckinney/gyrus:latest`)**:
   - Running containerized MCP server in interactive stdio mode, verifying stdio pipe persistence, signal handling (SIGTERM, SIGINT).
 - [x] **MCP Tool Suite Integration**:
-  - Complete verification of all 11 implemented MCP tools (`gyrus_create`, `gyrus_get`, `gyrus_update`, `gyrus_archive`, `gyrus_search`, `gyrus_suggest_context`, `gyrus_link`, `gyrus_unlink`, `gyrus_neighbors`, `gyrus_traverse`, `gyrus_sync`).
+  - Discovery and execution of CRUD, search, context, graph, and schema tools. Verify that retired sync is absent, keyword max_results passes through, and prepare-adr uses the active shared schema without obsolete metadata.
 - [x] **MCP Resources & Prompts**:
   - Resource fetching (`gyrus://documents`, `gyrus://schemas`) and prompt template rendering (`architect_review`, etc.).
 
@@ -304,9 +304,9 @@ go test -v ./tests/integration -run TestIntegration_VectorHybrid
 - [x] **Data Race Detector (`-race`)**:
   - Parallel Go test suite execution verifying zero data races under concurrent CLI/MCP operations.
 - [x] **Crash Consistency & Transaction Rollback**:
-  - Verifying that interrupted sync operations or database write failures rollback cleanly without corrupting the SQLite index or leaving orphan graph links.
+  - Verify atomic local concept replacement, rejected Git pushes, conditional blob mutations, and PostgreSQL transaction behavior without corrupting authoritative concepts or graph edges.
 - [x] **Database Migration & Upgrade Compatibility**:
-  - Backward compatibility tests ensuring existing SQLite databases migrate cleanly across version upgrades without data loss.
+  - Legacy SQLite data is exported through the migration skill, with consistent backups, qualified tuple parity, unchanged bodies/statuses, and idempotency. SQLite runtime providers and sync are removed; there is no automatic database migration.
 - [x] **Path Traversal Security**:
   - Rejection of directory traversal attacks (e.g. `../../etc/passwd` injection attempts).
 - [x] **Credential Masking**:

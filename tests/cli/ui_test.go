@@ -72,7 +72,7 @@ func TestUI_CLI_ServeE2E(t *testing.T) {
 
 	// Link docs
 	linkCmd := exec.Command(gyrusBinPath, "link",
-		"prd-e2e-001", "adr-e2e-001",
+		"root/projects/default/prd-e2e-001", "root/projects/default/adr-e2e-001",
 		"--rel-type", "depends_on",
 	)
 	linkCmd.Dir = tempWorkspace
@@ -175,7 +175,7 @@ func TestUI_CLI_ServeE2E(t *testing.T) {
 	// Verify edge details
 	foundEdge := false
 	for _, e := range graphData.Edges {
-		if e.Source == "prd-e2e-001" && e.Target == "adr-e2e-001" && e.RelationshipType == "depends_on" {
+		if e.Source == "root/projects/default/prd-e2e-001" && e.Target == "root/projects/default/adr-e2e-001" && e.RelationshipType == "depends_on" {
 			foundEdge = true
 			break
 		}
