@@ -4,16 +4,16 @@ id: tech-ref-002-config-schema
 type: technical-reference
 format: markdown
 category: technical
-version: 4
+version: 5
 status: active
-last_updated: 2026-10-16T19:41:57Z
+last_updated: 2026-10-17T23:57:58Z
 last_modified_by: ""
 tenant: root
 ---
 
 # Gyrus configuration reference
 
-Use `gyrus config init --profile local` to generate a project configuration, or add `--global` for the user-wide configuration. Profiles are local, git, blob, s3, azure, gcs, postgres, and vector. Inspect effective normalized provider selections with `gyrus config show`.
+Use `gyrus config init --profile local` to generate a project configuration, or add `--global` for the user-wide configuration. Profiles are local, git, blob, s3, azure, gcs, and postgres. Unsupported profiles fail before writing files. Inspect effective normalized provider selections with `gyrus config show`.
 
 ```yaml
 tenant: root
@@ -37,20 +37,20 @@ search:
 | storage.root | local root relative to the configuration file; default .gyrus; blob stores use their configured prefix/root |
 | index.provider | okf, postgres; file-backed default okf |
 | graph.provider | okf, postgres; omitted value follows effective index |
-| search.provider | okf, postgres_fts, vector; omitted value follows effective index |
+| search.provider | okf, postgres_fts; omitted value follows effective index |
 | tenant | Default tenant; root when omitted |
 | project | Explicit project scope; paths determine stored concept scope |
 | ui.client / ui.command | Existing UI agent selection and optional command |
 
-Git uses git.repo_url and git.branch. Blob uses blob.bucket_url and optional blob.prefix. Cloud profiles use s3.bucket_name/region, azure_blob.storage_account/container_name, or gcs.bucket_name. PostgreSQL uses postgres.connection_string. Vector uses its embedding provider/model/endpoint settings. Credentials continue to use existing SDK/environment discovery.
+Git uses git.repo_url and git.branch. Blob uses blob.bucket_url and optional blob.prefix. Cloud profiles use s3.bucket_name/region, azure_blob.storage_account/container_name, or gcs.bucket_name. PostgreSQL uses postgres.connection_string. Unknown provider names fail through shared provider validation before opening storage. Unrecognized YAML sections are ignored by the standard decoder. Credentials continue to use existing SDK/environment discovery.
 
 Storage aliases: aws_s3 → s3; azure → azure_blob; gcp/gcp_gcs → gcs. SQLite index/graph/search names and aliases have been removed and fail validation.
 
 ## Defaults and constraints
 
-File-backed profiles default to OKF index/graph/search. Explicit PostgreSQL index selects PostgreSQL graph/FTS. Explicit vector search with omitted index uses OKF index/graph and lexical fallback. The PostgreSQL storage profile remains postgres/postgres/postgres_fts.
+File-backed profiles default to OKF index/graph/search. Explicit PostgreSQL index selects PostgreSQL graph/FTS. The PostgreSQL storage profile remains postgres/postgres/postgres_fts. No embedding service is required.
 
-OKF index requires OKF graph and OKF or vector search. PostgreSQL index supports PostgreSQL or OKF graph and PostgreSQL FTS/OKF search. All OKF components require localfs/Git/blob storage; PostgreSQL storage has no scanner in v1. Incompatible/unknown settings fail before I/O. Shared SQLite persistence remains internal infrastructure reserved for future cache work.
+OKF index requires OKF graph/search. PostgreSQL index supports PostgreSQL or OKF graph and PostgreSQL FTS/OKF search. All OKF components require localfs/Git/blob storage; PostgreSQL storage has no scanner in v1. Incompatible/unknown settings fail before I/O. Shared SQLite persistence remains internal infrastructure reserved for future cache work.
 
 ## OKF behavior
 

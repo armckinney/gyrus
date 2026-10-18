@@ -60,7 +60,7 @@ func ResolveProviders(input *Config) (*Config, error) {
 	compatible := false
 	switch c.Index.Provider {
 	case "okf":
-		compatible = c.Graph.Provider == "okf" && (c.Search.Provider == "okf" || c.Search.Provider == "vector")
+		compatible = c.Graph.Provider == "okf" && c.Search.Provider == "okf"
 	case "postgres":
 		compatible = (c.Graph.Provider == "postgres" || c.Graph.Provider == "okf") && (c.Search.Provider == "postgres_fts" || c.Search.Provider == "okf")
 	}

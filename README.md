@@ -155,7 +155,7 @@ gyrus config show
 ```
 Generates `.gyrus.yaml` in the workspace root (or `~/.gyrus.yaml` when using `--global`) with your desired profile (`local`, `git`, `blob`, `s3`, `azure`, `gcs`, or `postgres`) and tenant boundary (`tenant`). Use `--force` to overwrite an existing configuration. Unsupported profiles fail before writing files.
 
-File-backed profiles default to direct-scan OKF indexing, graph relationships, and search with no database. Keyword searches return the top 10 matches; empty-query browsing returns all metadata matches. PostgreSQL provides native full-text search. Vector search, its profile, and embedding configuration have been removed; legacy vector settings fail explicitly.
+File-backed profiles default to direct-scan OKF indexing, graph relationships, and search with no database. Keyword searches return the top 10 matches; empty-query browsing returns all metadata matches. PostgreSQL provides native full-text search.
 
 ```yaml
 tenant: root

@@ -32,7 +32,7 @@ type GraphStore interface {
 	Traverse(ctx context.Context, query GraphQuery) ([]GraphPath, error)
 }
 
-// SearchProvider handles lexical or semantic text search queries.
+// SearchProvider handles keyword or full-text queries with metadata filters.
 type SearchProvider interface {
 	Search(ctx context.Context, query SearchQuery) ([]SearchResult, error)
 }

@@ -4,9 +4,9 @@ id: standards-002-testing-strategy
 type: standards
 format: markdown
 category: technical
-version: 8
+version: 9
 status: active
-last_updated: 2026-10-16T19:41:57Z
+last_updated: 2026-10-17T23:57:58Z
 last_modified_by: ""
 tenant: root
 tags:
@@ -57,7 +57,7 @@ graph TD
 
     subgraph "Layer 2: Provider Infrastructure Matrix (Integration)"
         P1["Storage: LocalFS, Git, Postgres, Blob Mock"]
-        P2["Index & Search: OKF, Postgres FTS, Vector Embeddings"]
+        P2["Index & Search: OKF Keyword Scan, Postgres FTS"]
         P3["Graph: OKF Links & Postgres Directed Edge Stores"]
     end
 
@@ -157,15 +157,15 @@ Gyrus supports seamless integration testing against live cloud infrastructure an
 
 ### 1. PostgreSQL (Neon, Supabase, AWS RDS, Azure Flexible Server, Docker)
 
-Integration tests in [`tests/integration/postgres_test.go`](file:///workspaces/gyrus/tests/integration/postgres_test.go) auto-detect PostgreSQL connection strings via `POSTGRES_URL`. When set, the test automatically connects, applies database migrations, seeds documents, executes `tsvector` / `tsquery` full-text search, and tests directed relationship graph edges.
+PostgreSQL integration is opt-in through GYRUS_TEST_POSTGRES_URL pointing to an isolated test database. The suite creates fixture concepts, checks native tsvector full-text matching and scope/project filters, and verifies qualified graph edges. Without that explicit target it skips. Mocked transaction tests verify typed version conflicts, rollback, and no concept/history writes; CLI maps those conflicts to code 4 and MCP reports a tool error.
 
 ```bash
 # Local Docker Container
-export POSTGRES_URL="postgres://postgres:postgres@localhost:5432/gyrus?sslmode=disable"
+export GYRUS_TEST_POSTGRES_URL="postgres://postgres:postgres@localhost:5432/gyrus_test?sslmode=disable"
 go test -v ./tests/integration -run TestIntegration_PostgresLive
 
 # Managed Cloud Postgres (Neon / Supabase / AWS Aurora / Azure)
-export POSTGRES_URL="postgres://user:password@ep-sample.us-east-2.aws.neon.tech/neondb?sslmode=require"
+export GYRUS_TEST_POSTGRES_URL="<isolated-test-database-DSN>"
 go test -v ./tests/integration -run TestIntegration_PostgresLive
 ```
 
@@ -193,19 +193,11 @@ export GCS_BUCKET="my-gyrus-gcs-bucket"
 go test -v ./tests/integration -run TestIntegration_BlobProfile
 ```
 
-### 3. Semantic Vector Search & Ollama Embeddings
+### 3. Search removal and UI graph regressions
 
-Vector integration tests in [`tests/integration/vector_test.go`](file:///workspaces/gyrus/tests/integration/vector_test.go) automatically ping local or sidecar Ollama services. When reachable, tests generate live 768-dimensional float32 embeddings using `nomic-embed-text` and assert cosine similarity rankings:
+Search supports OKF keyword scanning and PostgreSQL full-text matching. Verify unknown profiles and provider names fail through shared validation before writes or storage access, while every supported profile generates a valid configuration. Unrecognized YAML sections follow standard decoding behavior.
 
-```bash
-# Local Ollama or DevContainer sidecar (Default: http://localhost:11434)
-export OLLAMA_HOST="http://localhost:11434"
-go test -v ./tests/integration -run TestIntegration_OllamaVectorLive
-
-# OpenAI Semantic Vector Embeddings (Optional)
-export OPENAI_API_KEY="sk-..."
-go test -v ./tests/integration -run TestIntegration_VectorHybrid
-```
+UI graph regression tests use visible concepts linked to filtered concepts with onward edges. Assert that only visible sources expand, immediate targets remain display-only ghosts, duplicate nodes/edges collapse, self-links/cycles/missing targets remain represented, and repeated responses have identical ordering. Edge-query failures must return HTTP 500 without partial graph JSON.
 
 ---
 
@@ -230,7 +222,7 @@ go test -v ./tests/integration -run TestIntegration_VectorHybrid
 ---
 
 ## 2. Infrastructure-Backed Multi-Provider Suite (`internal/provider/{storage,index,search,graph}`)
-*Integration tests verifying real backing infrastructure across storage, search engines, vector embeddings, and graph databases.*
+*Integration tests verifying storage, lexical/full-text search, and graph providers.*
 
 - [x] **Real Infrastructure Storage Drivers (`storage`)**:
   - `localfs`: Full filesystem CRUD, nested directory auto-creation (`.gyrus/docs/...`), atomic writes, file permissions.
@@ -240,7 +232,7 @@ go test -v ./tests/integration -run TestIntegration_VectorHybrid
 - [x] **Real Infrastructure Search & Index Drivers (`search`, `index`)**:
   - `okf`: Authoritative scans, malformed-file recovery, qualified identity ranking, exact metadata/scope/project filters, default ten keyword matches, explicit CLI/MCP limit passthrough, uncapped metadata browsing.
   - `postgres_fts`: Shared storage/index/search query implementation, tsvector matching, scope/project filters, deterministic ranking, and default/explicit limits. Unit tests use mocks; live integration requires GYRUS_TEST_POSTGRES_URL pointing to an isolated test database.
-  - `vector`: Semantic vector embeddings (Local Ollama sidecar, OpenAI mock), Reciprocal Rank Fusion (RRF) score blending, distance thresholding.
+  - Unknown profiles/providers must fail through shared validation; default OKF retrieval requires no external search service.
 - [x] **Real Infrastructure Graph Drivers (`graph`)**:
   - Directed edge creation (`depends_on`, `supersedes`, `implements`, `mitigates`) in `okf` and `postgres`.
   - Circular dependency detection and resolution.
@@ -255,7 +247,7 @@ go test -v ./tests/integration -run TestIntegration_VectorHybrid
   - `gyrus suggest-context`: Prompt relevance ranking, `--max-tokens` budgeting & line truncation, empty prompt handling.
   - `gyrus search`: Keyword search filtering (`--category`, `--type`, `--status`, `--tag`, `--max-results`), structured `--json` output envelopes.
   - CRUD & Topology: `get`, `create`, `update`, `link`, `unlink`, `archive`, `sync`, `validate`, `schema`, `config show`.
-  - Installation & Setup: `gyrus init config` (verifying profile matrices `--profile local|git|blob|s3|azure|gcs|postgres|vector`, `--global`, `--force`), `gyrus init client` (`--target antigravity|claude|codex|copilot`, `--mode stdio|docker`, `--global`), and `gyrus config show` (`--json`).
+  - Configuration: gyrus config init with local/git/blob/s3/azure/gcs/postgres profiles, --global, --force, and config show --json. Unsupported profiles fail without replacing files. Agent integrations use native client plugin installation rather than retired gyrus init/client commands.
 - [x] **Exit Code Protocol Enforcement**:
   - `0`: Success
   - `1`: Frontmatter schema / validation / ID error

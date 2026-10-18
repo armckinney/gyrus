@@ -4,9 +4,9 @@ id: guide-002-setup-onboarding
 type: guide
 format: markdown
 category: technical
-version: 4
+version: 5
 status: active
-last_updated: 2026-10-16T19:41:57Z
+last_updated: 2026-10-17T23:57:58Z
 last_modified_by: ""
 tenant: root
 ---
@@ -20,7 +20,7 @@ gyrus config init --profile local --tenant root --project my-project
 gyrus config show
 ```
 
-The local profile uses localfs storage and OKF index/graph/search. There is no index database to initialize. Git, blob, s3, azure, and gcs profiles also default to OKF. PostgreSQL remains database-backed. Vector uses OKF index/graph and lexical fallback with its configured embedding service. Set the corresponding remote connection settings and use the existing credential discovery for remote storage.
+The local profile uses localfs storage and OKF index/graph/search. There is no index database to initialize. Git, blob, s3, azure, and gcs profiles also default to OKF. PostgreSQL remains database-backed and provides native full-text search. Vector search and embedding configuration have been removed; no embedding service is required. Set remote connection settings for the selected storage provider and use its existing credential discovery.
 
 ## Create and connect concepts
 

@@ -4,9 +4,9 @@ id: spec-005-composability
 type: specification
 format: markdown
 category: technical
-version: 5
+version: 6
 status: active
-last_updated: 2026-10-16T19:41:57Z
+last_updated: 2026-10-17T23:57:58Z
 last_modified_by: ""
 tenant: root
 ---
@@ -22,7 +22,7 @@ Provider capability is defined by the source factories and config resolver, not 
 | Storage | localfs, git, blob, s3, azure_blob, gcs, postgres |
 | Index | okf, postgres |
 | Graph | okf, postgres |
-| Search | okf, postgres_fts, vector |
+| Search | okf, postgres_fts |
 
 Storage aliases: aws_s3 maps to s3, azure to azure_blob, gcp/gcp_gcs to gcs. OKF requires scanner-capable storage: localfs, Git, or blob/cloud aliases. PostgreSQL storage remains database-backed.
 
@@ -37,13 +37,12 @@ Storage aliases: aws_s3 maps to s3, azure to azure_blob, gcp/gcp_gcs to gcs. OKF
 | azure | azure_blob | okf | okf | okf |
 | gcs | gcs | okf | okf | okf |
 | postgres | postgres | postgres | postgres | postgres_fts |
-| vector | localfs | okf | okf | vector |
 
 ## Omitted fields and compatible combinations
 
-Omitted storage uses localfs. File-backed storage defaults index to okf. Graph defaults to the effective index. Search defaults according to index: okf or postgres_fts. Explicit vector search with omitted index uses OKF index/graph and lexical fallback. PostgreSQL storage defaults all secondary providers to PostgreSQL.
+Omitted storage uses localfs. File-backed storage defaults index to okf. Graph defaults to the effective index. Search defaults according to index: okf or postgres_fts. PostgreSQL storage defaults all secondary providers to PostgreSQL. Unsupported profiles return an error before configuration writes. Provider names use shared validation; unrecognized YAML sections follow standard decoding behavior.
 
-An OKF index requires OKF graph and OKF or vector search. PostgreSQL indexes support PostgreSQL or OKF graph and PostgreSQL FTS/OKF search, subject to scanner-capable storage for every OKF component. PostgreSQL storage requires postgres/postgres/postgres_fts. Removed SQLite providers and unknown/incompatible providers fail before resource creation.
+An OKF index requires OKF graph/search. PostgreSQL indexes support PostgreSQL or OKF graph and PostgreSQL FTS/OKF search, subject to scanner-capable storage for every OKF component. PostgreSQL storage requires postgres/postgres/postgres_fts. Unknown or incompatible providers fail before resource creation. Shared SQLite persistence remains internal infrastructure for future cache work.
 
 ## Retrieval and portability
 

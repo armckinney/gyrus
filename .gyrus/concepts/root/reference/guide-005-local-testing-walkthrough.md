@@ -4,9 +4,9 @@ id: guide-005-local-testing-walkthrough
 type: guide
 format: markdown
 category: technical
-version: 3
+version: 4
 status: active
-last_updated: 2026-10-16T19:41:57Z
+last_updated: 2026-10-17T23:59:37Z
 last_modified_by: ""
 tenant: root
 tags:
@@ -15,269 +15,84 @@ tags:
     - cli-walkthrough
 ---
 
-# Gyrus Local Testing Commands Walkthrough
+# Local consumer lifecycle walkthrough
 
-Copy and paste these commands sequentially into your terminal to test every subcommand and feature of Gyrus.
+Use an installed Gyrus binary in a new terminal/subshell. The packaged gyrus-test-lifecycle skill provides the more extensive CLI/MCP/UI acceptance procedure. This sequence uses localfs with OKF and requires no source checkout, compiler, embedding service, or Make commands.
 
----
-
-## 1. Setup & Initialization
-
-Rebuild the latest binary and initialize workspace storage:
+## Private setup
 
 ```bash
-# Rebuild binary
-make build
-
-# Initialize Gyrus workspace configuration
-./gyrus init config
+gyrus_binary=$(command -v gyrus)
+test_directory=$(mktemp -d)
+mkdir "$test_directory/home" "$test_directory/project"
+cd "$test_directory/project"
+export HOME="$test_directory/home"
+export USERPROFILE="$test_directory/home"
+unset GYRUS_CONFIG GYRUS_PROJECT
+export GYRUS_PROJECT="$test_directory/project"
+"$gyrus_binary" config init --profile local --tenant root --project demo
+export GYRUS_CONFIG="$test_directory/project/.gyrus.yaml"
+"$gyrus_binary" config show --json
 ```
 
----
+Require localfs storage inside this private project and OKF index/graph/search. Supported profiles are local, git, blob, s3, azure, gcs, and postgres. Unknown profiles fail without replacing configuration; unknown provider names use shared validation. SQLite providers and sync are removed.
 
-## 2. Document Schema Inspection (`gyrus schema`)
-
-Inspect the frontmatter template for ADRs and PRDs:
+## Templates, creation, and qualified reads
 
 ```bash
-# Print ADR schema template
-./gyrus schema adr
-
-# Print PRD schema template
-./gyrus schema prd
+"$gyrus_binary" schema get adr
+"$gyrus_binary" schema get guide
+"$gyrus_binary" create --id adr-storage --title "Direct OKF retrieval" --category architecture --type adr --tenant root --scope reference --status proposed --tags okf,architecture --content "Use authoritative Markdown and typed concept links."
+"$gyrus_binary" create --id guide-retrieval --title "Retrieval guide" --category technical --type guide --tenant root --scope project --project demo --status active --content "retrievalwalkthroughmarker"
+"$gyrus_binary" get root/reference/adr-storage --json
+"$gyrus_binary" get root/projects/demo/guide-retrieval --json
 ```
 
----
+Creation takes a local ID and returns name plus revision. All subsequent operations use that qualified name. Observe returned versions rather than assuming a revision after additional mutations.
 
-## 3. Creating Documents (`gyrus create`)
-
-Create sample architecture and product contract documents:
+## Lifecycle and concurrency
 
 ```bash
-# Create Architecture Design Record (ADR)
-./gyrus create \
-  --id "adr-001-storage-engine" \
-  --title "Use Embedded SQLite FTS5 for Gyrus Search" \
-  --category "architecture" \
-  --type "adr" \
-  --owner-group "platform" \
-  --status "accepted" \
-  --tags "sqlite,fts5,cgo-free,architecture" \
-  --content "## Context & Problem Statement
-Gyrus requires zero-dependency embedded full-text search (FTS5) and edge graph storage.
-
-## Decision
-We selected modernc.org/sqlite as the pure Go driver engine.
-
-## Consequences
-- Zero CGO dependencies for cross-platform releases.
-- Native FTS5 lexical search."
-
-# Create Technical Specification
-./gyrus create \
-  --id "spec-002-cli-framework" \
-  --title "Cobra CLI Command Routing Architecture" \
-  --category "technical" \
-  --type "specification" \
-  --owner-group "platform" \
-  --status "active" \
-  --tags "cli,cobra,exit-codes" \
-  --dependencies "adr-001-storage-engine" \
-  --content "## Specification
-Defines CLI subcommands and programmatic exit code mappings (0..5)."
+"$gyrus_binary" update root/reference/adr-storage --status accepted --expected-version 1 --json
+"$gyrus_binary" update root/reference/adr-storage --title "Direct OKF retrieval decision" --expected-version 2 --json
 ```
 
----
+The accepted ADR body is immutable; metadata remains editable. A stale expected version fails with CLI exit code 4. Invalid transitions or immutable-body edits fail with code 2. PostgreSQL uses the same conflict classification with transaction rollback.
 
-## 4. Reading Documents (`gyrus get`)
-
-Retrieve raw Markdown or structured JSON envelopes:
+## Directed relationships and context
 
 ```bash
-# Fetch raw Markdown payload
-./gyrus get adr-001-storage-engine
-
-# Fetch structured JSON envelope
-./gyrus get adr-001-storage-engine --json
+"$gyrus_binary" link root/projects/demo/guide-retrieval root/reference/adr-storage --rel-type depends_on --json
+"$gyrus_binary" suggest-context --prompt retrievalwalkthroughmarker --max-concepts 2 --json
 ```
 
----
+Context includes the project guide and its reference dependency. Supported relations are depends_on, implements, supersedes, and mitigates. OKF links are stored on their source as concept/rel pairs; incoming neighbors derive backlinks. MCP exposes neighbors and traversal; there are no CLI commands with those names.
 
-## 5. Updating Documents (`gyrus update`)
-
-Patch document title, status, or body content with version lock:
+## Search and validation
 
 ```bash
-# Update document status and content
-./gyrus update adr-001-storage-engine \
-  --title "Use Embedded SQLite FTS5 Engine (Updated)" \
-  --status "active" \
-  --expected-version 1
+"$gyrus_binary" search --query retrievalwalkthroughmarker --max-results 20 --json
+"$gyrus_binary" search --query "" --scope all --max-results 0 --json
+"$gyrus_binary" validate .gyrus/concepts/root/reference/adr-storage.md --json
+"$gyrus_binary" validate .gyrus/concepts/root/projects/demo/guide-retrieval.md --json
 ```
 
----
+Keyword searches default to ten results and accept explicit limits above or below ten. Empty-query browsing is unlimited unless a positive limit is supplied. OKF performs direct keyword scans; PostgreSQL offers native full-text search. Neither requires vectorization. Invalid concepts fail collection queries explicitly.
 
-## 6. Linking Document Dependencies (`gyrus link` / `gyrus unlink`)
+## UI and MCP
 
-Manage directed relationship edges between documents:
+Start gyrus ui serve --config "$GYRUS_CONFIG" --host 127.0.0.1 --port 8080 in a separate terminal with the private environment. Verify /concepts, the qualified concept route, and /api/graph. Visible sources contribute outgoing edges; immediate filtered/missing targets appear as ghosts without further expansion or hidden metadata. Responses sort and deduplicate nodes/edges; edge failures return HTTP 500.
+
+Start gyrus mcp serve --config "$GYRUS_CONFIG" with a client that maintains its initialized stdio session. Discover tools and use max_results for search, max_concepts for context, and expected_version for updates. The prepare-adr prompt uses the active shared ADR template. Stop only the UI/MCP processes started for this private workspace.
+
+## Durable unlink and cleanup
 
 ```bash
-# Link spec-002-cli-framework -> adr-001-storage-engine
-./gyrus link spec-002-cli-framework adr-001-storage-engine --rel-type "depends_on"
-
-# Unlink relationship
-./gyrus unlink spec-002-cli-framework adr-001-storage-engine --rel-type "depends_on"
+"$gyrus_binary" unlink root/projects/demo/guide-retrieval root/reference/adr-storage --rel-type depends_on --json
+"$gyrus_binary" get root/projects/demo/guide-retrieval --json
+"$gyrus_binary" archive root/projects/demo/guide-retrieval --json
+"$gyrus_binary" archive root/reference/adr-storage --json
+"$gyrus_binary" search --query "" --scope all --max-results 0 --json
 ```
 
----
-
-## 7. Validating Documents (`gyrus validate`)
-
-Validate OKF frontmatter schema rules on disk without saving:
-
-```bash
-./gyrus validate .gyrus/docs/okf/platform/reference/adr-001-storage-engine.md
-```
-
----
-
-## 8. Browse the authoritative collection
-
-OKF reads concept metadata and links directly. SQLite providers and the sync command/tool have been removed:
-
-```bash
-# Human readable output
-./gyrus search --query "" --scope all
-
-# Complete structured inventory
-./gyrus search --query "" --scope all --max-results 0 --json
-```
-
----
-
-## 9. Full-Text Search (`gyrus search`)
-
-Query concepts through the configured provider. OKF keyword queries default to ten results; --max-results overrides the limit:
-
-```bash
-# Basic keyword search
-./gyrus search --query "SQLite search"
-
-# Filter by category and document type
-./gyrus search --query "Cobra" --category "technical" --type "specification"
-
-# JSON output
-./gyrus search --query "FTS5" --json
-```
-
----
-
-## 10. Context Linearization (`gyrus suggest-context`)
-
-Linearize relevant context matching an AI agent prompt:
-
-```bash
-# Suggest context for an architectural prompt
-./gyrus suggest-context --prompt "How does Gyrus implement zero-dependency FTS search?"
-
-# Return context as JSON array
-./gyrus suggest-context --prompt "Cobra CLI exit codes" --json
-```
-
----
-
-## 11. Archiving Documents (`gyrus archive`)
-
-Archive (delete) a document from storage and search index:
-
-```bash
-# Human-readable output
-./gyrus archive spec-002-cli-framework
-
-# Programmatic JSON response
-./gyrus archive adr-001-storage-engine --json
-```
-
----
-
-## 12. Testing Embedded MCP Stdio Server (`gyrus mcp serve`)
-
-Test launching the stdio Model Context Protocol (MCP) server:
-
-```bash
-# Test MCP stdio server startup (press Ctrl+C to stop)
-./gyrus mcp serve
-```
-
----
-
-## 13. Testing Docker Containerized MCP Execution
-
-Test zero-install containerized MCP server execution via Docker:
-
-```bash
-# Build local docker image
-docker build -f packaging/Dockerfile -t gyrus:latest .
-
-# Run containerized MCP server over stdio
-docker run -i --rm -v "$(pwd):/workspace" -w /workspace gyrus:latest mcp serve
-```
-
----
-
-## 14. Automated Test Suites & Live Infrastructure Testing
-
-Gyrus includes automated Go test suites that can run locally against embedded mocks or live cloud services:
-
-### A. Running Standard Test Suites
-
-```bash
-# Run entire lifecycle (clean -> fmt -> lint -> test -> build)
-make all
-
-# Run standard unit and core tests
-make test
-
-# Run black-box CLI/MCP integration tests
-make test-integration
-
-# Run performance benchmarks (indexing, search, graph traversal)
-go test -bench=. -benchmem ./tests/integration/...
-```
-
-### B. Running Live PostgreSQL & Cloud DB Tests
-
-```bash
-# Local Docker Postgres (localhost:5432)
-export POSTGRES_URL="postgres://postgres:postgres@localhost:5432/gyrus?sslmode=disable"
-go test -v ./tests/integration -run TestIntegration_PostgresLive
-
-# Live Cloud PostgreSQL (Neon, Supabase, AWS RDS, Azure)
-export POSTGRES_URL="postgres://user:password@ep-sample.us-east-2.aws.neon.tech/neondb?sslmode=require"
-go test -v ./tests/integration -run TestIntegration_PostgresLive
-```
-
-### C. Running Live Cloud Object Storage Tests (Azure, S3, GCS)
-
-```bash
-# Azure Blob Storage
-export AZURE_STORAGE_ACCOUNT="myaccount"
-export AZURE_STORAGE_KEY="mykey"
-export AZURE_STORAGE_CONTAINER="gyrus-docs"
-go test -v ./tests/integration -run TestIntegration_BlobProfile
-
-# AWS S3
-export AWS_REGION="us-east-1"
-export AWS_ACCESS_KEY_ID="AKIA..."
-export AWS_SECRET_ACCESS_KEY="..."
-export S3_BUCKET="my-gyrus-bucket"
-go test -v ./tests/integration -run TestIntegration_BlobProfile
-```
-
-### D. Running Live Vector Search Tests (Ollama Sidecar)
-
-```bash
-# Local Ollama or DevContainer sidecar service
-export OLLAMA_HOST="http://localhost:11434"
-go test -v ./tests/integration -run TestIntegration_OllamaVectorLive
-```
+The fresh read must show the link absent; a repeated unlink is a version no-op. Final browsing must return an empty collection. After stopping owned processes, remove only the recorded private test directory. Keep fixtures and logs for diagnosis when a check fails. The local profile creates no index database.

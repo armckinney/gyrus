@@ -17,7 +17,6 @@ const (
 	ProfileAzure    Profile = "azure"
 	ProfileGCS      Profile = "gcs"
 	ProfilePostgres Profile = "postgres"
-	ProfileVector   Profile = "vector"
 )
 
 // ConfigSetupOptions defines input options for project config initialization.
@@ -38,7 +37,7 @@ type ConfigSetupResult struct {
 }
 
 // GenerateConfigYaml generates the .gyrus.yaml config file content for a given profile using the nested schema.
-func GenerateConfigYaml(profile Profile, tenant string, project ...string) string {
+func GenerateConfigYaml(profile Profile, tenant string, project ...string) (string, error) {
 	if tenant == "" {
 		tenant = DefaultTenant
 	}
@@ -69,7 +68,7 @@ search:
 git:
   repo_url: ""
   branch: main
-`, tenant, proj)
+`, tenant, proj), nil
 
 	case ProfileS3:
 		return fmt.Sprintf(`# Gyrus Configuration - AWS S3 Profile
@@ -92,7 +91,7 @@ search:
 s3:
   bucket_name: "my-gyrus-bucket"
   region: "us-east-1"
-`, tenant, proj)
+`, tenant, proj), nil
 
 	case ProfileAzure:
 		return fmt.Sprintf(`# Gyrus Configuration - Azure Blob Profile
@@ -115,7 +114,7 @@ search:
 azure_blob:
   storage_account: "myaccountname"
   container_name: "my-gyrus-container"
-`, tenant, proj)
+`, tenant, proj), nil
 
 	case ProfileGCS:
 		return fmt.Sprintf(`# Gyrus Configuration - Google Cloud Storage Profile
@@ -137,7 +136,7 @@ search:
 
 gcs:
   bucket_name: "my-gyrus-gcs-bucket"
-`, tenant, proj)
+`, tenant, proj), nil
 
 	case ProfileBlob:
 		return fmt.Sprintf(`# Gyrus Configuration - Cloud Blob Profile
@@ -159,7 +158,7 @@ search:
 
 blob:
   bucket_url: "file:///tmp/gyrus-blob-bucket"
-`, tenant, proj)
+`, tenant, proj), nil
 
 	case ProfilePostgres:
 		return fmt.Sprintf(`# Gyrus Configuration - PostgreSQL Profile
@@ -181,32 +180,9 @@ search:
 
 postgres:
   connection_string: "postgres://postgres:postgres@postgres:5432/gyrus?sslmode=disable"
-`, tenant, proj)
+`, tenant, proj), nil
 
-	case ProfileVector:
-		return fmt.Sprintf(`# Gyrus Configuration - Semantic Vector Profile
-tenant: %s
-project: %s
-
-storage:
-  provider: localfs
-  root: .gyrus
-
-index:
-  provider: okf
-
-graph:
-  provider: okf
-
-search:
-  provider: vector
-
-vector:
-  embedding_provider: ollama
-  model: nomic-embed-text
-  ollama_endpoint: "http://localhost:11434"
-`, tenant, proj)
-	default: // ProfileLocal
+	case ProfileLocal:
 		return fmt.Sprintf(`# Gyrus Configuration - LocalFS Profile
 tenant: %s
 project: %s
@@ -223,7 +199,9 @@ graph:
 
 search:
   provider: okf
-`, tenant, proj)
+`, tenant, proj), nil
+	default:
+		return "", fmt.Errorf("unsupported configuration profile %q: choose local, git, blob, s3, azure, gcs, or postgres", profile)
 	}
 }
 
@@ -234,7 +212,10 @@ func WriteConfigFile(dir string, profile Profile, tenant string, project ...stri
 		proj = project[0]
 	}
 	configPath := filepath.Join(dir, ".gyrus.yaml")
-	content := GenerateConfigYaml(profile, tenant, proj)
+	content, err := GenerateConfigYaml(profile, tenant, proj)
+	if err != nil {
+		return "", err
+	}
 
 	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
 		return "", fmt.Errorf("failed to write .gyrus.yaml config file: %w", err)

@@ -15,7 +15,7 @@ gyrus search --query '' --scope all --max-results 0 --json
 
 Require localfs storage inside the private workspace, OKF index/graph/search, and zero initial concepts. Require that CLI help and MCP tools expose no sync command/tool. SQLite index/graph/search configuration must fail explicitly before data writes. Save the generated configuration for a final byte comparison. Do not copy customer configuration or data. Inspect `--help` for create/update/search/schema/link/unlink/archive/validate, `mcp serve`, and `ui serve` as needed.
 
-In separate disposable directories, verify `config init --profile vector` and an unknown profile fail without creating/replacing configuration. Verify configurations with `search.provider: vector` or any top-level `vector:` section (including empty/null) fail before storage access. Use copies of private fixture configurations for these rejection checks; keep the main test configuration unchanged.
+In separate disposable directories, verify an unknown profile fails without creating/replacing configuration. Verify an unknown search provider fails before storage access. Use copies of private fixture configurations for these rejection checks; keep the main test configuration unchanged.
 
 ## 2. Schema and interface interoperability
 

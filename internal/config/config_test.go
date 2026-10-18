@@ -498,7 +498,6 @@ func TestWriteConfigFileProfiles(t *testing.T) {
 		{config.ProfileAzure, "provider: azure_blob"},
 		{config.ProfileGCS, "provider: gcs"},
 		{config.ProfilePostgres, "provider: postgres"},
-		{config.ProfileVector, "provider: vector"},
 	}
 
 	for _, p := range profiles {

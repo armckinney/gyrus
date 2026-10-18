@@ -203,7 +203,11 @@ func (s *Store) Update(ctx context.Context, id string, patch gyrus.ConceptPatch,
 	}
 
 	if expectedVersion != 0 && doc.Version != expectedVersion {
-		return gyrus.ConceptRef{}, fmt.Errorf("version mismatch: expected %d, got %d", expectedVersion, doc.Version)
+		return gyrus.ConceptRef{}, &gyrus.ConflictError{
+			ConceptID: id,
+			Operation: "update",
+			Err:       fmt.Errorf("expected version %d, got %d", expectedVersion, doc.Version),
+		}
 	}
 
 	if patch.Title != nil {

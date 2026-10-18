@@ -4,9 +4,9 @@ id: tech-ref-003-mcp-manual
 type: technical-reference
 format: markdown
 category: technical
-version: 5
+version: 6
 status: active
-last_updated: 2026-10-16T19:41:57Z
+last_updated: 2026-10-17T23:57:58Z
 last_modified_by: ""
 tenant: root
 ---
@@ -36,9 +36,11 @@ Valid relationships are depends_on, supersedes, implements, and mitigates. Neigh
 
 ## OKF retrieval and graph behavior
 
-File-backed profiles default to OKF index/graph/search. Keyword queries use case-insensitive Unicode substring terms with OR semantics and return ten matches by default. Positive max_results values pass to the selected provider and override the default. Empty-query metadata browsing returns all matching concepts unless capped. PostgreSQL applies scope/project filters with native full-text matching; vector uses OKF index/graph and lexical fallback. SQLite providers have been removed.
+File-backed profiles default to OKF index/graph/search. Keyword queries use case-insensitive Unicode substring terms with OR semantics and return ten matches by default. Positive max_results values pass to the selected provider and override the default. Empty-query metadata browsing returns all matching concepts unless capped. PostgreSQL applies scope/project filters with native full-text matching. SQLite and vector providers have been removed; no embedding configuration or service is required.
 
 Link/unlink persist typed source frontmatter links and use qualified concept names with concept and rel only. Targets may be unresolved. Metadata-only links remain editable on immutable concepts without changing the body. Mutations reject version/Git/object-precondition conflicts, and multi-source batches report any already-applied sources.
+
+PostgreSQL version mismatches return the shared typed conflict inside the locked transaction, with the qualified concept name and expected/actual revisions. CLI maps these conflicts to exit code 4; MCP updates return isError=true. Rejected updates roll back without concept/history writes.
 
 The sync tool/command has been removed. Invalid concepts and duplicate qualified names fail queries with tool errors rather than hiding partial results. Validate individual Markdown files through the CLI and verify complete collection browsing through empty-query search.
 

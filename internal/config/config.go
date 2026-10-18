@@ -40,11 +40,6 @@ type Config struct {
 	GCS struct {
 		BucketName string `yaml:"bucket_name" json:"bucket_name"`
 	} `yaml:"gcs" json:"gcs"`
-	Vector struct {
-		EmbeddingProvider string `yaml:"embedding_provider" json:"embedding_provider"`
-		Model             string `yaml:"model" json:"model"`
-		OllamaEndpoint    string `yaml:"ollama_endpoint" json:"ollama_endpoint"`
-	} `yaml:"vector" json:"vector"`
 	Postgres struct {
 		ConnectionString string `yaml:"connection_string" json:"connection_string"`
 	} `yaml:"postgres" json:"postgres"`

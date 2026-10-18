@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/armckinney/gyrus/internal/config"
 	graphokf "github.com/armckinney/gyrus/internal/provider/graph/okf"
@@ -12,7 +11,6 @@ import (
 	indexpostgres "github.com/armckinney/gyrus/internal/provider/index/postgres"
 	searchokf "github.com/armckinney/gyrus/internal/provider/search/okf"
 	postgresfts "github.com/armckinney/gyrus/internal/provider/search/postgres_fts"
-	vectorsearch "github.com/armckinney/gyrus/internal/provider/search/vector"
 	"github.com/armckinney/gyrus/internal/provider/storage/blob"
 	"github.com/armckinney/gyrus/internal/provider/storage/git"
 	"github.com/armckinney/gyrus/internal/provider/storage/localfs"
@@ -171,40 +169,6 @@ func NewSearchProvider(cfg *config.Config, storageRoot string, store gyrus.Conce
 			return nil, fmt.Errorf("postgres search requires postgres index")
 		}
 		return postgresfts.NewSearchProviderWithPool(idx.Pool()), nil
-	case "vector":
-		lexical, err := searchokf.NewSearchProvider(store)
-		if err != nil {
-			return nil, err
-		}
-		var embedder vectorsearch.EmbeddingProvider
-		if cfg.Vector.EmbeddingProvider == "openai" {
-			embedder = vectorsearch.NewOpenAIEmbedder("")
-		} else {
-			endpoint := cfg.Vector.OllamaEndpoint
-			if endpoint == "" {
-				endpoint = os.Getenv("OLLAMA_HOST")
-			}
-			if endpoint == "" {
-				endpoint = "http://localhost:11434/api/embeddings"
-			}
-			model := cfg.Vector.Model
-			if model == "" {
-				model = "nomic-embed-text"
-			}
-			embedder = vectorsearch.NewOllamaEmbedder(endpoint, model)
-		}
-		v := vectorsearch.NewStore(lexical, embedder)
-		scanner, ok := store.(gyrus.ConceptScanner)
-		if !ok {
-			return nil, fmt.Errorf("vector search requires scanner-capable storage")
-		}
-		report, err := scanner.Scan(context.Background(), func(doc gyrus.Concept) error {
-			return v.AddConcept(context.Background(), doc)
-		})
-		if err != nil || len(report.Errors) > 0 {
-			return nil, fmt.Errorf("initialize vector search: %v; collection errors: %v", err, report.Errors)
-		}
-		return v, nil
 	default:
 		return nil, fmt.Errorf("unknown search provider %q", cfg.SearchProvider())
 	}

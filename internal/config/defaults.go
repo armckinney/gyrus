@@ -35,7 +35,7 @@ var ValidStorageProviders = []string{
 // ValidSearchProviders lists all recognized search provider names.
 var ValidSearchProviders = []string{
 	"okf",
-	"postgres_fts", "vector",
+	"postgres_fts",
 }
 
 // ValidIndexProviders lists all recognized index provider names.

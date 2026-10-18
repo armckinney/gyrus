@@ -3,11 +3,78 @@ package postgres
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/pashagolub/pgxmock/v4"
+	"strings"
 	"testing"
+
+	"github.com/armckinney/gyrus/internal/domain/lifecycle"
+	"github.com/armckinney/gyrus/internal/mcp/tools"
+	mcpapi "github.com/mark3labs/mcp-go/mcp"
 
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
+
+func TestPostgresVersionConflictIsMCPToolError(t *testing.T) {
+	mock, err := pgxmock.NewPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer mock.Close()
+	store := &Store{pool: mock}
+	doc := gyrus.Concept{ID: "shared", Tenant: "root", Title: "Shared", Type: gyrus.TypeGuide, Category: gyrus.CategoryTechnical, Status: "draft", Version: 2, Scope: "reference"}
+	metadata, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mock.ExpectQuery("SELECT frontmatter, content FROM concepts WHERE id = \\$1$").WithArgs("root/reference/shared").WillReturnRows(pgxmock.NewRows([]string{"frontmatter", "content"}).AddRow(metadata, "winner"))
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT frontmatter, content FROM concepts WHERE id = \\$1 FOR UPDATE").WithArgs("root/reference/shared").WillReturnRows(pgxmock.NewRows([]string{"frontmatter", "content"}).AddRow(metadata, "winner"))
+	mock.ExpectRollback()
+	engine := lifecycle.NewEngine(store, nil, nil, nil, "")
+	req := mcpapi.CallToolRequest{}
+	req.Params.Arguments = map[string]any{"id": "root/reference/shared", "title": "loser", "expected_version": 1}
+	result, err := tools.NewHandler(engine).HandleUpdate(context.Background(), req)
+	if err != nil || !result.IsError {
+		t.Fatalf("expected MCP tool error: %+v %v", result, err)
+	}
+	text := result.Content[0].(mcpapi.TextContent).Text
+	if !strings.Contains(text, "concurrency conflict") || !strings.Contains(text, "root/reference/shared") {
+		t.Fatalf("conflict details missing: %s", text)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestStoreVersionConflictRollsBackWithoutWrites(t *testing.T) {
+	mock, err := pgxmock.NewPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer mock.Close()
+	store := &Store{pool: mock}
+	doc := gyrus.Concept{ID: "shared", Tenant: "root", Version: 2, Scope: "reference"}
+	metadata, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT frontmatter, content FROM concepts WHERE id = \\$1 FOR UPDATE").WithArgs("root/reference/shared").WillReturnRows(pgxmock.NewRows([]string{"frontmatter", "content"}).AddRow(metadata, "winner"))
+	mock.ExpectRollback()
+	title := "loser"
+	_, err = store.Update(context.Background(), "root/reference/shared", gyrus.ConceptPatch{Title: &title}, 1)
+	var conflict *gyrus.ConflictError
+	if !errors.As(err, &conflict) {
+		t.Fatalf("expected typed conflict, got %T %v", err, err)
+	}
+	if conflict.ConceptID != "root/reference/shared" || conflict.Operation != "update" || !strings.Contains(conflict.Error(), "expected version 1, got 2") {
+		t.Fatalf("incomplete conflict: %+v", conflict)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Provider Integration Test

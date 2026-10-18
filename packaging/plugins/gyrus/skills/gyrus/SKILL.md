@@ -52,7 +52,7 @@ Use this skill whenever you need to resolve architectural context, align with re
 
 Keyword search defaults to ten results. CLI `--max-results` and MCP `max_results` pass through to the selected provider; positive limits also cap metadata browsing. Empty-query browsing is unlimited by default. SQLite index/graph/search providers and the sync command/tool have been removed; file-backed OKF data is read directly.
 
-Supported search providers are `okf` (direct keyword scan) and `postgres_fts` (native PostgreSQL FTS). Vector search, the vector profile, and the `vector:` configuration section are removed and fail explicitly. Use supported profiles; no embedding service is required. PostgreSQL stale updates return concurrency errors, matching CLI exit code 4.
+Supported search providers are `okf` (direct keyword scan) and `postgres_fts` (native PostgreSQL FTS). PostgreSQL stale updates return concurrency errors, matching CLI exit code 4.
 
 ---
 

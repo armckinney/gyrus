@@ -4,9 +4,9 @@ id: tech-ref-001-cli-manual
 type: technical-reference
 format: markdown
 category: technical
-version: 6
+version: 7
 status: active
-last_updated: 2026-10-16T19:41:57Z
+last_updated: 2026-10-17T23:57:58Z
 last_modified_by: ""
 tenant: root
 ---
@@ -127,7 +127,7 @@ gyrus validate docs/gyrus/okf/platform/reference/adr-001.md
 ```
 
 ### 9. `gyrus search`
-Executes search through the selected OKF, PostgreSQL, or vector provider. Positive --max-results values pass through to the provider. Keyword queries default to ten matches; empty-query metadata browsing is unlimited by default.
+Executes search through the selected OKF keyword or PostgreSQL full-text provider. Positive --max-results values pass through to the provider. Keyword queries default to ten matches; empty-query metadata browsing is unlimited by default. Vector search and its configuration are removed.
 
 ```bash
 gyrus search \
@@ -169,7 +169,7 @@ gyrus mcp serve
 
 ## OKF provider retrieval and maintenance
 
-File-backed profiles now generate OKF index, graph, and search. The same defaults apply when secondary provider fields are omitted. `gyrus config show` displays effective selections. Explicit database/vector providers retain their search semantics.
+File-backed profiles generate OKF index, graph, and search. The same defaults apply when secondary provider fields are omitted. `gyrus config show` displays effective selections. PostgreSQL retains native full-text matching. Unsupported profiles and unknown provider names fail through shared validation before initialization/writes.
 
 OKF keyword search returns the top ten matches; `gyrus search --query "" --scope all --json` browses the complete matching metadata collection. Keyword terms use case-insensitive Unicode substring matching with OR semantics; FTS expression syntax and stemming are not interpreted by OKF.
 

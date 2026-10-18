@@ -29,16 +29,10 @@ func TestEffectiveProviderDefaultsAndCompatibility(t *testing.T) {
 	if err != nil || resolved.IndexProvider() != "postgres" || resolved.SearchProvider() != "postgres_fts" {
 		t.Fatalf("postgres defaults: %+v %v", resolved, err)
 	}
-	cfg = &config.Config{}
-	cfg.Search.Provider = "vector"
-	resolved, err = config.ResolveProviders(cfg)
-	if err != nil || resolved.IndexProvider() != "okf" || resolved.GraphProvider() != "okf" {
-		t.Fatalf("vector defaults: %+v %v", resolved, err)
-	}
 	for _, tc := range []struct {
 		index, graph, search string
 		valid                bool
-	}{{"okf", "okf", "okf", true}, {"okf", "okf", "vector", true}, {"postgres", "okf", "okf", true}, {"okf", "okf", "sqlite_fts5", false}, {"okf", "sqlite", "okf", false}, {"sqlite", "okf", "okf", false}, {"okf", "okf", "sqlite", false}, {"sqlite", "sqlite", "unknown", false}} {
+	}{{"okf", "okf", "okf", true}, {"okf", "okf", "unknown", false}, {"postgres", "okf", "okf", true}, {"okf", "okf", "sqlite_fts5", false}, {"okf", "sqlite", "okf", false}, {"sqlite", "okf", "okf", false}, {"okf", "okf", "sqlite", false}, {"sqlite", "sqlite", "unknown", false}} {
 		cfg = &config.Config{}
 		cfg.Index.Provider = tc.index
 		cfg.Graph.Provider = tc.graph
@@ -48,15 +42,19 @@ func TestEffectiveProviderDefaultsAndCompatibility(t *testing.T) {
 			t.Errorf("%+v: %v", tc, err)
 		}
 	}
-	for _, profile := range []config.Profile{config.ProfileLocal, config.ProfileGit, config.ProfileBlob, config.ProfileS3, config.ProfileAzure, config.ProfileGCS, config.ProfilePostgres, config.ProfileVector} {
+	for _, profile := range []config.Profile{config.ProfileLocal, config.ProfileGit, config.ProfileBlob, config.ProfileS3, config.ProfileAzure, config.ProfileGCS, config.ProfilePostgres} {
 		var cfg config.Config
-		if err := yaml.Unmarshal([]byte(config.GenerateConfigYaml(profile, "root", "demo")), &cfg); err != nil {
+		content, err := config.GenerateConfigYaml(profile, "root", "demo")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := yaml.Unmarshal([]byte(content), &cfg); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := config.ResolveProviders(&cfg); err != nil {
 			t.Fatalf("profile %s: %v", profile, err)
 		}
-		if profile != config.ProfilePostgres && profile != config.ProfileVector && cfg.IndexProvider() != "okf" {
+		if profile != config.ProfilePostgres && cfg.IndexProvider() != "okf" {
 			t.Fatalf("profile %s did not use OKF", profile)
 		}
 	}

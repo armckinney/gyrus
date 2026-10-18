@@ -4,9 +4,9 @@ id: guide-001-system-architecture
 type: guide
 format: markdown
 category: architecture
-version: 2
+version: 3
 status: active
-last_updated: 2026-10-16T19:41:57Z
+last_updated: 2026-10-17T23:57:58Z
 last_modified_by: ""
 tenant: root
 ---
@@ -43,7 +43,7 @@ graph LR
     subgraph Services ["Core Services & Provider Drivers"]
         IndexSvc["Concept Index Service\n\nProviders:\n- OKF\n- PostgreSQL"]
         GraphSvc["Knowledge Graph Service\n\nProviders:\n- OKF\n- PostgreSQL"]
-        SearchSvc["Search Service\n\nProviders:\n- OKF keyword scan\n- PostgreSQL full-text search\n- Vector search"]
+        SearchSvc["Search Service\n\nProviders:\n- OKF keyword scan\n- PostgreSQL full-text search"]
         PersistSvc["Concept Persistence Service\n\nProviders:\n- localfs\n- Git Repo (GitHub, Bitbucket)\n- Blob Storage (S3, Azure SA)\n- PostgreSQL"]
     end
 
