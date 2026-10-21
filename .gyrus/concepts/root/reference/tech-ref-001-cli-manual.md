@@ -4,9 +4,9 @@ id: tech-ref-001-cli-manual
 type: technical-reference
 format: markdown
 category: technical
-version: 7
+version: 8
 status: active
-last_updated: 2026-10-17T23:57:58Z
+last_updated: 2026-10-21T05:30:00Z
 last_modified_by: ""
 tenant: root
 ---
@@ -140,11 +140,13 @@ gyrus search \
 ```
 
 ### 10. `gyrus suggest-context`
-Linearizes top context documents matching an agent prompt context.
+Builds a context layer for an agent prompt: the best-matching sections of the top concepts, split at Markdown headings, within a token budget.
 
 ```bash
-gyrus suggest-context --prompt "How is full-text search implemented?" [--max-tokens 4000]
+gyrus suggest-context --prompt "How is full-text search implemented?" [--max-tokens 4000] [--max-concepts 5]
 ```
+
+- `--max-tokens` (default 4000) is enforced: tokens are estimated from bytes at 2.6 bytes per token, rounded up, and the layer never exceeds the budget. Each concept gets its best section first (no more than an even share), then the remaining matching sections fill the budget; left-out sections and concepts are named with a `gyrus get` pointer. `0` returns whole concepts; a negative value is an error; a budget that fits no paragraph returns only the header, and one below the header's own size (about 13 tokens) returns nothing.
 
 ### 11. `gyrus schema <doc-type>`
 Prints structural frontmatter schema and template for a document type.

@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -64,6 +65,14 @@ func TestCLISearchAndSuggestAndSchema(t *testing.T) {
 	})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("suggest-context failed: %v", err)
+	}
+	rootCmd.SetArgs([]string{"suggest-context", "--prompt", "search", "--max-tokens", "-1"})
+	if err := rootCmd.Execute(); err == nil || !strings.Contains(err.Error(), "--max-tokens") {
+		t.Errorf("a negative --max-tokens must be refused, got %v", err)
+	}
+	rootCmd.SetArgs([]string{"suggest-context", "--prompt", "search", "--max-tokens", "0"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Errorf("--max-tokens 0 (whole concepts) failed: %v", err)
 	}
 
 	// 5. gyrus schema

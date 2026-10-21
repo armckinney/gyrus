@@ -32,7 +32,9 @@ func NewSuggestContextCmd(application *app.App) *cobra.Command {
 			if maxConcepts <= 0 {
 				maxConcepts = 5
 			}
-			_ = maxTokens
+			if maxTokens < 0 {
+				return fmt.Errorf("--max-tokens must be 0 (whole concepts) or more, got %d", maxTokens)
+			}
 
 			effectiveScope := ""
 			if cmd.Flags().Changed("scope") {
@@ -49,7 +51,7 @@ func NewSuggestContextCmd(application *app.App) *cobra.Command {
 				Project:  effectiveProject,
 			}
 
-			contextLayer, err := engine.SuggestContextWithFilter(context.Background(), prompt, filter, maxConcepts)
+			contextLayer, err := engine.SuggestContextWithBudget(context.Background(), prompt, filter, maxConcepts, maxTokens)
 			if err != nil {
 				return err
 			}
@@ -69,7 +71,7 @@ func NewSuggestContextCmd(application *app.App) *cobra.Command {
 	cmd.Flags().StringVar(&project, "project", "", "Explicit project name to scope context to")
 	cmd.Flags().StringVar(&category, "category", "", "Filter by category")
 	cmd.Flags().IntVar(&maxConcepts, "max-concepts", 5, "Maximum number of concepts to include")
-	cmd.Flags().IntVar(&maxTokens, "max-tokens", 4000, "Maximum token context budget")
+	cmd.Flags().IntVar(&maxTokens, "max-tokens", 4000, "Token budget, enforced: the layer holds the best-matching sections whose estimate fits; 0 returns whole concepts; a budget that fits no paragraph returns only the header, and one below the header's own size (about 13 tokens) returns nothing")
 	_ = cmd.MarkFlagRequired("prompt")
 
 	return cmd
