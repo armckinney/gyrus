@@ -1,0 +1,16 @@
+{
+  "description": "Adds the gyrus concepts that match each prompt, within a token budget, as context beside it.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gyrus suggest-context --hook --max-tokens 1500",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
