@@ -33,6 +33,7 @@ func (h *Handler) registerSearchTools(s *server.MCPServer) {
 		mcp.WithString("scope", mcp.Description("Context scope (project, reference, all)")),
 		mcp.WithString("project", mcp.Description("Explicit project name")),
 		mcp.WithNumber("max_concepts", mcp.Description("Maximum concepts to return")),
+		mcp.WithNumber("max_tokens", mcp.Description("Maximum estimated tokens; defaults to 4000. The layer holds the best-matching sections that fit")),
 	)
 	s.AddTool(suggestTool, h.HandleSuggest)
 }
@@ -76,13 +77,17 @@ func (h *Handler) HandleSuggest(ctx context.Context, req mcp.CallToolRequest) (*
 	if maxConcepts <= 0 {
 		maxConcepts = 5
 	}
+	maxTokens := getArgInt(req, "max_tokens")
+	if maxTokens <= 0 {
+		maxTokens = 4000
+	}
 
 	filter := gyrus.SearchFilter{
 		Scope:   scopeStr,
 		Project: projectStr,
 	}
 
-	contextLayer, err := h.engine.SuggestContextWithFilter(ctx, prompt, filter, maxConcepts)
+	contextLayer, err := h.engine.SuggestContextWithBudget(ctx, prompt, filter, maxConcepts, maxTokens)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("suggest failed: %v", err)), nil
 	}

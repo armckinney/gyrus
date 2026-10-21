@@ -290,8 +290,15 @@ func (e *Engine) SuggestContext(ctx context.Context, prompt string, category str
 }
 
 // SuggestContextWithFilter analyzes a prompt with explicit search filter constraints, prioritizes project concepts,
-// expands linked reference dependencies, and returns a formatted context layer.
+// expands linked reference dependencies, and returns a formatted context layer of whole concepts.
 func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, filter gyrus.SearchFilter, maxConcepts int) (string, error) {
+	return e.SuggestContextWithBudget(ctx, prompt, filter, maxConcepts, 0)
+}
+
+// SuggestContextWithBudget is SuggestContextWithFilter under a token budget: when maxTokens > 0 the layer holds the
+// concepts' best-matching sections, split at Markdown headings, and its estimated size never exceeds maxTokens.
+// maxTokens <= 0 returns whole concepts.
+func (e *Engine) SuggestContextWithBudget(ctx context.Context, prompt string, filter gyrus.SearchFilter, maxConcepts int, maxTokens int) (string, error) {
 	if maxConcepts <= 0 {
 		maxConcepts = 5
 	}
@@ -361,9 +368,6 @@ func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, fi
 		}
 	}
 
-	var sb strings.Builder
-	sb.WriteString("=== SUGGESTED CONTEXT LAYER ===\n\n")
-
 	// Group output by section: Project context first, then Shared Reference context
 	var finalProject []gyrus.Concept
 	var finalRef []gyrus.Concept
@@ -375,31 +379,40 @@ func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, fi
 		}
 	}
 
+	projectBanner := "[PROJECT CONTEXT]\n\n"
 	if len(finalProject) > 0 {
 		projectName := filter.Project
-		if projectName == "" && len(finalProject) > 0 && finalProject[0].Project != "" {
+		if projectName == "" && finalProject[0].Project != "" {
 			projectName = finalProject[0].Project
 		}
 		if projectName != "" {
-			sb.WriteString(fmt.Sprintf("[PROJECT CONTEXT: %s]\n\n", projectName))
-		} else {
-			sb.WriteString("[PROJECT CONTEXT]\n\n")
+			projectBanner = fmt.Sprintf("[PROJECT CONTEXT: %s]\n\n", projectName)
 		}
+	}
+	tenant := "root"
+	if len(finalRef) > 0 && finalRef[0].Tenant != "" {
+		tenant = finalRef[0].Tenant
+	}
+	refBanner := fmt.Sprintf("[SHARED REFERENCE LAYER: %s]\n\n", tenant)
+
+	if maxTokens > 0 {
+		return renderBudgeted(prompt, projectBanner, refBanner, finalProject, finalRef, maxTokens), nil
+	}
+
+	var sb strings.Builder
+	sb.WriteString(contextLayerHeader)
+	if len(finalProject) > 0 {
+		sb.WriteString(projectBanner)
 		for _, doc := range finalProject {
-			sb.WriteString(fmt.Sprintf("--- [%s] %s (%s/%s) ---\n", doc.Name, doc.Title, doc.Category, doc.Type))
+			sb.WriteString(conceptBanner(doc))
 			sb.WriteString(doc.Content)
 			sb.WriteString("\n\n")
 		}
 	}
-
 	if len(finalRef) > 0 {
-		tenant := "root"
-		if len(finalRef) > 0 && finalRef[0].Tenant != "" {
-			tenant = finalRef[0].Tenant
-		}
-		sb.WriteString(fmt.Sprintf("[SHARED REFERENCE LAYER: %s]\n\n", tenant))
+		sb.WriteString(refBanner)
 		for _, doc := range finalRef {
-			sb.WriteString(fmt.Sprintf("--- [%s] %s (%s/%s) ---\n", doc.Name, doc.Title, doc.Category, doc.Type))
+			sb.WriteString(conceptBanner(doc))
 			sb.WriteString(doc.Content)
 			sb.WriteString("\n\n")
 		}
