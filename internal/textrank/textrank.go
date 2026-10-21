@@ -20,16 +20,9 @@ var stopwords = map[string]bool{
 	"which": true, "who": true, "why": true, "will": true, "with": true, "you": true, "your": true,
 }
 
-// stem folds a plural onto its singular ("tasks" -> "task"); it is deliberately minimal.
-func stem(t string) string {
-	if len(t) > 3 && strings.HasSuffix(t, "s") && !strings.HasSuffix(t, "ss") && !strings.HasSuffix(t, "us") {
-		return t[:len(t)-1]
-	}
-	return t
-}
-
-// Tokenize lowercases text and splits it into terms: letters and digits, with stopwords dropped. A hyphenated or
-// underscored word yields itself and its parts, so "agent-ops" matches both "agent-ops" and "agent ops".
+// Tokenize lowercases text and splits it into terms: letters and digits, with stopwords dropped. Words are not
+// stemmed: folding plurals measured worse on a real store. A hyphenated or underscored word yields itself and its
+// parts, so "agent-ops" matches both "agent-ops" and "agent ops".
 func Tokenize(text string) []string {
 	words := strings.FieldsFunc(strings.ToLower(text), func(r rune) bool {
 		return !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '-' && r != '_'
@@ -38,7 +31,7 @@ func Tokenize(text string) []string {
 	add := func(w string) {
 		w = strings.Trim(w, "-_")
 		if w != "" && !stopwords[w] {
-			out = append(out, stem(w))
+			out = append(out, w)
 		}
 	}
 	for _, w := range words {

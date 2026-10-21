@@ -9,13 +9,13 @@ import (
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies tokenization: lowercasing, stopwords, plural folding and hyphenated words.
+// [Purpose]: Verifies tokenization: lowercasing, stopwords dropped, no stemming, and hyphenated words.
 // [Execution Surface]: Pure function
-// [Assertions]: "How do I send Tasks on the agent-ops bus?" yields send, task, agent-op, agent, ops, bus.
+// [Assertions]: "How do I send Tasks on the agent-ops bus?" yields send, tasks, agent-ops, agent, ops, bus.
 // -----------------------------------------------------------------------------
 func TestTokenize(t *testing.T) {
 	got := textrank.Tokenize("How do I send Tasks on the agent-ops bus?")
-	want := []string{"send", "task", "agent-op", "agent", "ops", "bus"}
+	want := []string{"send", "tasks", "agent-ops", "agent", "ops", "bus"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Tokenize = %v, want %v", got, want)
 	}

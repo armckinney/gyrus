@@ -61,3 +61,13 @@ func getArgInt(req mcp.CallToolRequest, key string) int {
 	}
 	return 0
 }
+
+// hasArg reports whether the request carries a non-null argument named key.
+func hasArg(req mcp.CallToolRequest, key string) bool {
+	args, ok := req.Params.Arguments.(map[string]any)
+	if !ok {
+		return false
+	}
+	val, ok := args[key]
+	return ok && val != nil
+}

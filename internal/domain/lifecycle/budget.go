@@ -1,8 +1,9 @@
 package lifecycle
 
 import (
+	"cmp"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/armckinney/gyrus/internal/textrank"
@@ -11,7 +12,7 @@ import (
 
 const (
 	contextLayerHeader = "=== SUGGESTED CONTEXT LAYER ===\n\n"
-	truncationMark     = "\n[…]"
+	truncationMark     = "\n[...]"
 )
 
 func conceptBanner(doc gyrus.Concept) string {
@@ -22,11 +23,20 @@ func omittedNote(doc gyrus.Concept, n int) string {
 	return fmt.Sprintf("[%d more sections: gyrus get %s]\n\n", n, doc.Name)
 }
 
-// EstimateTokensFromBytes conservatively estimates the token count of s from its length in bytes, at 3.5 bytes per
-// token, rounded up. len(s) counts UTF-8 bytes, not characters, so non-ASCII text estimates high, never low. Estimates
-// of pieces add up to at least the estimate of their concatenation, so a sum of piece estimates is a safe bound.
+func droppedNote(names []string) string {
+	return fmt.Sprintf("[%d more concepts matched: gyrus get %s]\n\n", len(names), strings.Join(names, ", "))
+}
+
+// bytesPerToken is measured, not assumed: context layers of Markdown concepts (tables, ids, banners) injected into
+// Claude Code prompts cost 2.6 bytes per token (median; interquartile range 2.52 to 2.79; 146 turns in 14 sessions,
+// 2026-10-20). It sits at the low end on purpose: plain prose runs above it, so an estimate made with it errs high.
+const bytesPerToken = 2.6
+
+// EstimateTokensFromBytes estimates the token count of s from its length in bytes at bytesPerToken, rounded up:
+// ceil(len(s)/2.6), computed in integers as (5*len(s)+12)/13. len(s) counts UTF-8 bytes, not characters. Estimates of
+// pieces add up to at least the estimate of their concatenation, so a sum of piece estimates is a safe bound.
 func EstimateTokensFromBytes(s string) int {
-	return (2*len(s) + 6) / 7
+	return (5*len(s) + 12) / 13
 }
 
 // section is a run of a concept's content from one Markdown heading to the next heading of any level.
@@ -36,17 +46,56 @@ type section struct {
 	order   int
 }
 
-// isHeading reports whether line is an ATX heading (up to three leading spaces, one to six '#', then a space).
+// indent returns the width of line's leading spaces and whether it is indented as code (four or more, or a tab).
+func indent(line string) (int, bool) {
+	n := len(line) - len(strings.TrimLeft(line, " "))
+	return n, n >= 4 || strings.HasPrefix(line[n:], "\t")
+}
+
+// isHeading reports whether line is an ATX heading (up to three leading spaces, one to six '#', then a space or end).
 func isHeading(line string) bool {
-	if strings.HasPrefix(line, "    ") || strings.HasPrefix(line, "\t") {
+	n, code := indent(line)
+	if code {
 		return false
 	}
-	t := strings.TrimLeft(line, " ")
-	n := 0
-	for n < len(t) && t[n] == '#' {
-		n++
+	t := line[n:]
+	hashes := len(t) - len(strings.TrimLeft(t, "#"))
+	return hashes >= 1 && hashes <= 6 && (hashes == len(t) || t[hashes] == ' ' || t[hashes] == '\t')
+}
+
+// headingText strips an ATX heading's opening hashes and its optional closing sequence ("## A #" is "A"); a '#' that
+// is part of the text ("# C#") stays.
+func headingText(line string) string {
+	t := strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(line), "#"))
+	if closing := strings.TrimRight(t, "#"); closing != t && (closing == "" || strings.HasSuffix(closing, " ")) {
+		t = strings.TrimSpace(closing)
 	}
-	return n >= 1 && n <= 6 && (n == len(t) || t[n] == ' ' || t[n] == '\t')
+	return t
+}
+
+// fenceOpen reports the fence a line opens: three or more backticks or tildes, indented at most three spaces.
+func fenceOpen(line string) (string, bool) {
+	n, code := indent(line)
+	if code {
+		return "", false
+	}
+	t := line[n:]
+	for _, c := range []string{"`", "~"} {
+		if run := len(t) - len(strings.TrimLeft(t, c)); run >= 3 {
+			return strings.Repeat(c, run), true
+		}
+	}
+	return "", false
+}
+
+// fenceCloses reports whether line closes fence: the same character, at least as many, and nothing after but spaces.
+func fenceCloses(line, fence string) bool {
+	n, code := indent(line)
+	if code {
+		return false
+	}
+	t := strings.TrimRight(line[n:], " \t")
+	return len(t) >= len(fence) && strings.Trim(t, fence[:1]) == ""
 }
 
 // splitSections splits Markdown content at every heading outside fenced code blocks.
@@ -61,17 +110,15 @@ func splitSections(content string) []section {
 		cur = nil
 	}
 	for _, line := range strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n") {
-		trimmed := strings.TrimSpace(line)
-		switch {
-		case fence != "":
-			if strings.HasPrefix(trimmed, fence) {
+		if fence != "" {
+			if fenceCloses(line, fence) {
 				fence = ""
 			}
-		case strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~"):
-			fence = trimmed[:3]
-		case isHeading(line):
+		} else if f, ok := fenceOpen(line); ok {
+			fence = f
+		} else if isHeading(line) {
 			flush()
-			heading = strings.TrimSpace(strings.Trim(trimmed, "#"))
+			heading = headingText(line)
 		}
 		cur = append(cur, line)
 	}
@@ -106,11 +153,14 @@ type candidate struct {
 
 // renderBudgeted builds the context layer from the concepts' sections that best match the prompt, within maxTokens.
 //
-// Sections are scored by BM25 against the prompt, over all candidate sections (a heading's words count twice).
-// Every concept first gets its best section (its first section when
-// none matches) in priority order, project concepts first; the remaining matching sections then fill what is left of
-// the budget, best first. A concept's sections keep their document order, and a concept whose best section does not
-// fit gets its leading paragraphs instead. Nothing is cut inside a paragraph.
+// Sections are scored by BM25 against the prompt over all candidate sections, a heading's words counting twice; the
+// score is relevance only, not relevance per token, so the fill below is greedy, not optimal. In priority order
+// (project concepts first) each concept gets its best section, or its first when none matches, but no more than an
+// even share of what is left, so one large section cannot crowd out the concepts after it; a section larger than its
+// share is cut to its leading paragraphs. The remaining matching sections then fill the budget, best first, and a cut
+// section is restored whole if it now fits. Sections keep document order; a concept with sections left out says how
+// many, and concepts left out entirely are listed when the note fits. Nothing is cut inside a paragraph. A budget
+// below the header's size yields "", and one that fits no paragraph yields the header alone.
 func renderBudgeted(prompt, projectBanner, refBanner string, project, ref []gyrus.Concept, maxTokens int) string {
 	docs := append(append([]gyrus.Concept{}, project...), ref...)
 	isProject := func(i int) bool { return i < len(project) }
@@ -138,19 +188,20 @@ func renderBudgeted(prompt, projectBanner, refBanner string, project, ref []gyru
 	if budget < 0 {
 		return ""
 	}
+	bannerCost := make([]int, len(docs))
+	for i, doc := range docs {
+		bannerCost[i] = EstimateTokensFromBytes(conceptBanner(doc)) + EstimateTokensFromBytes(omittedNote(doc, len(sections[i])))
+	}
+	groupCost := map[bool]int{true: EstimateTokensFromBytes(projectBanner), false: EstimateTokensFromBytes(refBanner)}
 	chosen := make([]map[int]string, len(docs))
 	groupOpen := map[bool]bool{}
 	openCost := func(i int) int {
 		if chosen[i] != nil {
 			return 0
 		}
-		cost := EstimateTokensFromBytes(conceptBanner(docs[i])) + EstimateTokensFromBytes(omittedNote(docs[i], len(sections[i])))
+		cost := bannerCost[i]
 		if !groupOpen[isProject(i)] {
-			if isProject(i) {
-				cost += EstimateTokensFromBytes(projectBanner)
-			} else {
-				cost += EstimateTokensFromBytes(refBanner)
-			}
+			cost += groupCost[isProject(i)]
 		}
 		return cost
 	}
@@ -164,6 +215,13 @@ func renderBudgeted(prompt, projectBanner, refBanner string, project, ref []gyru
 	}
 
 	var rest []candidate
+	var cut []candidate
+	left := 0
+	for i := range docs {
+		if len(sections[i]) > 0 {
+			left++
+		}
+	}
 	for i := range docs {
 		if len(sections[i]) == 0 {
 			continue
@@ -178,15 +236,18 @@ func renderBudgeted(prompt, projectBanner, refBanner string, project, ref []gyru
 				best = candidate{doc: i, sec: s, score: sc}
 			}
 		}
+		share := budget / left
+		left--
 		open := openCost(i)
-		if cost := open + EstimateTokensFromBytes(best.sec.text+"\n\n"); cost <= budget {
+		if cost := open + EstimateTokensFromBytes(best.sec.text+"\n\n"); cost <= share {
 			take(i, best.sec, best.sec.text, cost)
-		} else if text, ok := truncateAtParagraphs(best.sec.text, budget-open); ok {
+		} else if text, ok := truncateAtParagraphs(best.sec.text, share-open); ok {
 			take(i, best.sec, text, open+EstimateTokensFromBytes(text+"\n\n"))
+			cut = append(cut, best)
 		}
 	}
 
-	sort.SliceStable(rest, func(a, b int) bool { return rest[a].score > rest[b].score })
+	slices.SortStableFunc(rest, func(a, b candidate) int { return cmp.Compare(b.score, a.score) })
 	for _, c := range rest {
 		if chosen[c.doc] != nil {
 			if _, done := chosen[c.doc][c.sec.order]; done {
@@ -195,6 +256,20 @@ func renderBudgeted(prompt, projectBanner, refBanner string, project, ref []gyru
 		}
 		if cost := openCost(c.doc) + EstimateTokensFromBytes(c.sec.text+"\n\n"); cost <= budget {
 			take(c.doc, c.sec, c.sec.text, cost)
+		}
+	}
+	for _, c := range cut {
+		was := EstimateTokensFromBytes(chosen[c.doc][c.sec.order] + "\n\n")
+		if delta := EstimateTokensFromBytes(c.sec.text+"\n\n") - was; delta <= budget {
+			chosen[c.doc][c.sec.order] = c.sec.text
+			budget -= delta
+		}
+	}
+
+	var dropped []string
+	for i := range docs {
+		if len(sections[i]) > 0 && chosen[i] == nil {
+			dropped = append(dropped, docs[i].Name)
 		}
 	}
 
@@ -223,6 +298,11 @@ func renderBudgeted(prompt, projectBanner, refBanner string, project, ref []gyru
 			if omitted := len(sections[i]) - len(chosen[i]); omitted > 0 {
 				sb.WriteString(omittedNote(docs[i], omitted))
 			}
+		}
+	}
+	if len(dropped) > 0 {
+		if note := droppedNote(dropped); EstimateTokensFromBytes(note) <= budget {
+			sb.WriteString(note)
 		}
 	}
 	return sb.String()

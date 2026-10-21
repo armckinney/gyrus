@@ -297,8 +297,11 @@ func (e *Engine) SuggestContextWithFilter(ctx context.Context, prompt string, fi
 
 // SuggestContextWithBudget is SuggestContextWithFilter under a token budget: when maxTokens > 0 the layer holds the
 // concepts' best-matching sections, split at Markdown headings, and its estimated size never exceeds maxTokens.
-// maxTokens <= 0 returns whole concepts.
+// maxTokens == 0 returns whole concepts; a negative budget is an error.
 func (e *Engine) SuggestContextWithBudget(ctx context.Context, prompt string, filter gyrus.SearchFilter, maxConcepts int, maxTokens int) (string, error) {
+	if maxTokens < 0 {
+		return "", fmt.Errorf("max tokens must be 0 (whole concepts) or more, got %d", maxTokens)
+	}
 	if maxConcepts <= 0 {
 		maxConcepts = 5
 	}

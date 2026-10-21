@@ -144,6 +144,29 @@ func TestToolsExecution(t *testing.T) {
 	if err != nil || suggestRes.IsError {
 		t.Fatalf("HandleSuggest failed: %v", err)
 	}
+	// max_tokens: absent is 4000, explicit 0 is whole concepts, negative is refused.
+	layerOf := func(args map[string]any) (string, bool) {
+		req := mcp_sdk.CallToolRequest{}
+		req.Params.Name = "gyrus_suggest_context"
+		req.Params.Arguments = args
+		res, err := handler.HandleSuggest(ctx, req)
+		if err != nil {
+			t.Fatalf("HandleSuggest(%v): %v", args, err)
+		}
+		text, _ := res.Content[0].(mcp_sdk.TextContent)
+		return text.Text, res.IsError
+	}
+	whole, isErr := layerOf(map[string]any{"prompt": "MCP tools directory structure", "max_tokens": float64(0)})
+	if isErr {
+		t.Fatalf("max_tokens 0 must return whole concepts, got error %q", whole)
+	}
+	tiny, isErr := layerOf(map[string]any{"prompt": "MCP tools directory structure", "max_tokens": float64(1)})
+	if isErr || tiny != "" || len(whole) <= len(tiny) {
+		t.Errorf("max_tokens 1 must apply the budget (got %q), and 0 must not (got %d bytes)", tiny, len(whole))
+	}
+	if msg, isErr := layerOf(map[string]any{"prompt": "x", "max_tokens": float64(-5)}); !isErr || !strings.Contains(msg, "max_tokens") {
+		t.Errorf("negative max_tokens must be refused, got %q", msg)
+	}
 
 	// 6. Link & Graph
 	linkReq := mcp_sdk.CallToolRequest{}
