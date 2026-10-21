@@ -45,4 +45,11 @@ func TestEngineSuggestContextWithBudget(t *testing.T) {
 	if !strings.Contains(whole, doc.Content) {
 		t.Errorf("a zero budget must return the whole concept:\n%s", whole)
 	}
+	zero, err := engine.SuggestContextWithBudget(ctx, "restart the queue", gyrus.SearchFilter{}, 5, 0)
+	if err != nil || zero != whole {
+		t.Errorf("SuggestContextWithBudget with 0 must equal SuggestContextWithFilter byte for byte (err %v)", err)
+	}
+	if _, err := engine.SuggestContextWithBudget(ctx, "x", gyrus.SearchFilter{}, 5, -1); err == nil {
+		t.Error("a negative budget must be an error")
+	}
 }

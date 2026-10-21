@@ -32,7 +32,7 @@ Use this skill whenever you need to resolve architectural context, align with re
 
 ## 🛠️ Primary Interface: Model Context Protocol (MCP) Tools
 
-- **`gyrus_suggest_context`**: `{ "prompt": string, "max_concepts"?: int, "scope"?: string, "project"?: string }`
+- **`gyrus_suggest_context`**: `{ "prompt": string, "max_concepts"?: int, "max_tokens"?: int, "scope"?: string, "project"?: string }`. Returns the best-matching sections of the top concepts within `max_tokens` (4000 when absent; `0` returns whole concepts); left-out sections are named with a `gyrus get` pointer.
 - **`gyrus_search`**: `{ "query": string, "max_results"?: int, "scope"?: string, "project"?: string, "tenant"?: string }`
 - **`gyrus_get`**: `{ "id": string }`
 - **`gyrus_create`**: `{ "id": string, "title": string, "category": string, "type": string, "tenant": string, "status": string, "content": string, "scope"?: string, "project"?: string }`

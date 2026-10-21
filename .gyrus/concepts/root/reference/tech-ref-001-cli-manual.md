@@ -146,7 +146,7 @@ Builds a context layer for an agent prompt: the best-matching sections of the to
 gyrus suggest-context --prompt "How is full-text search implemented?" [--max-tokens 4000] [--max-concepts 5]
 ```
 
-- `--max-tokens` (default 4000) is enforced: tokens are estimated from bytes at 2.6 bytes per token, rounded up, and the layer never exceeds the budget. Each concept gets its best section first (no more than an even share), then the remaining matching sections fill the budget; left-out sections and concepts are named with a `gyrus get` pointer. `0` returns whole concepts; a negative value is an error; a budget too small for any paragraph returns only the header.
+- `--max-tokens` (default 4000) is enforced: tokens are estimated from bytes at 2.6 bytes per token, rounded up, and the layer never exceeds the budget. Each concept gets its best section first (no more than an even share), then the remaining matching sections fill the budget; left-out sections and concepts are named with a `gyrus get` pointer. `0` returns whole concepts; a negative value is an error; a budget that fits no paragraph returns only the header, and one below the header's own size (about 13 tokens) returns nothing.
 
 ### 11. `gyrus schema <doc-type>`
 Prints structural frontmatter schema and template for a document type.

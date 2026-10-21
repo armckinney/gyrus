@@ -112,7 +112,7 @@ func TestRenderBudgetedEdges(t *testing.T) {
 // first is cut to an even share and marked; a concept that cannot be opened at all is named in the dropped note.
 // -----------------------------------------------------------------------------
 func TestRenderBudgetedDoesNotStarveLaterConcepts(t *testing.T) {
-	big := "# Big\n\n" + strings.Repeat("queue restart paragraph with words. ", 30) + "\n\n" + strings.Repeat("more queue restart text here. ", 300)
+	big := "# Big\n\n" + strings.Repeat("queue restart paragraph with words. ", 5) + "\n\n" + strings.Repeat("more queue restart text here.\n\n", 300)
 	ref := []gyrus.Concept{refDoc("root/reference/big", big)}
 	for i := 1; i < 5; i++ {
 		ref = append(ref, refDoc(fmt.Sprintf("root/reference/small%d", i), fmt.Sprintf("# Small %d\n\nRestart the queue, step %d.", i, i)))

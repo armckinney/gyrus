@@ -20,17 +20,25 @@ var stopwords = map[string]bool{
 	"which": true, "who": true, "why": true, "will": true, "with": true, "you": true, "your": true,
 }
 
-// Tokenize lowercases text and splits it into terms: letters and digits, with stopwords dropped. Words are not
-// stemmed: folding plurals measured worse on a real store. A hyphenated or underscored word yields itself and its
-// parts, so "agent-ops" matches both "agent-ops" and "agent ops".
-func Tokenize(text string) []string {
+// Options switches the tokenizer's normalisations. The zero value drops stopwords.
+type Options struct {
+	KeepStopwords bool // keep stopwords as terms
+}
+
+// Tokenize is TokenizeWith the default Options.
+func Tokenize(text string) []string { return TokenizeWith(text, Options{}) }
+
+// TokenizeWith lowercases text and splits it into terms: letters and digits, by default with stopwords dropped.
+// Words are not stemmed: folding plurals measured worse on a real store. A hyphenated or underscored word yields
+// itself and its parts, so "agent-ops" matches both "agent-ops" and "agent ops".
+func TokenizeWith(text string, o Options) []string {
 	words := strings.FieldsFunc(strings.ToLower(text), func(r rune) bool {
 		return !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '-' && r != '_'
 	})
 	var out []string
 	add := func(w string) {
 		w = strings.Trim(w, "-_")
-		if w != "" && !stopwords[w] {
+		if w != "" && (o.KeepStopwords || !stopwords[w]) {
 			out = append(out, w)
 		}
 	}
@@ -43,6 +51,17 @@ func Tokenize(text string) []string {
 		}
 	}
 	return out
+}
+
+// ForQuery returns the Options to tokenize a query and the text it is scored against, and the query's distinct
+// terms. A query made only of stopwords ("what is this?") keeps them on both sides, so it still matches something
+// instead of nothing.
+func ForQuery(query string) (Options, []string) {
+	if terms := Unique(Tokenize(query)); len(terms) > 0 {
+		return Options{}, terms
+	}
+	o := Options{KeepStopwords: true}
+	return o, Unique(TokenizeWith(query, o))
 }
 
 // Unique returns the distinct terms of a token list in first-seen order.
@@ -86,6 +105,9 @@ func NewCorpus(docs [][]string) *Corpus {
 	}
 	return c
 }
+
+// TermFreq is how many times term occurs in document i.
+func (c *Corpus) TermFreq(i int, term string) int { return c.tf[i][term] }
 
 // Score is the BM25 score of document i for the distinct query terms; zero when no term occurs in it.
 func (c *Corpus) Score(i int, terms []string) float64 {

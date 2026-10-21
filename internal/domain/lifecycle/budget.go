@@ -81,7 +81,9 @@ func fenceOpen(line string) (string, bool) {
 	}
 	t := line[n:]
 	for _, c := range []string{"`", "~"} {
-		if run := len(t) - len(strings.TrimLeft(t, c)); run >= 3 {
+		run := len(t) - len(strings.TrimLeft(t, c))
+		// A backtick fence's info string cannot hold a backtick: "```a``` b" is inline code, not a fence.
+		if run >= 3 && !(c == "`" && strings.Contains(t[run:], "`")) {
 			return strings.Repeat(c, run), true
 		}
 	}
@@ -126,10 +128,50 @@ func splitSections(content string) []section {
 	return out
 }
 
+// paragraphs splits text at blank lines outside fenced code blocks, so a code block is never split, and keeps a
+// heading with the paragraph after it, so a cut never ends on a bare heading.
+func paragraphs(text string) []string {
+	var out, cur []string
+	fence, heading := "", ""
+	flush := func() {
+		if len(cur) == 0 {
+			return
+		}
+		para := strings.Join(cur, "\n")
+		cur = nil
+		if heading != "" {
+			para, heading = heading+"\n\n"+para, ""
+		}
+		if !strings.Contains(para, "\n") && isHeading(para) {
+			heading = para
+			return
+		}
+		out = append(out, para)
+	}
+	for _, line := range strings.Split(text, "\n") {
+		if fence != "" {
+			if fenceCloses(line, fence) {
+				fence = ""
+			}
+		} else if f, ok := fenceOpen(line); ok {
+			fence = f
+		} else if strings.TrimSpace(line) == "" {
+			flush()
+			continue
+		}
+		cur = append(cur, line)
+	}
+	flush()
+	if heading != "" {
+		out = append(out, heading)
+	}
+	return out
+}
+
 // truncateAtParagraphs keeps whole leading paragraphs of text that fit within maxTokens, marked as truncated.
 func truncateAtParagraphs(text string, maxTokens int) (string, bool) {
 	kept := ""
-	for _, para := range strings.Split(text, "\n\n") {
+	for _, para := range paragraphs(text) {
 		next := para
 		if kept != "" {
 			next = kept + "\n\n" + para
@@ -153,25 +195,28 @@ type candidate struct {
 
 // renderBudgeted builds the context layer from the concepts' sections that best match the prompt, within maxTokens.
 //
-// Sections are scored by BM25 against the prompt over all candidate sections, a heading's words counting twice; the
+// Sections are scored by BM25 against the prompt over all candidate sections, a heading's words counting twice (a
+// prompt of stopwords alone is scored with them kept); the
 // score is relevance only, not relevance per token, so the fill below is greedy, not optimal. In priority order
 // (project concepts first) each concept gets its best section, or its first when none matches, but no more than an
 // even share of what is left, so one large section cannot crowd out the concepts after it; a section larger than its
 // share is cut to its leading paragraphs. The remaining matching sections then fill the budget, best first, and a cut
 // section is restored whole if it now fits. Sections keep document order; a concept with sections left out says how
-// many, and concepts left out entirely are listed when the note fits. Nothing is cut inside a paragraph. A budget
-// below the header's size yields "", and one that fits no paragraph yields the header alone.
+// many, and concepts left out entirely are listed when the note fits. When the budget cannot give every concept a
+// paragraph, the lower-ranked ones are left out first, never the top match. A concept with no content gets its banner
+// alone. Nothing is cut inside a paragraph or a code block. A budget below the header's own size yields "", and one
+// that fits no paragraph yields the header alone.
 func renderBudgeted(prompt, projectBanner, refBanner string, project, ref []gyrus.Concept, maxTokens int) string {
 	docs := append(append([]gyrus.Concept{}, project...), ref...)
 	isProject := func(i int) bool { return i < len(project) }
 
-	terms := textrank.Unique(textrank.Tokenize(prompt))
+	opts, terms := textrank.ForQuery(prompt)
 	sections := make([][]section, len(docs))
 	var tokens [][]string
 	for i, doc := range docs {
 		sections[i] = splitSections(doc.Content)
 		for _, s := range sections[i] {
-			tokens = append(tokens, append(textrank.Tokenize(s.heading), textrank.Tokenize(s.text)...))
+			tokens = append(tokens, append(textrank.TokenizeWith(s.heading, opts), textrank.TokenizeWith(s.text, opts)...))
 		}
 	}
 	corpus := textrank.NewCorpus(tokens)
@@ -190,7 +235,10 @@ func renderBudgeted(prompt, projectBanner, refBanner string, project, ref []gyru
 	}
 	bannerCost := make([]int, len(docs))
 	for i, doc := range docs {
-		bannerCost[i] = EstimateTokensFromBytes(conceptBanner(doc)) + EstimateTokensFromBytes(omittedNote(doc, len(sections[i])))
+		bannerCost[i] = EstimateTokensFromBytes(conceptBanner(doc))
+		if len(sections[i]) > 0 {
+			bannerCost[i] += EstimateTokensFromBytes(omittedNote(doc, len(sections[i])))
+		}
 	}
 	groupCost := map[bool]int{true: EstimateTokensFromBytes(projectBanner), false: EstimateTokensFromBytes(refBanner)}
 	chosen := make([]map[int]string, len(docs))
@@ -216,34 +264,58 @@ func renderBudgeted(prompt, projectBanner, refBanner string, project, ref []gyru
 
 	var rest []candidate
 	var cut []candidate
-	left := 0
-	for i := range docs {
-		if len(sections[i]) > 0 {
-			left++
-		}
-	}
+	best := make([]candidate, len(docs))
+	need := make([]int, len(docs)) // the least a concept costs to open: its banner and its best section's first paragraph
 	for i := range docs {
 		if len(sections[i]) == 0 {
+			need[i] = bannerCost[i]
 			continue
 		}
-		best := candidate{doc: i, sec: sections[i][0], score: -1}
+		best[i] = candidate{doc: i, sec: sections[i][0], score: -1}
 		for j, s := range sections[i] {
 			sc := scores[i][j]
 			if sc > 0 {
 				rest = append(rest, candidate{doc: i, sec: s, score: sc})
 			}
-			if sc > best.score {
-				best = candidate{doc: i, sec: s, score: sc}
+			if sc > best[i].score {
+				best[i] = candidate{doc: i, sec: s, score: sc}
 			}
 		}
-		share := budget / left
-		left--
+		least := EstimateTokensFromBytes(best[i].sec.text + "\n\n")
+		if paras := paragraphs(best[i].sec.text); len(paras) > 1 {
+			least = min(least, EstimateTokensFromBytes(paras[0]+truncationMark+"\n\n"))
+		}
+		need[i] = bannerCost[i] + least
+	}
+	// The concepts the first pass opens: in rank order, each whose least cost still fits beside those before it.
+	var opened []int
+	spent, groups := 0, map[bool]bool{}
+	for i := range docs {
+		cost := need[i]
+		if !groups[isProject(i)] {
+			cost += groupCost[isProject(i)]
+		}
+		if spent+cost <= budget {
+			opened = append(opened, i)
+			spent += cost
+			groups[isProject(i)] = true
+		}
+	}
+	for n, i := range opened {
 		open := openCost(i)
-		if cost := open + EstimateTokensFromBytes(best.sec.text+"\n\n"); cost <= share {
-			take(i, best.sec, best.sec.text, cost)
-		} else if text, ok := truncateAtParagraphs(best.sec.text, share-open); ok {
-			take(i, best.sec, text, open+EstimateTokensFromBytes(text+"\n\n"))
-			cut = append(cut, best)
+		if len(sections[i]) == 0 {
+			if open <= budget {
+				take(i, section{order: -1}, "", open)
+				delete(chosen[i], -1)
+			}
+			continue
+		}
+		share := min(budget, max(budget/(len(opened)-n), open+need[i]-bannerCost[i]))
+		if cost := open + EstimateTokensFromBytes(best[i].sec.text+"\n\n"); cost <= share {
+			take(i, best[i].sec, best[i].sec.text, cost)
+		} else if text, ok := truncateAtParagraphs(best[i].sec.text, share-open); ok {
+			take(i, best[i].sec, text, open+EstimateTokensFromBytes(text+"\n\n"))
+			cut = append(cut, best[i])
 		}
 	}
 
@@ -268,7 +340,7 @@ func renderBudgeted(prompt, projectBanner, refBanner string, project, ref []gyru
 
 	var dropped []string
 	for i := range docs {
-		if len(sections[i]) > 0 && chosen[i] == nil {
+		if chosen[i] == nil {
 			dropped = append(dropped, docs[i].Name)
 		}
 	}

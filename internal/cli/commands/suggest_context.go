@@ -71,7 +71,7 @@ func NewSuggestContextCmd(application *app.App) *cobra.Command {
 	cmd.Flags().StringVar(&project, "project", "", "Explicit project name to scope context to")
 	cmd.Flags().StringVar(&category, "category", "", "Filter by category")
 	cmd.Flags().IntVar(&maxConcepts, "max-concepts", 5, "Maximum number of concepts to include")
-	cmd.Flags().IntVar(&maxTokens, "max-tokens", 4000, "Token budget, enforced: the layer holds the best-matching sections whose estimate fits; 0 returns whole concepts; a budget too small for any paragraph returns only the header")
+	cmd.Flags().IntVar(&maxTokens, "max-tokens", 4000, "Token budget, enforced: the layer holds the best-matching sections whose estimate fits; 0 returns whole concepts; a budget that fits no paragraph returns only the header, and one below the header's own size (about 13 tokens) returns nothing")
 	_ = cmd.MarkFlagRequired("prompt")
 
 	return cmd

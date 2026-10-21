@@ -41,7 +41,7 @@ func budgetDocs() (project, ref []gyrus.Concept) {
 	project = []gyrus.Concept{{Name: "root/projects/app/deploy", Title: "Deploy", Category: "operations", Type: "guide", Scope: "project", Project: "app", Content: body.String()}}
 	ref = []gyrus.Concept{
 		{Name: "root/reference/glossary", Title: "Glossary", Category: "technical", Type: "glossary", Scope: "reference", Content: "# Glossary\n\n## Release\n\nA tagged build.\n\n## Tag\n\nA git ref.\n"},
-		{Name: "root/reference/big", Title: "Big", Category: "technical", Type: "guide", Scope: "reference", Content: "# Big\n\n" + strings.Repeat("A release paragraph that is long. ", 400)},
+		{Name: "root/reference/big", Title: "Big", Category: "technical", Type: "guide", Scope: "reference", Content: "# Big\n\n" + strings.Repeat("A release paragraph that is long. A release paragraph that is long.\n\n", 200)},
 	}
 	return project, ref
 }
