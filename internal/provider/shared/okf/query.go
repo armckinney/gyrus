@@ -1,4 +1,4 @@
-// Package okf implements shared ephemeral OKF snapshots and keyword matching.
+// Package okf implements shared ephemeral OKF snapshots and BM25 keyword ranking.
 package okf
 
 import (
@@ -7,19 +7,24 @@ import (
 	"slices"
 	"sort"
 	"strings"
-	"unicode"
 
 	"github.com/armckinney/gyrus/internal/domain/okf"
+	"github.com/armckinney/gyrus/internal/textrank"
 	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
 const (
-	exactIDBoost   = 1000
-	projectBoost   = 60
-	referenceBoost = 20
-	identityWeight = 10
-	tagWeight      = 5
-	bodyWeight     = 1
+	exactIDBoost = 1000
+	// projectBoost and referenceBoost multiply the BM25 score of a concept that matched the query: scope reorders
+	// matches but never makes a concept match.
+	projectBoost   = 1.5
+	referenceBoost = 1.2
+	// identityRepeat and tagRepeat weight the name, title and tags by repeating their terms in the indexed text.
+	identityRepeat = 3
+	tagRepeat      = 2
+	// Browsing with an empty query orders project concepts, then reference concepts, then the rest.
+	browseProject   = 60
+	browseReference = 20
 )
 
 func Scanner(store gyrus.ConceptStore) (gyrus.ConceptScanner, error) {
@@ -58,62 +63,76 @@ func matches(doc gyrus.Concept, f gyrus.SearchFilter) bool {
 	}
 }
 
-func score(doc gyrus.Concept, raw string, terms []string, f gyrus.SearchFilter) (float64, string, bool) {
-	value := 0.0
-	project := f.Project != "" && doc.Project == f.Project
-	if project {
-		value = projectBoost
-	} else if doc.Scope == "reference" {
-		value = referenceBoost
+// indexed is a concept's searchable terms, weighted for BM25, and its short identity fields for the match reason;
+// a term in none of those must be in the body, which the corpus answers.
+type indexed struct {
+	tokens          []string
+	id, title, tags []string
+}
+
+func index(doc gyrus.Concept, o textrank.Options) indexed {
+	id := textrank.TokenizeWith(doc.Name, o)
+	title := textrank.TokenizeWith(doc.Title, o)
+	tags := textrank.TokenizeWith(strings.Join(doc.Tags, " "), o)
+	body := textrank.TokenizeWith(doc.Content, o)
+	var all []string
+	for i := 0; i < identityRepeat; i++ {
+		all = append(append(all, id...), title...)
 	}
-	if raw == "" {
-		reason := "All Concepts"
-		if project {
-			reason = "Project Concept"
-		} else if doc.Scope == "reference" {
-			reason = "Reference Concept"
-		}
-		return value, reason, true
+	for i := 0; i < tagRepeat; i++ {
+		all = append(all, tags...)
 	}
-	id, title, body := strings.ToLower(doc.Name), strings.ToLower(doc.Title), strings.ToLower(doc.Content)
-	var total float64
-	bestReason := ""
-	bestField := 0
-	for _, term := range terms {
-		weight, field, reason := 0, 0, ""
-		switch {
-		case strings.Contains(id, term):
-			weight, field, reason = identityWeight, 4, "Concept ID Match"
-		case strings.Contains(title, term):
-			weight, field, reason = identityWeight, 3, "Title Match"
-		default:
-			for _, tag := range doc.Tags {
-				if strings.Contains(strings.ToLower(tag), term) {
-					weight, field, reason = tagWeight, 2, "Tag Match"
-					break
-				}
-			}
-			if weight == 0 && strings.Contains(body, term) {
-				weight, field, reason = bodyWeight, 1, "Content Match"
-			}
-		}
-		total += float64(weight)
-		if field > bestField {
-			bestField, bestReason = field, reason
-		}
+	all = append(all, body...)
+	return indexed{all, id, title, tags}
+}
+
+func browse(doc gyrus.Concept, f gyrus.SearchFilter) (float64, string) {
+	if f.Project != "" && doc.Project == f.Project {
+		return browseProject, "Project Concept"
 	}
-	if total == 0 {
+	if doc.Scope == "reference" {
+		return browseReference, "Reference Concept"
+	}
+	return 0, "All Concepts"
+}
+
+// score is BM25 times the scope boost, plus exactIDBoost when the query is the concept's name; ok is false when no
+// query term occurs in the concept.
+func score(doc gyrus.Concept, ix indexed, corpus *textrank.Corpus, i int, raw string, terms []string, f gyrus.SearchFilter) (float64, string, bool) {
+	bm25 := corpus.Score(i, terms)
+	exact := strings.ToLower(doc.Name) == raw
+	if bm25 == 0 && !exact {
 		return 0, "", false
 	}
-	value += total / float64(len(terms))
-	if project {
-		bestReason = "Project Match"
+	bestField, reason := 0, ""
+	for _, term := range terms {
+		field, r := 0, ""
+		switch {
+		case slices.Contains(ix.id, term):
+			field, r = 4, "Concept ID Match"
+		case slices.Contains(ix.title, term):
+			field, r = 3, "Title Match"
+		case slices.Contains(ix.tags, term):
+			field, r = 2, "Tag Match"
+		case corpus.TermFreq(i, term) > 0:
+			field, r = 1, "Content Match"
+		}
+		if field > bestField {
+			bestField, reason = field, r
+		}
 	}
-	if id == raw {
+	value := bm25
+	if f.Project != "" && doc.Project == f.Project {
+		value *= projectBoost
+		reason = "Project Match"
+	} else if doc.Scope == "reference" {
+		value *= referenceBoost
+	}
+	if exact {
 		value += exactIDBoost
-		bestReason = "Exact ID Match"
+		reason = "Exact ID Match"
 	}
-	return value, bestReason, true
+	return value, reason, true
 }
 
 func Search(ctx context.Context, scanner gyrus.ConceptScanner, q gyrus.SearchQuery) ([]gyrus.SearchResult, error) {
@@ -127,26 +146,36 @@ func Search(ctx context.Context, scanner gyrus.ConceptScanner, q gyrus.SearchQue
 		return nil, err
 	}
 	raw := strings.ToLower(strings.TrimSpace(q.Query))
-	parts := strings.FieldsFunc(raw, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' && r != '-' })
-	terms := make([]string, 0, len(parts))
-	seen := make(map[string]bool)
-	for _, term := range parts {
-		if !seen[term] {
-			terms = append(terms, term)
-			seen[term] = true
-		}
-	}
-	results := make([]gyrus.SearchResult, 0)
+	candidates := make([]gyrus.Concept, 0, len(docs))
 	for _, doc := range docs {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		if !matches(doc, q.Filter) {
-			continue
+		if matches(doc, q.Filter) {
+			candidates = append(candidates, doc)
 		}
-		value, reason, ok := score(doc, raw, terms, q.Filter)
-		if ok {
+	}
+	results := make([]gyrus.SearchResult, 0)
+	if raw == "" {
+		for _, doc := range candidates {
+			value, reason := browse(doc, q.Filter)
 			results = append(results, gyrus.SearchResult{Concept: doc, Score: value, MatchReason: reason})
+		}
+	} else {
+		// Term statistics come from the concepts the filter admits, so rarity is judged among what can be returned.
+		opts, terms := textrank.ForQuery(raw)
+		indexes := make([]indexed, len(candidates))
+		tokens := make([][]string, len(candidates))
+		for i, doc := range candidates {
+			indexes[i] = index(doc, opts)
+			tokens[i] = indexes[i].tokens
+		}
+		corpus := textrank.NewCorpus(tokens)
+		for i, doc := range candidates {
+			value, reason, ok := score(doc, indexes[i], corpus, i, raw, terms, q.Filter)
+			if ok {
+				results = append(results, gyrus.SearchResult{Concept: doc, Score: value, MatchReason: reason})
+			}
 		}
 	}
 	sort.Slice(results, func(i, j int) bool {

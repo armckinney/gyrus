@@ -212,3 +212,66 @@ func TestCLI_SuggestContext(t *testing.T) {
 		t.Errorf("Expected 'context' key in JSON response, got %v", jsonRes)
 	}
 }
+
+// -----------------------------------------------------------------------------
+// [Test Level]: E2E CLI Integration Test
+// [Purpose]: Verifies 'gyrus suggest-context --hook' as a Claude Code UserPromptSubmit hook.
+// [Execution Surface]: Compiled ./gyrus CLI binary via os/exec subprocess, payload on stdin
+// [Assertions]: Started outside the project, it resolves configuration from the payload's cwd and prints
+// hookSpecificOutput.additionalContext within the budget; an empty prompt or a bad payload prints nothing and exits 0.
+// -----------------------------------------------------------------------------
+func TestCLI_SuggestContextHook(t *testing.T) {
+	workspace := t.TempDir()
+	initCmd := exec.Command(gyrusBinPath, "config", "init", "--profile", "local")
+	initCmd.Dir = workspace
+	if out, err := initCmd.CombinedOutput(); err != nil {
+		t.Fatalf("Init failed: %v\nOutput: %s", err, string(out))
+	}
+	createCmd := exec.Command(gyrusBinPath, "create",
+		"--id", "guide-queue-001",
+		"--title", "Queue operations",
+		"--category", "operations",
+		"--type", "guide",
+		"--tenant", "ops",
+		"--status", "active",
+		"--content", "# Queue\n\n## Restart\n\nRestart the queue with the restart script.\n\n## Unrelated\n\nNothing here.",
+	)
+	createCmd.Dir = workspace
+	if out, err := createCmd.CombinedOutput(); err != nil {
+		t.Fatalf("Create failed: %v\nOutput: %s", err, string(out))
+	}
+
+	run := func(payload string) (string, string) {
+		cmd := exec.Command(gyrusBinPath, "suggest-context", "--hook", "--max-tokens", "1500")
+		cmd.Dir = t.TempDir()
+		cmd.Stdin = strings.NewReader(payload)
+		var stdout, stderr bytes.Buffer
+		cmd.Stdout, cmd.Stderr = &stdout, &stderr
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("hook must exit 0, got %v\nstderr: %s", err, stderr.String())
+		}
+		return stdout.String(), stderr.String()
+	}
+
+	payload, _ := json.Marshal(map[string]string{"session_id": "s1", "hook_event_name": "UserPromptSubmit", "prompt": "how do I restart the queue?", "cwd": workspace})
+	out, stderr := run(string(payload))
+	var result struct {
+		HookSpecificOutput struct {
+			HookEventName     string `json:"hookEventName"`
+			AdditionalContext string `json:"additionalContext"`
+		} `json:"hookSpecificOutput"`
+	}
+	if err := json.Unmarshal([]byte(out), &result); err != nil {
+		t.Fatalf("hook output is not JSON: %v\nstdout: %s\nstderr: %s", err, out, stderr)
+	}
+	if result.HookSpecificOutput.HookEventName != "UserPromptSubmit" || !strings.Contains(result.HookSpecificOutput.AdditionalContext, "Restart the queue") {
+		t.Errorf("unexpected hook output: %+v", result)
+	}
+
+	if out, _ := run(`{"prompt": "  ", "cwd": "` + strings.ReplaceAll(workspace, `\`, `\`) + `"}`); out != "" {
+		t.Errorf("an empty prompt must print nothing, got %q", out)
+	}
+	if out, stderr := run("not json"); out != "" || !strings.Contains(stderr, "suggest-context hook") {
+		t.Errorf("a bad payload must print nothing and report on stderr, got %q / %q", out, stderr)
+	}
+}
