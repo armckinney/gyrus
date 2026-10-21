@@ -16,5 +16,17 @@
     "mcp",
     "agent-skills",
     "memory"
-  ]
+  ],
+  "mcpServers": {
+    "gyrus": {
+      "command": "gyrus",
+      "args": [
+        "mcp",
+        "serve"
+      ],
+      "env": {
+        "GYRUS_PROJECT": "${CLAUDE_PROJECT_DIR}"
+      }
+    }
+  }
 }
