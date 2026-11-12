@@ -182,6 +182,7 @@ type: guide
 tenant: dev
 version: 1
 status: active
+last_updated: YYYY-MM-DD
 ---
 
 # Developer Guide Template

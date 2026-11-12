@@ -91,19 +91,21 @@ The branch name is never saved in configuration. Each MCP server remembers its o
 
 A new initiative initially reads trunk and is pushed on its first mutation. Trunk must already exist for branching. Existing initiative branches are reused. All concepts, relationships, schemas, and queries use the selected branch. Humans open, review, and merge PRs through their Git host; Gyrus never automatically merges, rebases, or force-pushes.
 
-HTTPS authentication uses your configured Git credential manager through noninteractive `git credential fill`. SSH uses an agent or standard keys with known-host verification. Do not embed passwords in remote URLs. See the [initiative walkthrough](.gyrus/concepts/root/reference/guide-006-git-initiatives.md).
+HTTPS authentication uses your configured Git credential manager through noninteractive `git credential fill`. SSH uses an agent or standard keys with known-host verification. Do not embed passwords in remote URLs. See the [initiative walkthrough](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/guide-006-git-initiatives.md).
 
 ## Agent integration
 
-The agent plugin is packaged under `packaging/plugins/gyrus`. Install it using your client's native plugin manager; see the [installation guide](.gyrus/concepts/root/reference/guide-005-installation-and-initialization.md). MCP runs locally over stdio. Each parallel initiative should use its own server process or explicit runtime selection.
+The agent plugin is packaged under `packaging/plugins/gyrus`. Install it using your client's native plugin manager; see the [installation guide](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/guide-005-installation-and-initialization.md). MCP runs locally over stdio. Each parallel initiative should use its own server process or explicit runtime selection.
 
 ## Documentation
 
-- [Setup and onboarding](.gyrus/concepts/root/reference/guide-002-setup-onboarding.md)
-- [Configuration reference and standard examples](.gyrus/concepts/root/reference/tech-ref-002-config-schema.md)
-- [CLI reference](.gyrus/concepts/root/reference/tech-ref-001-cli-manual.md)
-- [MCP reference](.gyrus/concepts/root/reference/tech-ref-003-mcp-manual.md)
-- [Architecture index](.gyrus/concepts/root/reference/spec-000-overview.md)
-- [Value proposition](.gyrus/concepts/root/reference/prd-002-value-proposition-positioning.md)
+This repository uses [armckinney/wiki](https://github.com/armckinney/wiki) as its Gyrus Git storage backend. Its [project documentation](https://github.com/armckinney/wiki/tree/main/.gyrus/concepts/root/projects/gyrus) is scoped to project `gyrus`. The checked-in [configuration](.gyrus.yaml) sends Gyrus writes directly to the wiki repository's `main` branch.
+
+- [Setup and onboarding](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/guide-002-setup-onboarding.md)
+- [Configuration reference and standard examples](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/tech-ref-002-config-schema.md)
+- [CLI reference](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/tech-ref-001-cli-manual.md)
+- [MCP reference](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/tech-ref-003-mcp-manual.md)
+- [Architecture index](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/spec-000-overview.md)
+- [Value proposition](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/prd-002-value-proposition-positioning.md)
 
 See [LICENSE](LICENSE) for licensing terms.
