@@ -1,7 +1,10 @@
 package config
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -58,7 +61,9 @@ func Load() (*ResolvedConfig, error) {
 	// 3. DevContainer auto-detection fallback if running inside container and not in a temp directory
 	if isContainerEnvironment() && !inTemp {
 		if ws := findDevcontainerProject(); ws != "" {
-			if devRes, err := LoadFrom(ws, home); err == nil && devRes.Source == SourceProject {
+			if devRes, err := LoadFrom(ws, home); err != nil {
+				return nil, err
+			} else if devRes.Source == SourceProject {
 				return devRes, nil
 			}
 		}
@@ -134,7 +139,9 @@ func findDevcontainerProject() string {
 // LoadFrom resolves configuration relative to explicit working and home directories.
 func LoadFrom(workingDir, homeDir string) (*ResolvedConfig, error) {
 	// 1. Try to find project config (walk workingDir -> filesystem root)
-	if cfg, path, err := findProjectConfig(workingDir); err == nil && cfg != nil {
+	if cfg, path, err := findProjectConfig(workingDir); err != nil {
+		return nil, err
+	} else if cfg != nil {
 		if err := validate(cfg, path); err != nil {
 			return nil, err
 		}
@@ -148,7 +155,9 @@ func LoadFrom(workingDir, homeDir string) (*ResolvedConfig, error) {
 	}
 
 	// 2. Try global config (~/.gyrus.yaml)
-	if cfg, path, err := findGlobalConfig(homeDir); err == nil && cfg != nil {
+	if cfg, path, err := findGlobalConfig(homeDir); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	} else if cfg != nil {
 		if err := validate(cfg, path); err != nil {
 			return nil, err
 		}
@@ -182,7 +191,7 @@ func LoadFrom(workingDir, homeDir string) (*ResolvedConfig, error) {
 }
 
 // findProjectConfig walks parent directories looking for .gyrus.yaml.
-// If a file is malformed, it returns nil to allow fallback.
+// A present but invalid file is an error, never a fallback.
 func findProjectConfig(startDir string) (*Config, string, error) {
 	absStart, err := filepath.Abs(startDir)
 	if err != nil {
@@ -192,8 +201,10 @@ func findProjectConfig(startDir string) (*Config, string, error) {
 	curr := absStart
 	for {
 		candidate := filepath.Join(curr, GlobalConfigFileName)
-		if cfg, path, err := loadConfigFile(candidate); err == nil && cfg != nil {
+		if cfg, path, err := loadConfigFile(candidate); err == nil {
 			return cfg, path, nil
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return nil, "", err
 		}
 
 		parent := filepath.Dir(curr)
@@ -222,8 +233,14 @@ func loadConfigFile(path string) (*Config, string, error) {
 	}
 
 	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, "", err
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&cfg); err != nil {
+		return nil, "", fmt.Errorf("%s: %w", path, err)
+	}
+	var extra any
+	if err := decoder.Decode(&extra); err != io.EOF {
+		return nil, "", fmt.Errorf("%s: expected one YAML document", path)
 	}
 
 	return &cfg, path, nil

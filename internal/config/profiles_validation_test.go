@@ -60,7 +60,7 @@ func TestUnknownProfilesDoNotOverwriteConfiguration(t *testing.T) {
 }
 
 func TestSupportedProfileConfigurationsResolve(t *testing.T) {
-	for _, profile := range []config.Profile{config.ProfileLocal, config.ProfileGit, config.ProfileBlob, config.ProfileS3, config.ProfileAzure, config.ProfileGCS, config.ProfilePostgres} {
+	for _, profile := range []config.Profile{config.ProfileLocal, config.ProfileGit, config.ProfilePostgres} {
 		content, err := config.GenerateConfigYaml(profile, "root", "demo")
 		if err != nil {
 			t.Fatal(err)

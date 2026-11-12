@@ -2,7 +2,9 @@ package lifecycle
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 
@@ -493,7 +495,11 @@ func (e *Engine) Traverse(ctx context.Context, query gyrus.GraphQuery) ([]gyrus.
 // Returns an error if the schema template is not found in either source.
 func (e *Engine) GetSchema(ctx context.Context, conceptType string) (string, error) {
 	if e.schemaStore != nil {
-		if content, err := e.schemaStore.GetSchema(ctx, conceptType); err == nil && strings.TrimSpace(content) != "" {
+		content, err := e.schemaStore.GetSchema(ctx, conceptType)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return "", err
+		}
+		if err == nil && strings.TrimSpace(content) != "" {
 			return content, nil
 		}
 	}
@@ -523,6 +529,9 @@ func (e *Engine) ListSchemas(ctx context.Context) ([]gyrus.SchemaInfo, error) {
 	// 2. Persisted schemas from active storage provider
 	if e.schemaStore != nil {
 		persisted, err := e.schemaStore.ListSchemas(ctx)
+		if err != nil {
+			return nil, err
+		}
 		if err == nil {
 			for _, p := range persisted {
 				seen[p] = gyrus.SchemaInfo{

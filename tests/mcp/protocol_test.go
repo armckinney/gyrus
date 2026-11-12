@@ -49,8 +49,8 @@ type MCPClient struct {
 	reqID  int64
 }
 
-func startMCPClient(t *testing.T, workspaceDir string) *MCPClient {
-	cmd := exec.Command(gyrusBinPath, "mcp", "serve")
+func startMCPClient(t *testing.T, workspaceDir string, args ...string) *MCPClient {
+	cmd := exec.Command(gyrusBinPath, append([]string{"mcp", "serve"}, args...)...)
 	cmd.Dir = workspaceDir
 
 	stdin, err := cmd.StdinPipe()

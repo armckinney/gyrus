@@ -20,26 +20,10 @@ type Config struct {
 	Tenant      string `yaml:"tenant" json:"tenant"`
 	SchemasPath string `yaml:"schemas_path" json:"schemas_path"`
 	Git         struct {
-		RepoURL string `yaml:"repo_url" json:"repo_url"`
-		Branch  string `yaml:"branch" json:"branch"`
+		RepoURL        string `yaml:"repo_url" json:"repo_url"`
+		TrunkBranch    string `yaml:"trunk_branch" json:"trunk_branch"`
+		CommitStrategy string `yaml:"commit_strategy" json:"commit_strategy"`
 	} `yaml:"git" json:"git"`
-	Blob struct {
-		BucketURL      string `yaml:"bucket_url" json:"bucket_url"`
-		StorageAccount string `yaml:"storage_account" json:"storage_account"`
-		ContainerName  string `yaml:"container_name" json:"container_name"`
-		Prefix         string `yaml:"prefix" json:"prefix"`
-	} `yaml:"blob" json:"blob"`
-	S3 struct {
-		BucketName string `yaml:"bucket_name" json:"bucket_name"`
-		Region     string `yaml:"region" json:"region"`
-	} `yaml:"s3" json:"s3"`
-	AzureBlob struct {
-		StorageAccount string `yaml:"storage_account" json:"storage_account"`
-		ContainerName  string `yaml:"container_name" json:"container_name"`
-	} `yaml:"azure_blob" json:"azure_blob"`
-	GCS struct {
-		BucketName string `yaml:"bucket_name" json:"bucket_name"`
-	} `yaml:"gcs" json:"gcs"`
 	Postgres struct {
 		ConnectionString string `yaml:"connection_string" json:"connection_string"`
 	} `yaml:"postgres" json:"postgres"`

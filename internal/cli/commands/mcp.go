@@ -25,19 +25,27 @@ func NewMCPCmd(application *app.App) *cobra.Command {
 		Use:   "serve",
 		Short: "Start embedded Gyrus MCP stdio server",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var (
-				srv *mcp.Server
-				err error
-			)
+			var selected *app.App
+			var err error
 			if cfgPath != "" {
-				srv, err = mcp.NewServerWithConfig(cfgPath)
+				selected, err = app.NewWithConfig(cfgPath)
 			} else if project != "" {
-				srv, err = mcp.NewServerWithProject(project)
+				selected, err = app.NewWithProject(project)
 			} else {
-				srv, err = mcp.NewServer()
+				selected, err = app.New()
 			}
 			if err != nil {
 				return fmt.Errorf("failed to start MCP server: %w", err)
+			}
+			if cmd.Flags().Changed("git-branch") {
+				branch, _ := cmd.Flags().GetString("git-branch")
+				if err := selectGitBranch(cmd.Context(), selected, branch); err != nil {
+					return err
+				}
+			}
+			srv, err := mcp.NewServerFromApp(selected)
+			if err != nil {
+				return err
 			}
 			return srv.ServeStdio(context.Background())
 		},

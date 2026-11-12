@@ -63,8 +63,8 @@ func TestGitStore(t *testing.T) {
 	remoteURL := setupTestRemote(t)
 
 	opts := Options{
-		RepoURL: remoteURL,
-		Branch:  "main",
+		RepoURL:     remoteURL,
+		TrunkBranch: "main",
 	}
 
 	store, err := NewStore(opts)
@@ -152,8 +152,8 @@ func TestGitSchemaStore(t *testing.T) {
 	remoteURL := setupTestRemote(t)
 
 	opts := Options{
-		RepoURL: remoteURL,
-		Branch:  "main",
+		RepoURL:     remoteURL,
+		TrunkBranch: "main",
 	}
 
 	store, err := NewStore(opts)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	searchpostgres "github.com/armckinney/gyrus/internal/provider/search/postgres_fts"
+	"os"
 	"time"
 
 	"github.com/armckinney/gyrus/internal/domain/okf"
@@ -500,7 +501,7 @@ func (s *Store) GetSchema(ctx context.Context, conceptType string) (string, erro
 	err := s.pool.QueryRow(ctx, "SELECT content FROM schemas WHERE id = $1", conceptType).Scan(&content)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return "", fmt.Errorf("schema '%s' not found: %w", conceptType, err)
+			return "", fmt.Errorf("schema '%s' not found: %w: %w", conceptType, os.ErrNotExist, err)
 		}
 		return "", err
 	}

@@ -1,9 +1,9 @@
 # TODO
 
 ## Remediate MVP Multi-Repo Configuration
-- [ ] Fix Git Storage Provider
-- [ ] Update profile options to logical implementations (local, git, postgres)
-- [ ] Update docs
+- [x] Fix Git Storage Provider
+- [x] Update profile options to logical implementations (local, git, postgres)
+- [x] Update docs
   - Update guides / root readme
   - Simplify value add doc
   - Update Config / Setup Docs (include standard consigs)

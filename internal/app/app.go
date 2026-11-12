@@ -8,12 +8,14 @@ import (
 	"github.com/armckinney/gyrus/internal/config"
 	"github.com/armckinney/gyrus/internal/domain/lifecycle"
 	"github.com/armckinney/gyrus/internal/provider"
+	"github.com/armckinney/gyrus/pkg/gyrus"
 )
 
 // App is the central dependency injection service container for Gyrus.
 type App struct {
 	resolved *config.ResolvedConfig
 	engine   *lifecycle.Engine
+	store    gyrus.ConceptStore
 	engineMu sync.Mutex
 }
 
@@ -65,6 +67,7 @@ func (a *App) Reset() error {
 
 	a.resolved = resolved
 	a.engine = nil
+	a.store = nil
 	return nil
 }
 
@@ -116,28 +119,22 @@ func (a *App) Engine() (*lifecycle.Engine, error) {
 		return a.engine, nil
 	}
 
-	resolved, err := config.ResolveProviders(a.resolved.Config)
+	store, err := a.conceptStoreLocked()
 	if err != nil {
 		return nil, err
 	}
-	a.resolved.Config = resolved
 
-	store, err := provider.NewConceptStore(a.resolved.Config, a.resolved.StorageRoot)
-	if err != nil {
-		return nil, fmt.Errorf("failed initializing storage provider: %w", err)
-	}
-
-	indexer, err := provider.NewIndexStore(a.resolved.Config, a.resolved.StorageRoot, store)
+	indexer, err := provider.NewIndexStore(a.resolved.Config, store)
 	if err != nil {
 		return nil, fmt.Errorf("failed initializing index provider: %w", err)
 	}
 
-	graph, err := provider.NewGraphStore(a.resolved.Config, a.resolved.StorageRoot, store, indexer)
+	graph, err := provider.NewGraphStore(a.resolved.Config, store, indexer)
 	if err != nil {
 		return nil, fmt.Errorf("failed initializing graph provider: %w", err)
 	}
 
-	search, err := provider.NewSearchProvider(a.resolved.Config, a.resolved.StorageRoot, store, indexer)
+	search, err := provider.NewSearchProvider(a.resolved.Config, store, indexer)
 	if err != nil {
 		return nil, fmt.Errorf("failed initializing search provider: %w", err)
 	}
@@ -148,4 +145,32 @@ func (a *App) Engine() (*lifecycle.Engine, error) {
 	}
 	a.engine = lifecycle.NewEngineWithProject(store, search, indexer, graph, a.resolved.StorageRoot, projectName)
 	return a.engine, nil
+}
+
+// ConceptStore returns the same storage instance used by the lifecycle engine.
+// Provider-specific commands can use optional capabilities without adding them
+// to the application container or the common ConceptStore contract.
+func (a *App) ConceptStore() (gyrus.ConceptStore, error) {
+	a.engineMu.Lock()
+	defer a.engineMu.Unlock()
+	return a.conceptStoreLocked()
+}
+
+// conceptStoreLocked requires engineMu. Storage may be requested before Engine
+// so invocation setup can select a provider session before constructing adapters.
+func (a *App) conceptStoreLocked() (gyrus.ConceptStore, error) {
+	if a.store != nil {
+		return a.store, nil
+	}
+	resolved, err := config.ResolveProviders(a.resolved.Config)
+	if err != nil {
+		return nil, err
+	}
+	store, err := provider.NewConceptStore(resolved, a.resolved.StorageRoot)
+	if err != nil {
+		return nil, fmt.Errorf("failed initializing storage provider: %w", err)
+	}
+	a.resolved.Config = resolved
+	a.store = store
+	return store, nil
 }

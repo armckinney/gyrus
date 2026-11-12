@@ -12,6 +12,18 @@ var (
 
 // Register registers all Gyrus CLI subcommands onto the root command.
 func Register(rootCmd *cobra.Command, application *app.App) {
+	var gitBranch string
+	rootCmd.PersistentFlags().StringVar(&gitBranch, "git-branch", "", "Runtime initiative branch (selects branching strategy; never saved)")
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		// MCP constructs its app from its own --config/--project flags.
+		if cmd.Name() == "serve" && cmd.Parent() != nil && cmd.Parent().Name() == "mcp" {
+			return nil
+		}
+		if cmd.Flags().Changed("git-branch") {
+			return selectGitBranch(cmd.Context(), application, gitBranch)
+		}
+		return nil
+	}
 	rootCmd.PersistentFlags().BoolVar(&GlobalJSONOutput, "json", false, "Output results as formatted JSON")
 	rootCmd.PersistentFlags().BoolVar(&GlobalVerbose, "verbose", false, "Enable verbose debug logging")
 
@@ -33,6 +45,7 @@ func Register(rootCmd *cobra.Command, application *app.App) {
 	rootCmd.AddCommand(NewValidateCmd(application))
 	rootCmd.AddCommand(NewSchemaCmd(application))
 	rootCmd.AddCommand(NewConfigCmd(application))
+	rootCmd.AddCommand(NewGitCmd(application))
 
 	// Setup & Server Commands
 	rootCmd.AddCommand(NewMCPCmd(application))
