@@ -171,8 +171,8 @@ tenant: local-team
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies that malformed global YAML falls back gracefully to defaults.
-// [Assertions]: Source is SourceDefault, no fatal error.
+// [Purpose]: Verifies that malformed global YAML fails without falling back.
+// [Assertions]: Returns a configuration error.
 // -----------------------------------------------------------------------------
 func TestLoadMalformedGlobal(t *testing.T) {
 	tempWork := t.TempDir()
@@ -183,20 +183,15 @@ func TestLoadMalformedGlobal(t *testing.T) {
 		t.Fatalf("Failed writing bad global config: %v", err)
 	}
 
-	rc, err := config.LoadFrom(tempWork, tempHome)
-	if err != nil {
-		t.Fatalf("Expected graceful fallback, got error: %v", err)
-	}
-
-	if rc.Source != config.SourceDefault {
-		t.Errorf("Expected source '%s', got '%s'", config.SourceDefault, rc.Source)
+	if _, err := config.LoadFrom(tempWork, tempHome); err == nil {
+		t.Fatal("malformed configuration silently fell back")
 	}
 }
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Unit Test
-// [Purpose]: Verifies that malformed project config falls through to valid global config.
-// [Assertions]: Source is SourceGlobal.
+// [Purpose]: Verifies that malformed project config fails despite a valid global config.
+// [Assertions]: Returns a configuration error.
 // -----------------------------------------------------------------------------
 func TestLoadMalformedProject(t *testing.T) {
 	tempWork := t.TempDir()
@@ -215,16 +210,8 @@ tenant: fallback-global
 		t.Fatalf("Failed writing good global config: %v", err)
 	}
 
-	rc, err := config.LoadFrom(tempWork, tempHome)
-	if err != nil {
-		t.Fatalf("LoadFrom failed: %v", err)
-	}
-
-	if rc.Source != config.SourceGlobal {
-		t.Errorf("Expected source '%s', got '%s'", config.SourceGlobal, rc.Source)
-	}
-	if rc.Config.Tenant != "fallback-global" {
-		t.Errorf("Expected tenant 'fallback-global', got '%s'", rc.Config.Tenant)
+	if _, err := config.LoadFrom(tempWork, tempHome); err == nil {
+		t.Fatal("malformed configuration silently fell back")
 	}
 }
 
@@ -493,10 +480,6 @@ func TestWriteConfigFileProfiles(t *testing.T) {
 	}{
 		{config.ProfileLocal, "provider: localfs"},
 		{config.ProfileGit, "provider: git"},
-		{config.ProfileBlob, "provider: blob"},
-		{config.ProfileS3, "provider: s3"},
-		{config.ProfileAzure, "provider: azure_blob"},
-		{config.ProfileGCS, "provider: gcs"},
 		{config.ProfilePostgres, "provider: postgres"},
 	}
 

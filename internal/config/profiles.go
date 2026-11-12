@@ -12,10 +12,6 @@ type Profile string
 const (
 	ProfileLocal    Profile = "local"
 	ProfileGit      Profile = "git"
-	ProfileBlob     Profile = "blob"
-	ProfileS3       Profile = "s3"
-	ProfileAzure    Profile = "azure"
-	ProfileGCS      Profile = "gcs"
 	ProfilePostgres Profile = "postgres"
 )
 
@@ -54,7 +50,6 @@ project: %s
 
 storage:
   provider: git
-  root: .gyrus
 
 index:
   provider: okf
@@ -67,97 +62,8 @@ search:
 
 git:
   repo_url: ""
-  branch: main
-`, tenant, proj), nil
-
-	case ProfileS3:
-		return fmt.Sprintf(`# Gyrus Configuration - AWS S3 Profile
-tenant: %s
-project: %s
-
-storage:
-  provider: s3
-  root: .gyrus
-
-index:
-  provider: okf
-
-graph:
-  provider: okf
-
-search:
-  provider: okf
-
-s3:
-  bucket_name: "my-gyrus-bucket"
-  region: "us-east-1"
-`, tenant, proj), nil
-
-	case ProfileAzure:
-		return fmt.Sprintf(`# Gyrus Configuration - Azure Blob Profile
-tenant: %s
-project: %s
-
-storage:
-  provider: azure_blob
-  root: .gyrus
-
-index:
-  provider: okf
-
-graph:
-  provider: okf
-
-search:
-  provider: okf
-
-azure_blob:
-  storage_account: "myaccountname"
-  container_name: "my-gyrus-container"
-`, tenant, proj), nil
-
-	case ProfileGCS:
-		return fmt.Sprintf(`# Gyrus Configuration - Google Cloud Storage Profile
-tenant: %s
-project: %s
-
-storage:
-  provider: gcs
-  root: .gyrus
-
-index:
-  provider: okf
-
-graph:
-  provider: okf
-
-search:
-  provider: okf
-
-gcs:
-  bucket_name: "my-gyrus-gcs-bucket"
-`, tenant, proj), nil
-
-	case ProfileBlob:
-		return fmt.Sprintf(`# Gyrus Configuration - Cloud Blob Profile
-tenant: %s
-project: %s
-
-storage:
-  provider: blob
-  root: .gyrus
-
-index:
-  provider: okf
-
-graph:
-  provider: okf
-
-search:
-  provider: okf
-
-blob:
-  bucket_url: "file:///tmp/gyrus-blob-bucket"
+  trunk_branch: main
+  commit_strategy: direct
 `, tenant, proj), nil
 
 	case ProfilePostgres:
@@ -167,7 +73,6 @@ project: %s
 
 storage:
   provider: postgres
-  root: .gyrus
 
 index:
   provider: postgres
@@ -201,7 +106,7 @@ search:
   provider: okf
 `, tenant, proj), nil
 	default:
-		return "", fmt.Errorf("unsupported configuration profile %q: choose local, git, blob, s3, azure, gcs, or postgres", profile)
+		return "", fmt.Errorf("unsupported configuration profile %q: choose local, git, or postgres", profile)
 	}
 }
 

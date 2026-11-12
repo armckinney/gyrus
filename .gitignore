@@ -87,4 +87,3 @@ coverage.out
 
 # OKF mutation locks and migration rollback artifacts
 **/.gyrus-write.lock
-.gyrus/backups/

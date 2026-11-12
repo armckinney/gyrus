@@ -12,8 +12,8 @@ import (
 
 // -----------------------------------------------------------------------------
 // [Test Level]: Provider Integration Test
-// [Purpose]: Verifies end-to-end functionality for the 'git' profile (Git remote storage driver + SQLite index).
-// [Execution Surface]: Real In-Memory / Local Bare Git Repository + SQLite Database
+// [Purpose]: Verifies end-to-end functionality for the 'git' profile (Git remote storage driver + OKF scans).
+// [Execution Surface]: In-memory checkout and local bare Git repository
 // [Assertions]: Document commits to git repository, retrieves via Git storage driver, and updates commit log.
 // -----------------------------------------------------------------------------
 func TestIntegration_GitProfile(t *testing.T) {
@@ -26,8 +26,8 @@ func TestIntegration_GitProfile(t *testing.T) {
 	}
 
 	store, err := storagegit.NewStore(storagegit.Options{
-		RepoURL: remoteDir,
-		Branch:  "main",
+		RepoURL:     remoteDir,
+		TrunkBranch: "main",
 	})
 	if err != nil {
 		t.Fatalf("Failed initializing git store: %v", err)

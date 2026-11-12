@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 //go:embed templates/*.md
@@ -39,13 +41,22 @@ func ValidateSchemaContent(conceptType string, content string) error {
 		return fmt.Errorf("schema content cannot be empty")
 	}
 
-	doc, err := ParseMarkdown([]byte(content))
-	if err != nil {
+	// Templates contain placeholders (including dates), not concrete Concept
+	// values. Validate their YAML envelope without decoding runtime field types.
+	text := strings.TrimSpace(content)
+	if !strings.HasPrefix(text, "---\n") && !strings.HasPrefix(text, "---\r\n") {
+		return fmt.Errorf("invalid schema template frontmatter: missing leading delimiter")
+	}
+	end := strings.Index(text[3:], "\n---")
+	if end < 0 {
+		return fmt.Errorf("invalid schema template frontmatter: missing closing delimiter")
+	}
+	var metadata map[string]interface{}
+	if err := yaml.Unmarshal([]byte(text[3:3+end]), &metadata); err != nil {
 		return fmt.Errorf("invalid schema template frontmatter: %w", err)
 	}
-
-	if doc.Type != "" && string(doc.Type) != conceptType {
-		return fmt.Errorf("schema template type '%s' does not match target concept type '%s'", doc.Type, conceptType)
+	if schemaType, exists := metadata["type"]; exists && schemaType != "" && schemaType != conceptType {
+		return fmt.Errorf("schema template type '%v' does not match target concept type '%s'", schemaType, conceptType)
 	}
 
 	return nil

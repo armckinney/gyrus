@@ -308,3 +308,29 @@ status: active
 		t.Errorf("expected embedded adr template, got err: %v", err)
 	}
 }
+
+func TestSchemaTemplatesAllowPlaceholders(t *testing.T) {
+	for _, docType := range okf.ListEmbeddedTemplates() {
+		t.Run(docType, func(t *testing.T) {
+			content, err := okf.GetTemplate(docType, "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := okf.ValidateSchemaContent(docType, content); err != nil {
+				t.Fatalf("built-in template must be saveable: %v", err)
+			}
+		})
+	}
+	for _, content := range []string{
+		"type: guide",
+		"---\ntype: guide\n",
+		"---\ntype: [\n---\n",
+		"---\ntype: [guide]\n---\n",
+		"---\ntype: adr\n---\n",
+		"---\n- guide\n---\n",
+	} {
+		if err := okf.ValidateSchemaContent("guide", content); err == nil {
+			t.Errorf("accepted invalid template %q", content)
+		}
+	}
+}

@@ -11,7 +11,6 @@ import (
 	indexpostgres "github.com/armckinney/gyrus/internal/provider/index/postgres"
 	searchokf "github.com/armckinney/gyrus/internal/provider/search/okf"
 	postgresfts "github.com/armckinney/gyrus/internal/provider/search/postgres_fts"
-	"github.com/armckinney/gyrus/internal/provider/storage/blob"
 	"github.com/armckinney/gyrus/internal/provider/storage/git"
 	"github.com/armckinney/gyrus/internal/provider/storage/localfs"
 	"github.com/armckinney/gyrus/internal/provider/storage/postgres"
@@ -26,14 +25,6 @@ func NewConceptStore(cfg *config.Config, storageRoot string) (gyrus.ConceptStore
 		return nil, err
 	}
 	cfg = resolved
-	if cfg == nil {
-		cfg = &config.Config{}
-	}
-
-	prefix := cfg.StorageRoot()
-	if prefix == "" {
-		prefix = config.DefaultStorageRoot
-	}
 
 	switch cfg.StorageProvider() {
 	case "git":
@@ -41,65 +32,10 @@ func NewConceptStore(cfg *config.Config, storageRoot string) (gyrus.ConceptStore
 			return nil, fmt.Errorf("git storage provider selected but git.repo_url is empty in config file (.gyrus.yaml)")
 		}
 		return git.NewStore(git.Options{
-			RepoURL: cfg.Git.RepoURL,
-			Branch:  cfg.Git.Branch,
+			RepoURL:        cfg.Git.RepoURL,
+			TrunkBranch:    cfg.Git.TrunkBranch,
+			CommitStrategy: cfg.Git.CommitStrategy,
 		})
-
-	case "s3", "aws_s3":
-		bucketName := cfg.S3.BucketName
-		if bucketName == "" {
-			return nil, fmt.Errorf("s3 storage provider selected but s3.bucket_name is empty in config file (.gyrus.yaml)")
-		}
-		bucketURL := fmt.Sprintf("s3://%s", bucketName)
-		if cfg.S3.Region != "" {
-			bucketURL = fmt.Sprintf("s3://%s?region=%s", bucketName, cfg.S3.Region)
-		}
-		return blob.NewStore(context.Background(), bucketURL, prefix)
-
-	case "azure", "azure_blob":
-		container := cfg.AzureBlob.ContainerName
-		if container == "" {
-			container = cfg.Blob.ContainerName
-		}
-		if container == "" {
-			return nil, fmt.Errorf("azure_blob storage provider selected but azure_blob.container_name is empty in config file (.gyrus.yaml)")
-		}
-		account := cfg.AzureBlob.StorageAccount
-		if account == "" {
-			account = cfg.Blob.StorageAccount
-		}
-		bucketURL := fmt.Sprintf("azblob://%s", container)
-		if account != "" {
-			bucketURL = fmt.Sprintf("azblob://%s?storage_account=%s", container, account)
-		}
-		return blob.NewStore(context.Background(), bucketURL, prefix)
-
-	case "gcs", "gcp_gcs", "gcp":
-		bucketName := cfg.GCS.BucketName
-		if bucketName == "" {
-			return nil, fmt.Errorf("gcs storage provider selected but gcs.bucket_name is empty in config file (.gyrus.yaml)")
-		}
-		bucketURL := fmt.Sprintf("gs://%s", bucketName)
-		return blob.NewStore(context.Background(), bucketURL, prefix)
-
-	case "blob":
-		bucketURL := cfg.Blob.BucketURL
-		if bucketURL == "" {
-			if cfg.Blob.ContainerName != "" {
-				container := cfg.Blob.ContainerName
-				if cfg.Blob.StorageAccount != "" {
-					bucketURL = fmt.Sprintf("azblob://%s?storage_account=%s", container, cfg.Blob.StorageAccount)
-				} else {
-					bucketURL = fmt.Sprintf("azblob://%s", container)
-				}
-			} else {
-				bucketURL = "file://" + storageRoot
-			}
-		}
-		if cfg.Blob.Prefix != "" {
-			prefix = cfg.Blob.Prefix
-		}
-		return blob.NewStore(context.Background(), bucketURL, prefix)
 
 	case "postgres":
 		if cfg.Postgres.ConnectionString == "" {
@@ -116,7 +52,7 @@ func NewConceptStore(cfg *config.Config, storageRoot string) (gyrus.ConceptStore
 }
 
 // NewIndexStore creates the configured index over the selected storage.
-func NewIndexStore(cfg *config.Config, storageRoot string, store gyrus.ConceptStore) (gyrus.IndexStore, error) {
+func NewIndexStore(cfg *config.Config, store gyrus.ConceptStore) (gyrus.IndexStore, error) {
 	cfg, err := config.ResolveProviders(cfg)
 	if err != nil {
 		return nil, err
@@ -135,7 +71,7 @@ func NewIndexStore(cfg *config.Config, storageRoot string, store gyrus.ConceptSt
 }
 
 // NewGraphStore reuses database indexes or persists links in the selected store.
-func NewGraphStore(cfg *config.Config, storageRoot string, store gyrus.ConceptStore, indexer gyrus.IndexStore) (gyrus.GraphStore, error) {
+func NewGraphStore(cfg *config.Config, store gyrus.ConceptStore, indexer gyrus.IndexStore) (gyrus.GraphStore, error) {
 	cfg, err := config.ResolveProviders(cfg)
 	if err != nil {
 		return nil, err
@@ -155,7 +91,7 @@ func NewGraphStore(cfg *config.Config, storageRoot string, store gyrus.ConceptSt
 }
 
 // NewSearchProvider shares the selected storage and index dependencies.
-func NewSearchProvider(cfg *config.Config, storageRoot string, store gyrus.ConceptStore, indexer gyrus.IndexStore) (gyrus.SearchProvider, error) {
+func NewSearchProvider(cfg *config.Config, store gyrus.ConceptStore, indexer gyrus.IndexStore) (gyrus.SearchProvider, error) {
 	cfg, err := config.ResolveProviders(cfg)
 	if err != nil {
 		return nil, err

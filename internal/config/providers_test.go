@@ -10,7 +10,7 @@ import (
 )
 
 func TestEffectiveProviderDefaultsAndCompatibility(t *testing.T) {
-	for _, storage := range []string{"", "localfs", "git", "blob", "s3", "aws_s3", "azure", "azure_blob", "gcs", "gcp", "gcp_gcs"} {
+	for _, storage := range []string{"", "localfs", "git"} {
 		t.Run(storage, func(t *testing.T) {
 			cfg := &config.Config{}
 			cfg.Storage.Provider = storage
@@ -32,7 +32,7 @@ func TestEffectiveProviderDefaultsAndCompatibility(t *testing.T) {
 	for _, tc := range []struct {
 		index, graph, search string
 		valid                bool
-	}{{"okf", "okf", "okf", true}, {"okf", "okf", "unknown", false}, {"postgres", "okf", "okf", true}, {"okf", "okf", "sqlite_fts5", false}, {"okf", "sqlite", "okf", false}, {"sqlite", "okf", "okf", false}, {"okf", "okf", "sqlite", false}, {"sqlite", "sqlite", "unknown", false}} {
+	}{{"okf", "okf", "okf", true}, {"okf", "okf", "unknown", false}, {"postgres", "okf", "okf", false}, {"okf", "okf", "sqlite_fts5", false}, {"okf", "sqlite", "okf", false}, {"sqlite", "okf", "okf", false}, {"okf", "okf", "sqlite", false}, {"sqlite", "sqlite", "unknown", false}} {
 		cfg = &config.Config{}
 		cfg.Index.Provider = tc.index
 		cfg.Graph.Provider = tc.graph
@@ -42,7 +42,7 @@ func TestEffectiveProviderDefaultsAndCompatibility(t *testing.T) {
 			t.Errorf("%+v: %v", tc, err)
 		}
 	}
-	for _, profile := range []config.Profile{config.ProfileLocal, config.ProfileGit, config.ProfileBlob, config.ProfileS3, config.ProfileAzure, config.ProfileGCS, config.ProfilePostgres} {
+	for _, profile := range []config.Profile{config.ProfileLocal, config.ProfileGit, config.ProfilePostgres} {
 		var cfg config.Config
 		content, err := config.GenerateConfigYaml(profile, "root", "demo")
 		if err != nil {

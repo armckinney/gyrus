@@ -21,7 +21,6 @@ func setupTestWorkspace(t *testing.T) (*app.App, string) {
 	}
 
 	cfgContent := `
-version: 1
 project: gyrus
 storage:
   provider: localfs

@@ -2,19 +2,15 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
+
+	"github.com/go-git/go-git/v5/plumbing"
 )
 
 func storageName(value string) string {
-	switch value {
-	case "":
+	if value == "" {
 		return DefaultStorageProvider
-	case "aws_s3":
-		return "s3"
-	case "azure":
-		return "azure_blob"
-	case "gcp_gcs", "gcp":
-		return "gcs"
 	}
 	return value
 }
@@ -57,18 +53,34 @@ func ResolveProviders(input *Config) (*Config, error) {
 			return nil, fmt.Errorf("unknown %s provider '%s'. Valid: %s", field.name, field.value, strings.Join(field.valid, ", "))
 		}
 	}
-	compatible := false
-	switch c.Index.Provider {
-	case "okf":
-		compatible = c.Graph.Provider == "okf" && c.Search.Provider == "okf"
-	case "postgres":
-		compatible = (c.Graph.Provider == "postgres" || c.Graph.Provider == "okf") && (c.Search.Provider == "postgres_fts" || c.Search.Provider == "okf")
+	wantIndex, wantSearch := "okf", "okf"
+	if c.Storage.Provider == "postgres" {
+		wantIndex, wantSearch = "postgres", "postgres_fts"
 	}
-	if !compatible {
-		return nil, fmt.Errorf("incompatible providers: index=%s graph=%s search=%s", c.Index.Provider, c.Graph.Provider, c.Search.Provider)
+	if c.Index.Provider != wantIndex || c.Graph.Provider != wantIndex || c.Search.Provider != wantSearch {
+		return nil, fmt.Errorf("%s storage requires index=%s graph=%s search=%s", c.Storage.Provider, wantIndex, wantIndex, wantSearch)
 	}
-	if c.Storage.Provider == "postgres" && (c.Index.Provider != "postgres" || c.Graph.Provider != "postgres" || c.Search.Provider != "postgres_fts") {
-		return nil, fmt.Errorf("PostgreSQL storage requires index=postgres graph=postgres search=postgres_fts; OKF requires scanner-capable storage")
+	if c.Storage.Provider == "git" {
+		if c.Git.TrunkBranch == "" {
+			c.Git.TrunkBranch = "main"
+		}
+		if err := plumbing.NewBranchReferenceName(c.Git.TrunkBranch).Validate(); err != nil {
+			return nil, fmt.Errorf("invalid git.trunk_branch: %w", err)
+		}
+		if c.Git.CommitStrategy == "" {
+			c.Git.CommitStrategy = "direct"
+		}
+		if c.Git.CommitStrategy != "direct" && c.Git.CommitStrategy != "branching" {
+			return nil, fmt.Errorf("invalid git.commit_strategy: choose direct or branching")
+		}
+		if strings.ContainsAny(c.Git.RepoURL, "\r\n") {
+			return nil, fmt.Errorf("git.repo_url must not contain newlines")
+		}
+		if u, err := url.Parse(c.Git.RepoURL); err == nil && u.User != nil {
+			if _, set := u.User.Password(); set {
+				return nil, fmt.Errorf("git.repo_url must not contain a password; use Git credential helpers")
+			}
+		}
 	}
 	return c, nil
 }

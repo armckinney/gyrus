@@ -1,16 +1,15 @@
 tenant: root
 project: gyrus
-
 storage:
-  provider: localfs
-  root: ./.gyrus
-
+  provider: git
+git:
+  repo_url: https://github.com/armckinney/wiki.git
+  trunk_branch: main
+  commit_strategy: direct
 index:
   provider: okf
-
 graph:
   provider: okf
-
 search:
   provider: okf
 

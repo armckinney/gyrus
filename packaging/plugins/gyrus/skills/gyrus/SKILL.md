@@ -67,3 +67,11 @@ Supported search providers are `okf` (direct keyword scan) and `postgres_fts` (n
 Create takes a local frontmatter id and tenant/scope/project. All existing-concept `id`, `from_id`, `to_id`, and `start_id` arguments require a full name: `root/reference/adr-example` or `root/projects/gyrus/ticket-003`. No short-ID fallback is supported. API envelopes/references expose the derived name; Markdown frontmatter keeps the local id. Use `gyrus get root/reference/adr-example --json` and `gyrus link root/projects/gyrus/ticket-003 root/reference/adr-example --rel-type depends_on`.
 
 Persist links only as `{concept: <qualified-name>, rel: <relationship>}`. Dependencies, old link keys, and per-link creation metadata are obsolete. Use incoming neighbors for backlinks; do not write inverse copies. Retain depends_on, implements, supersedes, and mitigates; do not impose parent/child or DAG rules. Use the packaged migration skill for legacy data. Typed links and Gyrus-required metadata are extensions to upstream OKF.
+
+## Supported stacks and Git initiative sessions
+
+Use only localfs/OKF, Git/OKF, or PostgreSQL with PostgreSQL index/graph and native FTS. Cloud/blob providers, hybrid stacks, and provider aliases are removed. Configuration is strict: unknown keys and malformed files fail rather than falling back.
+
+Git config contains `repo_url`, `trunk_branch` (default `main`), and `commit_strategy: direct | branching` (default `direct`). Initiative branch names are runtime inputs, never configuration fields. Use CLI `--git-branch initiative/name` or MCP `gyrus_git_switch({strategy: "branching", branch: "initiative/name"})`; inspect `gyrus_git_status`. Return to trunk with `{strategy: "direct"}`. Each MCP process owns its selection; restart requires selecting again. All knowledge tools, resources, schemas, and queries use the selected branch. A branching server without selection rejects knowledge operations until an initiative is selected.
+
+HTTPS credentials come from the configured Git credential helper. Gyrus performs no PR creation, merging, rebasing, or force-pushing. Humans review and merge initiative branches in their Git host. Existing initiative branches do not automatically integrate trunk changes.

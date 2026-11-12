@@ -18,15 +18,15 @@ func TestOKFFactoryCompositionAndNoHiddenDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	idx, err := provider.NewIndexStore(cfg, root, store)
+	idx, err := provider.NewIndexStore(cfg, store)
 	if err != nil {
 		t.Fatal(err)
 	}
-	graph, err := provider.NewGraphStore(cfg, root, store, idx)
+	graph, err := provider.NewGraphStore(cfg, store, idx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	search, err := provider.NewSearchProvider(cfg, root, store, idx)
+	search, err := provider.NewSearchProvider(cfg, store, idx)
 	if err != nil {
 		t.Fatal(err)
 	}
