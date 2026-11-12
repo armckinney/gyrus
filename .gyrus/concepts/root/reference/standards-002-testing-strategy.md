@@ -4,9 +4,9 @@ id: standards-002-testing-strategy
 type: standards
 format: markdown
 category: technical
-version: 9
+version: 11
 status: active
-last_updated: 2026-10-17T23:57:58Z
+last_updated: 2026-11-12T05:49:34Z
 last_modified_by: ""
 tenant: root
 tags:
@@ -33,283 +33,140 @@ links:
       rel: depends_on
 ---
 
-# Gyrus Testing Strategy & QA Standards
+# Testing strategy and QA standards
 
-> **Testing Methodology & Scope**:
-> This document establishes the single source of truth for the **Integration, End-to-End (E2E), Protocol, and Product Quality Assurance (QA) standards** for Gyrus. Because Gyrus is developed agentically and serves as foundational context and memory infrastructure for AI agents, this suite guarantees full-system capability, agent interoperability, and long-term stability.
-> 
-> *Note on Unit Tests*: These product and integration test suites do **not** replace package-level unit tests. Granular unit tests scattered throughout `internal/` packages continue to be maintained and executed in conjunction with this suite for rapid local development and isolated logic verification.
-> 
-> *(Future roadmap features such as Phase 2.8 Workspace Routing, Phase 2.9 Automated Sync Daemon, and Phase 2.10 UI have their target test requirements tracked in `prd-001-specification-roadmap.md` and are implemented during their respective releases).*
+This standard describes how contributors verify Gyrus at package, provider, product, protocol, and agent-workflow boundaries. Package tests provide fast feedback; CLI/MCP subprocess tests verify the experience exposed to humans and agents. Test names and executed assertions establish coverage, not a checklist alone.
 
----
-
-## 🏛️ Test Harness Architecture & Layers
+## Test architecture and responsibilities
 
 ```mermaid
-graph TD
-    subgraph "Layer 1: Unit & Package Tests (In-Memory, Microsecond Feedback)"
-        U1["Domain & OKF Parser Unit Tests (internal/domain/okf)"]
-        U2["Lifecycle State Machine Unit Tests (internal/domain/lifecycle)"]
-        U3["Format Serialization Unit Tests (internal/format)"]
-        U4["Provider Algorithmic Logic (BM25, RRF Math)"]
-    end
-
-    subgraph "Layer 2: Provider Infrastructure Matrix (Integration)"
-        P1["Storage: LocalFS, Git, Postgres, Blob Mock"]
-        P2["Index & Search: OKF Keyword Scan, Postgres FTS"]
-        P3["Graph: OKF Links & Postgres Directed Edge Stores"]
-    end
-
-    subgraph "Layer 3: CLI Binary & Protocol Contract (Product E2E)"
-        C1["Subcommands: suggest-context, search, get, create, update, link, archive, sync, init"]
-        C2["Standardized Exit Code Protocol: 0, 1, 2, 3, 4, 5"]
-        C3["Stdio Stream Isolation: stderr logs / stdout pure JSON"]
-    end
-
-    subgraph "Layer 4: MCP Protocol & Transport (JSON-RPC 2.0 Process)"
-        M1["Stdio Subprocess Handshake & Request/Response"]
-        M2["10 MCP Tools Verification over JSON-RPC 2.0"]
-        M3["MCP Resources & Prompt Templates"]
-        M4["Docker Container Interactive MCP Serving"]
-    end
-
-    subgraph "Layer 5: Product QA, Agent Workflows & Hardening"
-        Q1["Deterministic Snapshot Linearization (Golden Markdown Fixtures)"]
-        Q2["Token Budgeting & Precision Truncation (--max-tokens)"]
-        Q3["Agent Skills & Autonomous AI Agent E2E Scenarios (agy, copilot, claude)"]
-        Q4["Race Detection (-race), Crash Consistency & 10k Scale Benchmark"]
-    end
-
-    Layer 1 --> Layer 2
-    Layer 2 --> Layer 3
-    Layer 3 --> Layer 4
-    Layer 4 --> Layer 5
+flowchart TD
+    Domain["Domain, OKF parsing, lifecycle, serialization"] --> Providers["Localfs, Git, PostgreSQL and query adapters"]
+    Providers --> CLI["CLI binary, arguments, output and exit codes"]
+    Providers --> MCP["MCP tools, resources, prompts and stdio protocol"]
+    Providers --> UI["Local UI rendering, search and graph APIs"]
+    CLI --> Product["Installation, plugin packaging and consumer workflows"]
+    MCP --> Product
+    Product --> Agent["Opt-in agent evaluation and live infrastructure"]
 ```
 
----
+| Level | Execution surface | Main evidence |
+| --- | --- | --- |
+| Package | `internal/config`, `internal/domain`, `internal/format`, persistence packages | Strict configuration, qualified identities, parsing, lifecycle guards, serialization, locks |
+| Provider | `internal/provider` and `tests/integration` | Durable concepts/schemas, source-owned links, search/filter limits, version and push conflicts |
+| CLI | `internal/cli`, `tests/cli` | Built binary, real flags/files, JSON/text output, process exit codes |
+| MCP | `internal/mcp`, `tests/mcp` | Handshake/discovery, tool results, resources/prompts, runtime branch forwarding and isolation |
+| UI | `internal/ui` | HTTP handlers, templates, document rendering, graph scope and deterministic ordering |
+| Distribution/agents | `tests/install`, `tests/plugins`, `tests/skills` | Installer/build checks, plugin layout, prompt-routing fixtures, explicitly enabled live evaluation |
 
-## ⚖️ Unit Tests vs. Product E2E Tests
+Use isolated temporary roots and local bare repositories for default tests. PostgreSQL unit tests use mocks; a live database is separately enabled. A successful default run can include skipped external tests; report those skips rather than implying that every host or environment was exercised.
 
-To ensure the system functions properly as a user and AI agent expect, Gyrus maintains a strict separation of concerns between **Unit Tests** and **Product / E2E Integration Tests**:
+## Repository commands
 
-| Dimension | Unit Tests (In-Code / Package Level) | Product / E2E Tests (Black Box / Manual User Sim) |
-| :--- | :--- | :--- |
-| **Execution Surface** | Internal Go packages (`internal/**_test.go`) | Compiled `./gyrus` binary executable and MCP subprocess (`tests/e2e/`, `tests/cli/`, `tests/mcp/`) |
-| **Primary Goal** | Validate isolated logic, mathematical formulas, regexes, and data transformations. | Validate the product as a human developer or AI agent interacts with it manually. |
-| **I/O & Environment** | In-memory mocks, zero external process overhead, microsecond runtimes. | Real filesystem, real CLI flags, real process exit codes, real stdio JSON-RPC streaming. |
-| **Example Scenarios** | - YAML unmarshaling edge cases<br>- Document ID regex validation (`^[a-z0-9-_]+$`)<br>- State machine transition truth tables<br>- BM25 score calculation | - `gyrus init config --profile postgres` creates `.gyrus.yaml`<br>- `gyrus update adr-001 --status proposed` exits with code `2`<br>- Spawning `gyrus mcp serve` and calling `suggest_context` over JSON-RPC stdin/stdout<br>- Multi-step onboarding workflow from init config ➔ client ➔ create ➔ link ➔ suggest-context |
+The [Makefile](../../../../Makefile) defines the contributor entry points:
 
----
+| Command | Actual behavior | Prerequisites / effects |
+| --- | --- | --- |
+| `make test` | Runs `go test ./...` with `GYRUS_PROJECT` and `GYRUS_CONFIG` cleared | Includes package tests and ordinary CLI/MCP/integration tests; external gates still apply |
+| `make lint` | Lists files reported by `gofmt -l .`, then runs `go vet ./...` | Formatting output requires attention; this target does not itself fail solely because files were listed |
+| `make fmt` | Runs `go fmt ./...` | Rewrites source formatting |
+| `make build` | Builds `gyrus` with `-buildvcs=false` | Writes the root binary; use a temporary output path when preserving it matters |
+| `make test-integration` | Builds, then runs `go test ./tests/...` with `RUN_INTEGRATION_TESTS=1` and `RUN_DOCKER_TESTS=1` | Enables Docker execution when available; does not supply Git credentials or a database URL |
+| `make all` | Runs clean, fmt, lint, test, build | Removes build artifacts and formats source before testing |
+| `make install` | Builds and symlinks the binary into `/usr/local/bin` | Changes the local installation |
 
-## 📝 In-Code Test Documentation Standard
-
-To ensure tests remain immediately comprehensible to human contributors and AI pair programmers, **every test function in this repository must include a structured header docstring**:
-
-```go
-// -----------------------------------------------------------------------------
-// [Test Level]: Product E2E Test | Provider Integration | Unit Test
-// [Purpose]: Plain English explanation of what contract or user journey is tested.
-// [Execution Surface]: Compiled ./gyrus CLI binary | Stdio MCP Subprocess | In-Memory Package
-// [Assertions]: Explicit list of verified outcomes (e.g. Exit Code 2, pure JSON on stdout).
-// -----------------------------------------------------------------------------
-func TestExample(t *testing.T) { ... }
-```
-
----
-
-## 🧪 Test Execution Commands & Environment Toggles
-
-Gyrus provides automated test commands via `make` and standard `go test` flags:
-
-### 1. Standard Test Execution
+For a focused change, run its affected packages first, then the required repository checks. Examples:
 
 ```bash
-# 1. Run entire test suite + clean build verification (Local Default)
-make all
-
-# 2. Run standard tests (internal/... and unit tests)
+# Standard regression run, isolated from project-selection environment variables
 make test
 
-# 3. Run integration & CLI/MCP subprocess E2E tests (tests/...)
-make test-integration
+# Git/configuration and provider-wiring checks
+go test ./internal/config ./internal/provider/... ./internal/app
 
-# 4. Run race detector across all packages
+# Actual public CLI and stdio MCP contracts
+go test ./tests/cli ./tests/mcp -count=1
+
+# Concurrency checks around shared storage and live branch switching
+go test -race ./internal/provider/storage/git ./internal/mcp ./internal/app
+
+# Broader race run when the change touches more subsystems
 go test -race ./...
 
-# 5. Run performance benchmarks (indexing, search, graph)
-go test -bench=. -benchmem ./tests/integration/...
+# Static checks and a non-mutating formatting report
+go vet ./...
+gofmt -l cmd internal pkg tests
+
+# Existing local persistence/search/graph benchmarks
+go test ./tests/integration -run '^$' -bench . -benchmem
 ```
 
-### 2. Environment Flags & Test Toggles
+CI runs `go vet ./...`, explicitly fails on a nonempty formatting report, and runs `go test ./... -v`. See the [CI workflow](../../../../.github/workflows/wf-ci.yml). Benchmarks report latency and allocation measurements; they do not establish an undocumented fixed latency guarantee.
 
-| Environment Variable | Default | Purpose & Description |
-| :--- | :--- | :--- |
-| `RUN_INTEGRATION_TESTS=1` | Disabled in basic CI | Injected automatically by `make test-integration` to execute all provider integration suites. |
-| `RUN_DOCKER_TESTS=1` | Disabled | Enables building and launching the live `packaging/Dockerfile` container (`TestLiveDockerContainerExecution`). |
-| `RUN_AGENT_EVAL=1` | Disabled | Enables live end-to-end evaluation with the Google Antigravity (`agy`) CLI runner (`TestAntigravityIntegration`). |
+## Environment gates and prerequisites
 
----
+| Variable | Current effect |
+| --- | --- |
+| `RUN_DOCKER_TESTS` or `RUN_INTEGRATION_TESTS` | A nonempty value enables the live Docker test in `tests/install`; missing Docker or an inaccessible daemon still causes a skip |
+| `GYRUS_TEST_POSTGRES_URL` | Enables `TestIntegration_PostgresLive` against the supplied isolated PostgreSQL database |
+| `GYRUS_TEST_GIT_URL` | Enables `TestGitLiveRemote` against the supplied disposable Git remote |
+| `GYRUS_TEST_GIT_RUN_ID` | Optional unique concept ID used by the live Git fixture; otherwise generated per run |
+| `RUN_AGENT_EVAL` or `RUN_E2E_TESTS` | A nonempty value enables the Antigravity evaluation script; its actual path depends on installed agent tooling |
+| `GYRUS_PROJECT`, `GYRUS_CONFIG` | Select runtime configuration; Makefile test targets clear them to avoid accidental fixture routing |
 
-## ☁️ Live Cloud & Database Integration Testing Guide
+These gates are independent: `make test-integration` does not automatically enable live Git/PostgreSQL or live agent evaluation. The existing agent script validates the plugin and attempts an `agy` prompt when available; without `agy` it checks MCP transport. Treat that as an integration smoke test, not a quality score for autonomous reasoning. Inspect the script's output to report which path ran.
 
-Gyrus supports seamless integration testing against live cloud infrastructure and managed databases without requiring code modifications:
+## Live infrastructure runbooks
 
-### 1. PostgreSQL (Neon, Supabase, AWS RDS, Azure Flexible Server, Docker)
+### Git
 
-PostgreSQL integration is opt-in through GYRUS_TEST_POSTGRES_URL pointing to an isolated test database. The suite creates fixture concepts, checks native tsvector full-text matching and scope/project filters, and verifies qualified graph edges. Without that explicit target it skips. Mocked transaction tests verify typed version conflicts, rollback, and no concept/history writes; CLI maps those conflicts to code 4 and MCP reports a tool error.
+Use a disposable repository and preconfigured Git credential-manager or SSH access. HTTPS credentials are obtained through noninteractive `git credential fill`; do not put tokens in command arguments or remote URLs.
 
 ```bash
-# Local Docker Container
-export GYRUS_TEST_POSTGRES_URL="postgres://postgres:postgres@localhost:5432/gyrus_test?sslmode=disable"
-go test -v ./tests/integration -run TestIntegration_PostgresLive
-
-# Managed Cloud Postgres (Neon / Supabase / AWS Aurora / Azure)
-export GYRUS_TEST_POSTGRES_URL="<isolated-test-database-DSN>"
-go test -v ./tests/integration -run TestIntegration_PostgresLive
+GYRUS_TEST_GIT_URL=https://github.com/OWNER/test-wiki.git \
+  go test ./tests/integration -run '^TestGitLiveRemote$' -v -count=1
 ```
 
-### 2. Cloud Object Storage (Azure Blob Storage, AWS S3, Google Cloud Storage)
+The test validates direct trunk writes, two initiative branches, schema/link/search isolation, idempotent schema saves, fresh sessions, and return to unchanged trunk. It leaves fixtures and branches for inspection. Use the [provider validation guide](guide-004-test-phase-2-1.md) for external PR review/merge and fresh-trunk verification. GitHub results do not imply live Bitbucket coverage.
 
-Cloud object storage integration tests in [`tests/integration/blob_test.go`](file:///workspaces/gyrus/tests/integration/blob_test.go) run by default against pure Go fileblob emulation and can target live cloud containers via Go CDK connection strings:
+### PostgreSQL
+
+Use a dedicated database that can receive fixture concepts, edges, schema initialization, and history writes.
 
 ```bash
-# Azure Blob Storage (using Account Key or Connection String)
-export AZURE_STORAGE_ACCOUNT="myazureaccount"
-export AZURE_STORAGE_KEY="mysecretaccountkey"
-export AZURE_STORAGE_CONTAINER="gyrus-docs"
-go test -v ./tests/integration -run TestIntegration_BlobProfile
-
-# AWS S3 (using IAM credentials & bucket)
-export AWS_REGION="us-east-1"
-export AWS_ACCESS_KEY_ID="AKIA..."
-export AWS_SECRET_ACCESS_KEY="..."
-export S3_BUCKET="my-gyrus-documents-bucket"
-go test -v ./tests/integration -run TestIntegration_BlobProfile
-
-# Google Cloud Storage (using Service Account Key)
-export GOOGLE_APPLICATION_CREDENTIALS="/path/to/gcp-sa-key.json"
-export GCS_BUCKET="my-gyrus-gcs-bucket"
-go test -v ./tests/integration -run TestIntegration_BlobProfile
+GYRUS_TEST_POSTGRES_URL='postgres://USER:PASSWORD@HOST:5432/gyrus_test?sslmode=require' \
+  go test ./tests/integration -run '^TestIntegration_PostgresLive$' -v -count=1
 ```
 
-### 3. Search removal and UI graph regressions
+For a local disposable database, use its actual host/port and appropriate SSL setting. The integration test exercises storage, graph, native FTS, and query filters. Mocked provider tests independently verify expected-version conflicts, rollback, and query/decode failures. Do not infer live transaction or host behavior solely from mock results.
 
-Search supports OKF keyword scanning and PostgreSQL full-text matching. Verify unknown profiles and provider names fail through shared validation before writes or storage access, while every supported profile generates a valid configuration. Unrecognized YAML sections follow standard decoding behavior.
+### Docker and agent workflows
 
-UI graph regression tests use visible concepts linked to filtered concepts with onward edges. Assert that only visible sources expand, immediate targets remain display-only ghosts, duplicate nodes/edges collapse, self-links/cycles/missing targets remain represented, and repeated responses have identical ordering. Edge-query failures must return HTTP 500 without partial graph JSON.
+```bash
+# Builds the binary and enables the existing Docker integration gate
+make test-integration
 
----
+# Build first: the evaluation script invokes the root binary
+make build
+RUN_AGENT_EVAL=1 go test ./tests/skills -run '^TestAntigravityIntegration$' -v -count=1
+```
 
-## 1. Domain & Contract Governance (`internal/domain/{okf,lifecycle}`, `internal/format`)
-*Contract validation tests verifying frontmatter schemas, state machines, immutability, and optimistic concurrency locks.*
+Docker requires the executable and a running accessible daemon. Live agent evaluation requires the relevant installed/authenticated harness for a real prompt run. It can invoke external services; keep it outside the ordinary regression suite.
 
-- [x] **Schema & Frontmatter Validation**:
-  - Valid OKF YAML frontmatter parsing and attribute normalization.
-  - Enforcement of document ID lower-case alphanumeric pattern (`^[a-z0-9-_]+$`).
-  - Mandatory frontmatter fields check (`id`, `title`, `category`, `type`, `owner_group`, `status`).
-  - Rejection of unknown document types or invalid categories.
-- [x] **State Machine & Lifecycle Transitions**:
-  - Valid lifecycle paths (`draft` ➔ `proposed` ➔ `accepted`/`active` ➔ `deprecated`/`superseded`/`archived`).
-  - Strict blocking of illegal transitions (e.g. `accepted` ➔ `proposed`, `archived` ➔ `draft`) returning **Exit Code 2**.
-- [x] **Immutability Enforcement**:
-  - Immutability of accepted ADRs, accepted improvement proposals, and custom templates with `immutable: true`.
-  - Mutation blocking ensuring immutable documents cannot be updated without creating superseding documents.
-- [x] **Optimistic Concurrency Control**:
-  - Document version auto-incrementing on updates (`version` integer).
-  - Version collision detection when `--expected-version` mismatches current storage version (**Exit Code 4**).
+## Contract acceptance by subsystem
 
----
+- **Domain/configuration:** Required metadata, qualified names, scope/project derivation, invalid paths, minimal typed links, complete provider stacks, strict YAML errors, and lifecycle/body-immutability rules.
+- **Storage/query:** Local atomic replacement and locks; Git commit history, selected branches and rejected-push recovery; PostgreSQL version checks/rollback; malformed collections, duplicate identities, exact filters, and result limits.
+- **Graph/context:** Directional relations, backlinks, cycles/self-links, provider-specific missing-target behavior, deterministic traversal, and project/dependency/reference ordering. `max_concepts` caps selected context. CLI `--max-tokens` is currently accepted but not enforced; there is no current token-truncation acceptance claim.
+- **CLI:** Required flags, positional qualified names, configuration generation, text/JSON payloads, exit codes, runtime branch arguments, and absence of retired commands. Schema validation is a local file operation.
+- **MCP:** Initialization and discovery, actual `gyrus_*` tools, text/JSON-text results, `memory://` resources, active ADR templates, storage error propagation, and independent Git sessions. Switches must wait for in-flight knowledge requests and never save configuration.
+- **UI:** Document/search rendering, fixed visible graph sources, display-only missing/filtered targets, edge/node deduplication, stable ordering, and HTTP errors without partial graph payloads.
+- **Distribution:** Canonical plugin manifests/skills/rules, installer syntax, binary build behavior, and client-specific packaging. Test behavior through installed public interfaces when validating consumer workflows.
 
-## 2. Infrastructure-Backed Multi-Provider Suite (`internal/provider/{storage,index,search,graph}`)
-*Integration tests verifying storage, lexical/full-text search, and graph providers.*
+Keep test purpose and execution surface clear in names and comments. For substantial product/integration tests, the established header format records `[Test Level]`, `[Purpose]`, `[Execution Surface]`, and `[Assertions]`. Do not mark unexecuted scenarios complete or copy stale assertions into documentation.
 
-- [x] **Real Infrastructure Storage Drivers (`storage`)**:
-  - `localfs`: Full filesystem CRUD, nested directory auto-creation (`.gyrus/docs/...`), atomic writes, file permissions.
-  - `git`: `go-git` in-memory and local repository commit creation, remote sync, clean working tree assertions, branch isolation.
-  - `postgres`: Real PostgreSQL backend testing via Docker container (`pgx/v5`), transaction isolation, reconnection pooling.
-  - `blob`: Cloud Object Storage (S3, Azure Blob, GCS) via `gocloud.dev/blob` mock server, chunked writes, key prefixing.
-- [x] **Real Infrastructure Search & Index Drivers (`search`, `index`)**:
-  - `okf`: Authoritative scans, malformed-file recovery, qualified identity ranking, exact metadata/scope/project filters, default ten keyword matches, explicit CLI/MCP limit passthrough, uncapped metadata browsing.
-  - `postgres_fts`: Shared storage/index/search query implementation, tsvector matching, scope/project filters, deterministic ranking, and default/explicit limits. Unit tests use mocks; live integration requires GYRUS_TEST_POSTGRES_URL pointing to an isolated test database.
-  - Unknown profiles/providers must fail through shared validation; default OKF retrieval requires no external search service.
-- [x] **Real Infrastructure Graph Drivers (`graph`)**:
-  - Directed edge creation (`depends_on`, `supersedes`, `implements`, `mitigates`) in `okf` and `postgres`.
-  - Circular dependency detection and resolution.
-  - Cascade unlink and orphaned link cleanup on document archiving.
+## Documentation verification and reporting
 
----
+Validate concept frontmatter, local ID/filename agreement, qualified links, relative Markdown links, example configurations, and explicit distinctions between current behavior and the [roadmap](prd-001-specification-roadmap.md). Prefer representative CLI/MCP contract checks over adding tests that merely duplicate prose.
 
-## 3. CLI Subcommand Suite & Exit Code Protocol (`internal/cli`, `cmd/gyrus`)
-*End-to-end CLI binary tests validating command outputs, flag behaviors, structured JSON envelopes, and exit code contracts.*
-
-- [x] **Subcommand Verification**:
-  - `gyrus suggest-context`: Prompt relevance ranking, `--max-tokens` budgeting & line truncation, empty prompt handling.
-  - `gyrus search`: Keyword search filtering (`--category`, `--type`, `--status`, `--tag`, `--max-results`), structured `--json` output envelopes.
-  - CRUD & Topology: `get`, `create`, `update`, `link`, `unlink`, `archive`, `sync`, `validate`, `schema`, `config show`.
-  - Configuration: gyrus config init with local/git/blob/s3/azure/gcs/postgres profiles, --global, --force, and config show --json. Unsupported profiles fail without replacing files. Agent integrations use native client plugin installation rather than retired gyrus init/client commands.
-- [x] **Exit Code Protocol Enforcement**:
-  - `0`: Success
-  - `1`: Frontmatter schema / validation / ID error
-  - `2`: Illegal State Machine transition error
-  - `3`: Unauthorized / owner group permission error
-  - `4`: Optimistic concurrency lock conflict (`--expected-version` mismatch)
-  - `5`: File/Record not found or storage read/write error
-- [x] **Stdio Stream Isolation**:
-  - Guarantee that logs, warnings, and informational banners route strictly to `stderr`, keeping `stdout` completely clean for JSON/JSON-RPC consumers.
-
----
-
-## 4. MCP Transport & Server Integration (`internal/mcp`)
-*Protocol and transport tests verifying JSON-RPC 2.0 message handling, stdio streaming, and MCP tool/resource interfaces.*
-
-- [x] **MCP Serving from CLI (`gyrus mcp serve`)**:
-  - Stdio JSON-RPC 2.0 message parsing, initialization handshake, request/response encoding over stdin/stdout.
-- [x] **MCP Container Serving (`docker run -i ghcr.io/armckinney/gyrus:latest`)**:
-  - Running containerized MCP server in interactive stdio mode, verifying stdio pipe persistence, signal handling (SIGTERM, SIGINT).
-- [x] **MCP Tool Suite Integration**:
-  - Discovery and execution of CRUD, search, context, graph, and schema tools. Verify that retired sync is absent, keyword max_results passes through, and prepare-adr uses the active shared schema without obsolete metadata.
-- [x] **MCP Resources & Prompts**:
-  - Resource fetching (`gyrus://documents`, `gyrus://schemas`) and prompt template rendering (`architect_review`, etc.).
-
----
-
-## 5. Installation, Workspace Setup & E2E Agent Integration (`internal/setup`, `tests/skills/`)
-*End-to-end agent product tests verifying workspace provisioning, skill distribution, and autonomous agent tool usage.*
-
-- [x] **Installation & Workspace Setup (`gyrus init config` & `gyrus init client`)**:
-  - CLI binary execution & installation verification.
-  - Workspace and global configuration generation (`.gyrus.yaml` and `~/.gyrus.yaml`).
-  - Skill/Plugin equipping across target agent tools (`agy cli`, `copilot & codex cli`, `claude code` target paths).
-- [x] **End-to-End Agent Integration Harness**:
-  - E2E integration test harness (`tests/skills/agent_eval_test.go` and `e2e_antigravity_test.go`) verifying that target AI agents (`agy cli`, `copilot cli`, `claude code`) properly discover, invoke, and consume Gyrus CLI subcommands and MCP tools to resolve engineering context tasks.
-- [x] **Agent Skill Specification Conformance**:
-  - Automated schema and frontmatter linting for `.agents/skills/gyrus/SKILL.md` to ensure zero discovery warnings across all agent loaders.
-
----
-
-## 6. Context Linearization & Snapshot Regression Testing
-*Product quality assurance tests ensuring context generation outputs remain deterministic, clean, and token-accurate for LLMs.*
-
-- [x] **Suggest-Context Golden Snapshot Tests**:
-  - Regression testing across diverse multi-document repositories ensuring linearized Markdown context matches golden snapshot fixtures.
-- [x] **Token Budgeting & Precision Truncation**:
-  - Strict validation that `--max-tokens` budgets correctly truncate document bodies without corrupting frontmatter boundaries or truncating mid-character.
-
----
-
-## 7. Reliability, Concurrency & Security Hardening
-*System stability tests verifying data race safety, crash recovery, path sanitization, and scale performance under heavy load.*
-
-- [x] **Data Race Detector (`-race`)**:
-  - Parallel Go test suite execution verifying zero data races under concurrent CLI/MCP operations.
-- [x] **Crash Consistency & Transaction Rollback**:
-  - Verify atomic local concept replacement, rejected Git pushes, conditional blob mutations, and PostgreSQL transaction behavior without corrupting authoritative concepts or graph edges.
-- [x] **Database Migration & Upgrade Compatibility**:
-  - Legacy SQLite data is exported through the migration skill, with consistent backups, qualified tuple parity, unchanged bodies/statuses, and idempotency. SQLite runtime providers and sync are removed; there is no automatic database migration.
-- [x] **Path Traversal Security**:
-  - Rejection of directory traversal attacks (e.g. `../../etc/passwd` injection attempts).
-- [x] **Credential Masking**:
-  - Guarantee that storage secrets (S3 keys, DB passwords) are never leaked in logs or `--json` outputs.
-- [x] **Scalability & Load Benchmarks**:
-  - Benchmark test harness scaling to documents, asserting indexing time < 2s and query latency < 50ms.
+Record the command, result, relevant skips, and any external target used in the change review or testing guide. Routine implementation work does not require a release note. New backends, caching, hosted services, or transaction guarantees need their own implemented acceptance evidence.

@@ -4,9 +4,9 @@ id: spec-004-core-engine
 type: specification
 format: markdown
 category: technical
-version: 8
+version: 9
 status: active
-last_updated: 2026-10-17T23:57:58Z
+last_updated: 2026-11-12T04:38:04Z
 last_modified_by: ""
 tenant: root
 ---
@@ -15,7 +15,7 @@ Gyrus composes ConceptStore, IndexStore, GraphStore, and SearchProvider through 
 
 ## Provider contracts
 
-ConceptStore provides Create, Get, version-checked Update, Delete, and Archive. Optional ConceptScanner.Scan(context.Context, func(Concept) error) (SyncReport, error) enumerates authoritative validated concepts. Localfs, Git, and blob implement this capability; PostgreSQL storage does not in this release.
+ConceptStore provides Create, Get, version-checked Update, Delete, and Archive. Optional ConceptScanner.Scan(context.Context, func(Concept) error) (SyncReport, error) enumerates authoritative validated concepts. Localfs and Git implement this capability; PostgreSQL storage does not in this release.
 
 IndexStore exposes Index, Remove, and Search. GraphStore exposes UpsertEdges, DeleteEdges, Neighbors, and Traverse. SearchProvider accepts SearchQuery including Query, Filter, and MaxResults. Engine.Search retains the default-limit convenience method; Engine.SearchQuery accepts explicit limits. PostgreSQL storage/index/search delegate to one shared full-text query implementation. SQLite index/graph/search adapters and CLI/MCP sync operations have been removed; internal/persistence/db retains SQLite connection support for future cache work.
 
@@ -27,7 +27,7 @@ Graph reads derive source-owned {concept, rel} links keyed by qualified concept 
 
 ## Mutations and consistency
 
-Localfs/fileblob serialize cooperating processes with a stable root lock and replace complete payloads atomically. Git refreshes before scans/mutations and pushes without force; rejected pushes are conflicts and cannot leak unconfirmed data. S3/Azure/GCS updates and deletes require the observed ETag/generation; creates require nonexistence. A token comes from the same object read as the content. Unsupported conditional mutation capabilities fail explicitly.
+Localfs serializes cooperating processes with a stable root lock and replaces complete payloads atomically. Git refreshes before scans/mutations and pushes without force; rejected pushes are conflicts and cannot leak unconfirmed data. Cloud/blob providers are removed.
 
 Positive expected versions are checked before mutation. Conflicts map to CLI code 4. Multi-source graph batches preflight sources, then apply one patch per source in qualified-name order; later failure reports already-applied sources. There is no cross-concept transaction, automatic retry, cloud-wide snapshot, or automatic cross-concept transaction. Local IDs may repeat across tenants/projects; duplicate qualified names and inconsistent locations fail queries.
 
@@ -35,7 +35,7 @@ PostgreSQL checks expected versions under its row lock and returns gyrus.Conflic
 
 The UI graph reads outgoing edges only for a fixed list of originally visible concepts. Immediate filtered/missing targets are display-only ghosts, never traversal sources. Nodes are unique by qualified name; edges are unique by source/target/relation. Both collections are sorted deterministically. Edge-query errors return HTTP 500 before any partial graph is encoded.
 
-Context suggestions expand depends_on edges from the selected graph provider for project concepts, including PostgreSQL database-only edges. Other relation types do not automatically expand context. OKF graph mutations refresh an explicitly selected PostgreSQL metadata index; a post-persistence indexing failure is reported as requiring repair without rolling back source data.
+Context suggestions expand depends_on edges from the selected graph provider for project concepts, including PostgreSQL database-only edges. Other relation types do not automatically expand context. Only complete local/Git OKF stacks and the PostgreSQL stack are supported; cross-backend metadata indexing is rejected.
 
 ## Lifecycle
 
@@ -48,3 +48,7 @@ Creation accepts a local ID and tenant/scope/project. All existing-concept opera
 ## Shared package boundaries
 
 Provider contracts remain in pkg/gyrus. internal/persistence/fileio supplies local locking, safe paths, and atomic file replacement; internal/persistence/db manages shared SQLite/PostgreSQL connections. These are concrete infrastructure packages, not providers or a second persistence interface. internal/provider/shared/okf supplies scanner validation, snapshots, filtering, and ranking used by the independent OKF adapters. Legacy conversion is an agent-led procedure in the packaged gyrus-migrate-sqlite-to-okf skill, using installed Gyrus and available file/database tools. It has no Go helper package or runtime imports and does not require a Go installation or source checkout. The packaged gyrus-test-lifecycle skill likewise verifies public CLI, MCP, and HTTP behavior through agent instructions without a bundled language runtime.
+
+## Git runtime selection and schemas
+
+One Git store is shared across the engine adapters. Its runtime selection applies to all knowledge, schema, and query operations. MCP pins complete requests while a switch waits. Schema lookup falls back to embedded templates only for missing overrides; storage, cancellation, and branch-selection errors propagate. See [Git storage](spec-201-git-storage-driver.md).

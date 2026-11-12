@@ -4,9 +4,9 @@ id: spec-001-contract-schema
 type: specification
 format: markdown
 category: technical
-version: 8
+version: 9
 status: active
-last_updated: 2026-10-16T19:41:57Z
+last_updated: 2026-11-12T05:50:25Z
 last_modified_by: ""
 tenant: root
 ---
@@ -118,7 +118,7 @@ Markdown/JSON format readers parse metadata and reject obsolete or malformed rel
 
 Scanner-backed OKF index/search/graph queries fail if the authoritative collection contains malformed concepts or duplicate qualified names. Scans enumerate canonical concepts and exclude schemas/backups outside that collection. CLI queries exit with validation code 1 and MCP queries return tool errors. There is no public sync command/tool. Validate individual files through gyrus validate; query the complete collection with an empty query, scope all, and no positive result cap.
 
-Normal file-backed patches increment the version and update `last_updated`, including accepted metadata-only patches. A positive expected version enables the version check; zero means no caller-supplied version check. File-backed providers retain local interprocess locks, Git conflict detection, or conditional blob mutations. Link mutations made through the OKF graph provider supply the source's observed version. The structural schema does not itself impose these storage concurrency mechanisms.
+Normal file-backed patches increment the version and update `last_updated`, including accepted metadata-only patches. A positive expected version enables the version check; zero means no caller-supplied version check. File-backed providers retain local interprocess locks or Git conflict detection. Link mutations made through the OKF graph provider supply the source's observed version. The structural schema does not itself impose these storage concurrency mechanisms.
 
 Lifecycle updates through the engine validate these transitions; same-state updates are accepted:
 

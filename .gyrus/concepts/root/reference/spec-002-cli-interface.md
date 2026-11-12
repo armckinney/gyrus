@@ -4,136 +4,183 @@ id: spec-002-cli-interface
 type: specification
 format: markdown
 category: technical
-version: 2
+version: 5
 status: active
-last_updated: 2026-10-16T19:41:57Z
+last_updated: 2026-11-12T05:49:34Z
 last_modified_by: ""
 tenant: root
 ---
 
-# Specification 02: CLI Interface & Authentication
+# CLI interface specification
 
-The CLI tool (`gyrus`) is a compiled standalone Go binary that serves as the execution gateway. It handles configuration management, local caching, developer/agent authentication, and direct communication with the Gyrus Core Engine.
+The compiled `gyrus` command exposes configuration, concept lifecycle, search/context, relationships, schemas, Git session status, local MCP, and the local UI. Commands delegate to the shared lifecycle engine and selected complete storage stack. This specification describes current arguments, defaults, outputs, and failure behavior; the [CLI reference](tech-ref-001-cli-manual.md) provides companion examples.
 
----
+## Invocation, configuration, and identity
 
-## 1. CLI Command Reference
+```text
+gyrus [global flags] <command> [arguments] [command flags]
+```
 
-### `gyrus init config`
-* **Description:** Bootstraps Gyrus workspace configuration (`.gyrus.yaml`) or user-wide global configuration (`~/.gyrus.yaml`).
-* **Flags:**
-  * `-p, --profile <profile>` (optional): Configuration profile (`local`, `git`, `blob`, `s3`, `azure`, `gcs`, `postgres`, `vector`).
-  * `-o, --owner-group <group>` (optional): Default security owner group.
-  * `-g, --global` (optional): Write configuration to global `~/.gyrus.yaml` instead of workspace.
-  * `-f, --force` (optional): Overwrite existing configuration file without prompting.
+| Global flag | Type / default | Behavior |
+| --- | --- | --- |
+| `--json` | Boolean, false | Request the command's machine-readable output |
+| `--verbose` | Boolean, false | Existing verbose/debug option |
+| `--git-branch <name>` | String, unset | Runtime initiative selection for knowledge commands and MCP startup; selects `branching` and never writes configuration |
+| `-h`, `--help` | Boolean | Display command help |
 
-### `gyrus init client`
-* **Description:** Installs the Gyrus Agent Plugin and registers MCP server integration for an AI coding assistant.
-* **Flags:**
-  * `-t, --target <target>` (required): Explicit client target (`antigravity`, `claude`, `codex`, `copilot`).
-  * `-m, --mode <mode>` (optional): Execution mode (`stdio` or `docker`).
-  * `--mcp-container-image <image>` (optional): Container image tag for docker mode.
-  * `-g, --global` (optional): Install globally in user home instead of workspace.
-  * `--plugin-dir <dir>` (optional): Custom plugin destination directory.
+Commands use normal configuration discovery; `GYRUS_CONFIG` and `GYRUS_PROJECT` can explicitly select configuration. MCP/UI server commands also have their own selectors. Project files replace global settings rather than merging them. Local/Git/PostgreSQL complete stacks are validated before resource creation. See the [configuration reference](tech-ref-002-config-schema.md) for discovery, strict loading, and standard examples.
 
-### `gyrus create`
-* **Description:** Creates a new OKF document. Metadata is passed as CLI flags; content is passed inline or via a file.
-* **Flags:**
-  * `--id <id>` (required): Unique document ID.
-  * `--title <title>` (required): Human-readable title.
-  * `--type <type>` (required): Document type (e.g. `adr`, `prd`, `specification`).
-  * `--category <category>` (required): Category (`architecture`, `technical`, etc.).
-  * `--status <status>` (required): Initial state (e.g. `proposed`, `draft`).
-  * `--owner-group <group>` (required): Owning group (e.g. `engineering`).
-  * `--tags <tag1,tag2>` (optional): Comma-separated list of tags.
-  * `--dependencies <id1,id2>` (optional): Comma-separated list of dependent document IDs.
-  * `--content <markdown>` (optional): Inline Markdown text body.
-  * `--content-file <path>` (optional): Path to a file containing Markdown text body.
-  * `--json` (optional): Output JSON result envelope to `stdout`.
+Creation takes a local slug with tenant/scope/project. Existing-concept arguments take full names such as `root/reference/adr-storage` or `root/projects/payments/guide-deploy`. Short-ID lookup is unsupported. Safe identifiers, supported types/categories, and minimal source-owned links follow the [concept contract](spec-001-contract-schema.md).
 
-### `gyrus get`
-* **Description:** Retrieves a document by ID.
-* **Flags:**
-  * `--id <id>` (required): Document ID.
-  * `--json` (optional): Output full JSON envelope instead of raw Markdown content body.
+## Configuration commands
 
-### `gyrus update`
-* **Description:** Updates an existing document envelope or content with optimistic concurrency control.
-* **Flags:**
-  * `--id <id>` (required): Target document ID.
-  * `--expected-version <v>` (required): Expected current version integer for lock verification.
-  * `--status <status>` (optional): New status (must satisfy transition rules).
-  * `--reason <text>` (required): Audit log reason for update.
-  * `--content <markdown>` (optional): Updated inline content body.
-  * `--content-file <path>` (optional): Path to updated content file.
-  * `--json` (optional): Output JSON result envelope.
+### `gyrus config init`
 
-### `gyrus link` / `gyrus unlink`
-* **Description:** Manages document relationships in the active storage backend.
-* **Flags:**
-  * `--from <id>` (required): Source document ID.
-  * `--to <id>` (required): Target document ID.
-  * `--rel <type>` (required): Relationship type (`supersedes`, `depends_on`, `implements`, `mitigates`).
+Generate `.gyrus.yaml` in the current directory, or `~/.gyrus.yaml` with `--global`.
 
-### `gyrus search`
-* **Description:** Performs full-text lexical search and metadata filtering over indexed documents.
-* **Flags:**
-  * `--query <search-string>` (optional): Search terms; empty for metadata browsing.
-  * `--max-results <num>` (optional): Provider limit; default ten for keywords, unlimited for empty queries.
-  * `--tenant`, `--scope`, `--project` (optional): Qualified identity filters.
-  * `--type <type>` (optional): Filter by document type.
-  * `--category <category>` (optional): Filter by category.
-  * `--status <status>` (optional): Filter by status.
-  * `--tag <tag>` (optional): Filter by tag.
-  * `--json` (optional): Output JSON search results.
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `-p`, `--profile` | `local` | `local`, `git`, or `postgres` |
+| `-t`, `--tenant` | `root` | Default tenant |
+| `-P`, `--project` | `default` | Default project |
+| `-g`, `--global` | false | Write the global file |
+| `-f`, `--force` | false | Permit replacement of an existing global file |
 
-### `gyrus suggest-context`
-* **Description:** Assembles a linearized context package relevant to an input prompt or user request.
-* **Flags:**
-  * `--prompt <prompt>` (required): Coding task or prompt context.
-  * `--max-concepts <num>` (optional): Maximum concept count (default: 5).
-  * `--json` (optional): Output JSON package.
+The current project writer replaces the target configuration file; the global writer checks `--force` before replacement. Unsupported profiles fail before writes. Git generation defaults to trunk `main` and strategy `direct`; remote/database connection settings need to be supplied for actual use.
 
-SQLite index/graph/search providers and the sync command/tool are removed. OKF reads concepts and links directly. Legacy SQLite data requires explicit export through the migration skill.
-
-### `gyrus validate`
-* **Description:** Validates document frontmatter and state-machine transitions without persisting changes.
-* **Flags:**
-  * `--file <path>` (optional): Validate a specific Markdown file.
-  * `--all` (optional): Validate all documents in the active workspace.
-
-### `gyrus schema`
-* **Description:** Prints the recommended structural Markdown template for a specified type (e.g. `gyrus schema adr`).
+`--json` returns a configuration result with status, file path, profile, storage, tenant, project, and scope. Plain output describes the generated configuration.
 
 ### `gyrus config show`
-* **Description:** Displays the resolved Gyrus configuration, active source tier (`workspace`, `global`, or `default`), source file path, and resolved storage root.
-* **Flags:**
-  * `--json` (optional): Output resolved configuration as structured JSON.
+
+Display the effective normalized configuration and source. JSON contains `source`, `source_path`, `storage_root`, and `config`. This reports saved configuration; use Git status for the current runtime branch.
+
+## Concept lifecycle commands
+
+### `gyrus create`
+
+Required flags: `--id`, `--title`, `--category`, and `--type`.
+
+| Optional flag | Behavior |
+| --- | --- |
+| `--tenant` | Configured tenant or `root` |
+| `--scope` | Explicit `project` or `reference` scope |
+| `--project` | Explicit project; engine defaults can supply the configured project |
+| `--status` | Defaults to `proposed` for ADRs, `draft` for other types |
+| `--tags` | Comma-separated tags |
+| `--content` | Inline Markdown body |
+| `--content-file` | Body from a file, taking precedence over inline content |
+
+```bash
+gyrus create --id guide-deploy --title "Deployment guide" \
+  --category technical --type guide --tenant root \
+  --scope project --project payments --status active \
+  --content-file ./deployment-body.md --json
+```
+
+Plain output identifies the qualified name, version, and status. JSON returns a `ConceptRef`: `name`, local `id`, `version`, `status`, `last_updated`.
+
+### `gyrus get <qualified-name>`
+
+Retrieve a concept as Markdown with frontmatter/body, or a full JSON `Concept` with `--json`. The JSON envelope includes derived `name`, `scope`, project where applicable, storage filepath where available, metadata, and `content`; Markdown keeps the local frontmatter ID.
+
+### `gyrus update <qualified-name>`
+
+Optional patch flags are `--title`, `--status`, `--tags`, `--content`, `--content-file`, and `--expected-version` (integer, default 0). Only supplied fields are patched. A content file takes precedence over inline content. Positive expected versions must match; zero supplies no caller version precondition. Updates still apply provider conflict checks and lifecycle/body-immutability guards.
+
+```bash
+gyrus update root/projects/payments/guide-deploy \
+  --title "Reviewed deployment guide" --expected-version 2 --json
+```
+
+Returns the same mutation-reference shape as create. No CLI `--reason`, `--dependencies`, or arbitrary metadata patch flag is implemented.
+
+### `gyrus archive <qualified-name>`
+
+Invoke the provider's archive operation and remove its index entry. Current behavior differs by store: localfs removes the concept file; Git and PostgreSQL retain the concept with status `archived`. It does not guarantee cascading relationship cleanup. To request a lifecycle transition while retaining a local file, use `update --status archived` where that type's transition rules permit it.
+
+Plain output confirms archiving; JSON is `{ "archived": true, "id": "<qualified-name>" }`. There is no separate public `delete` command.
+
+## Relationship commands
+
+```text
+gyrus link <from-name> <to-name> [--rel-type depends_on]
+gyrus unlink <from-name> <to-name> [--rel-type depends_on]
+```
+
+Both positional endpoints are qualified names. Relationship types are `depends_on` (default), `implements`, `supersedes`, and `mitigates`. Plain output confirms the operation; `--json` currently suppresses that confirmation without emitting a JSON result object. Use exit status to check completion.
+
+OKF writes source-owned `{concept, rel}` links and allows a qualified missing target. PostgreSQL graph persistence requires existing endpoints. Incoming neighbors and general traversal are exposed by MCP/engine interfaces; there is no separate CLI neighbors/traverse command.
+
+## Search and suggested context
+
+### `gyrus search`
+
+| Flag | Meaning |
+| --- | --- |
+| `--query` | Keyword text; empty/omitted for metadata browsing |
+| `--category`, `--type`, `--status`, `--tag`, `--tenant` | Exact metadata filters |
+| `--scope` | `project`, `reference`, or `all` |
+| `--project` | Explicit project filter |
+| `--max-results` | Positive result cap; 0/default means ten keyword matches or uncapped metadata browsing |
+
+Local/Git use direct OKF keyword scanning; PostgreSQL supplies native full-text matching. Search results include concept, score, and optional match reason. `--json` emits the result array. Project defaults and scope control which project/reference concepts are considered.
+
+```bash
+gyrus search --query "deployment" --project payments --max-results 5 --json
+gyrus search --query '' --scope all --json
+```
+
+### `gyrus suggest-context`
+
+Required: `--prompt`. Optional: `--scope`, `--project`, `--category`, `--max-concepts` (default 5; nonpositive values also use 5), and `--max-tokens` (registered default 4000).
+
+The engine searches for the prompt, prioritizes project concepts, expands `depends_on` targets, deduplicates by qualified name, and emits project/reference sections up to the concept limit. Plain output is formatted context; JSON is `{ "context": "..." }`.
+
+**Current limitation:** `--max-tokens` is accepted but not applied by the command. Do not rely on it for truncation or model-budget enforcement. MCP exposes a concept-count limit, not a token limit.
+
+## Schema and local validation
+
+| Invocation | Inputs and behavior |
+| --- | --- |
+| `schema <type>` or `schema get <type>` | Print the active template; JSON wraps `type` and `template` |
+| `schema list` | List types and whether templates are persisted or embedded |
+| `schema set <type> [file]` | Save an override; aliases `save` and `put` |
+| `schema delete <type>` | Remove a persisted override; embedded fallback may remain |
+| `validate <file-path>` | Parse and structurally validate a local Markdown/JSON concept without storing it |
+
+Schema set accepts `--content-file`, an optional positional file, or `--content`; a file takes precedence, with `--content-file` preferred over the positional file. Schema override validation checks parseability and matching type where present. It does not replace the compiled concept validator. Retrieval falls back to embedded templates only for an absent override; storage and branch-selection errors propagate.
+
+`validate` does not accept `--all` or establish collection uniqueness/location or target existence. With `--json`, successful validation currently emits no body. Browse the collection through an uncapped empty search to exercise location-aware scan validation.
+
+## Git session status and server commands
+
+### `gyrus git status`
+
+Report `strategy`, `trunk_branch`, `active_branch`, and `selection_required`, as text or JSON. It errors on non-Git profiles. Supply `--git-branch initiative/name` to select an initiative for that invocation. There is no persistent CLI switch command.
+
+`direct` operates on configured trunk. `branching` requires a valid initiative distinct from trunk; the branch name is never saved. A missing initiative reads trunk until its first write pushes the branch. Trunk must exist for branching. Separate CLI calls repeat the runtime selection. See the [Git guide](guide-006-git-initiatives.md).
 
 ### `gyrus mcp serve`
-* **Description:** Launches the local Model Context Protocol (MCP) server over standard input/output (`stdio`).
 
----
+Run the local stdio MCP server. Flags: `-p/--project <directory>`, `-c/--config <file>`, plus global `--git-branch`. Explicit config takes precedence over the project-directory option. Each process owns its Git selection. A branching server may start without an initiative, then use MCP status/switch before knowledge operations. See the [MCP contract](spec-003-mcp-interface.md).
 
-## 2. Programmatic Exit Codes
+### `gyrus ui serve`
 
-The `gyrus` CLI returns deterministic exit codes to enable self-healing agent automation:
+Run the existing local web UI. Flags: `--host` (default `127.0.0.1`), `-p/--port` (8080), `-P/--project <directory>`, and `-c/--config <file>`. The server exposes concept browsing, search, graph, and configured agent/chat interfaces. This is the local UI; the hosted platform in the architecture roadmap is separate work.
 
-| Code | Status Name | Description |
-| :--- | :--- | :--- |
-| **`0`** | `SUCCESS` | Operation completed successfully. |
-| **`1`** | `VALIDATION_ERROR` | Document metadata, OKF envelope, or schema validation failed. |
-| **`2`** | `TRANSITION_ERROR` | Requested lifecycle state update violates state-machine rules. |
-| **`3`** | `AUTH_ERROR` | Authentication failed or user lacks group permissions. |
-| **`4`** | `CONCURRENCY_CONFLICT` | Optimistic lock check failed (`expected-version` mismatch). |
-| **`5`** | `STORAGE_ERROR` | File I/O failure or database connection error. |
+## Output, errors, and authentication
 
----
+Successful commands use the output forms above; `--json` does not imply that every command returns an object. Local MCP uses protocol stdout, not human command output. The CLI router reports initialization/command errors on stderr unless command JSON mode suppresses ordinary error printing; callers must inspect exit status.
 
-## 3. Authentication & Session Caching
+| Exit | Meaning in the current mapper |
+| --- | --- |
+| 0 | Success |
+| 1 | Typed OKF validation errors or errors identified as validation failures |
+| 2 | Lifecycle-transition or immutability errors |
+| 3 | Permission-denied/unauthorized errors recognized by the mapper |
+| 4 | Typed conflicts, expected-version mismatches, or recognized concurrency errors |
+| 5 | Other command/storage failures |
 
-When configured in **Team/Enterprise Profiles**, `gyrus` uses Entra ID (Azure AD) tokens:
-1. **Azure CLI Handshake:** Executes `az account get-access-token --resource <API_CLIENT_ID>`.
-2. **Device Code Fallback:** Prompts device login via `https://microsoft.com/devicelogin`.
-3. **Session Cache:** Saves session JWT to `~/.config/gyrus/token.json`.
-4. **Offline Read Cache:** Caches retrieved contracts to `~/.cache/gyrus/` for offline access.
+Not every configuration/argument/transport error has its own typed category. Application initialization failures occur before command execution and exit 1. The mapper does not implement an ownership/RBAC authorization service.
+
+Git HTTPS uses noninteractive configured credential helpers; SSH uses agent/key authentication and known hosts. PostgreSQL uses its connection string. There is no separate device-login flow, identity-token cache, or offline-read cache. Retired `init`, client-install, sync, cloud-provider, and hybrid-stack interfaces remain unsupported; native client plugin managers own installation.

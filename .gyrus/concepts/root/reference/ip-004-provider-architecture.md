@@ -4,12 +4,14 @@ id: ip-004-provider-architecture
 type: improvement-proposal
 format: ""
 category: architecture
-version: 1
-status: active
-last_updated: 2026-07-22T06:38:56Z
+version: 2
+status: abandoned
+last_updated: 2026-11-12T04:38:04Z
 last_modified_by: ""
 tenant: root
 ---
+
+> Historical record. This document describes earlier work and is not a current setup or capability contract. Use the current configuration reference and architecture index.
 
 # Gyrus providers
 

@@ -4,12 +4,14 @@ id: ticket-gyrus-501
 type: freeform
 format: ""
 category: product
-version: 1
-status: active
-last_updated: 2026-07-22T06:43:33Z
+version: 2
+status: archived
+last_updated: 2026-11-12T04:38:04Z
 last_modified_by: ""
 tenant: root
 ---
+
+> Historical record. This document describes earlier work and is not a current setup or capability contract. Use the current configuration reference and architecture index.
 
 # [GYRUS-501] Profile Verification Tests & GoReleaser Packaging
 

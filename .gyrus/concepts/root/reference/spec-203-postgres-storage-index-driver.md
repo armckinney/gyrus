@@ -4,9 +4,9 @@ id: spec-203-postgres-storage-index-driver
 type: specification
 format: ""
 category: technical
-version: 1
+version: 2
 status: completed
-last_updated: 2026-07-23T21:23:12Z
+last_updated: 2026-11-12T04:38:04Z
 last_modified_by: ""
 tenant: root
 tags:
@@ -15,17 +15,12 @@ tags:
     - postgres
 ---
 
-# GYRUS-203: PostgreSQL Enterprise Index & Storage Driver
+# PostgreSQL storage contract
 
-## 1. Overview & Objective
-Implement an enterprise PostgreSQL backend under `internal/provider/postgres` providing `DocumentStore`, `IndexStore`, and `GraphStore` implementations using `pgx/v5` (`github.com/jackc/pgx/v5`).
+The PostgreSQL profile uses the storage, index, graph, and FTS adapters together. Hybrid file-backed/database stacks are rejected before construction. A configured connection string opens the existing pgx-backed pools and initializes required tables/indexes.
 
-## 2. Requirements & Constraints
-- Must implement `gyrus.DocumentStore`, `gyrus.IndexStore`, and `gyrus.GraphStore`.
-- DDL Schema migrations for tables: `documents` (JSONB frontmatter + content), `document_edges` (directional relationships), and `documents_history`.
-- Automated DDL schema execution on initialization (`postgres.NewStore(connString)`).
-- High concurrency connection pooling and parameterized query protection.
+Storage implements `ConceptStore` and `SchemaStore`. Tables include `concepts` (JSONB frontmatter and content), `concept_edges`, `concepts_history`, and `schemas`. Qualified names identify concepts and relationships. Positive expected versions are checked under row locks; stale writes return typed conflicts and roll back without history writes.
 
-## 3. Key Test Verification
-- Unit and integration tests in `internal/provider/postgres/postgres_test.go` using `pgxmock` or PostgreSQL test container.
-- Full CRUD, edge upsert/traversal, and indexing verification.
+The metadata index and graph use PostgreSQL; search uses [native FTS](spec-204-postgres-fts-search-driver.md). Runtime Git branch selection does not apply to this stack. Distributed locking/queues and hosted deployment remain future work.
+
+Provider mocks cover CRUD, version conflicts, schemas, relationships, and queries. `TestIntegration_PostgresLive` is opt-in through `GYRUS_TEST_POSTGRES_URL` pointing to an isolated database. See [configuration examples](tech-ref-002-config-schema.md).

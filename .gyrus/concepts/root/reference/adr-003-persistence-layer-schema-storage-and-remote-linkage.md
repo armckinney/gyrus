@@ -4,9 +4,9 @@ id: adr-003-persistence-layer-schema-storage-and-remote-linkage
 type: adr
 format: markdown
 category: architecture
-version: 3
-status: accepted
-last_updated: 2026-10-16T16:47:49Z
+version: 5
+status: superseded
+last_updated: 2026-11-12T05:07:17Z
 last_modified_by: antigravity
 tenant: root
 tags:
@@ -22,9 +22,17 @@ links:
       rel: depends_on
 ---
 
+> Historical decision. Superseded by [Keep schema overrides with their knowledge collection](adr-019-schema-storage.md). The original decision content is retained within the restored template below.
+
 # ADR 003: Persistence Layer Schema Storage & Remote Linkage
 
 ## Context
+
+* **Author:** Not recorded in the original decision.
+* **Date Proposed:** Not recorded in the original decision.
+* **Deciders:** Not recorded in the original decision.
+
+### 1. The Problem
 
 In earlier iterations of Gyrus, document schema templates (`<doc-type>.md`) were either compiled directly into the binary via Go embed or resolved via an arbitrary local configuration property (`schemas_path` in `.gyrus.yaml`).
 
@@ -33,6 +41,12 @@ This architecture presented critical limitations in enterprise, multi-agent, and
 2. **Lack of Remote Schema Management**: There was no standard programmatic interface to upload, update, list, or delete custom schema templates in remote persistence stores without manually modifying local files.
 3. **Arbitrary Directory Locations**: The `schemas_path` setting allowed unpredictable custom directory paths, complicating cross-workspace synchronization and cloud storage key mapping.
 4. **Agent Tooling Gap**: AI agents using the Model Context Protocol (MCP) lacked tools to inspect available schema types, persist custom schema templates, or query schema resources.
+
+### 2. Objectives & Constraints
+
+Keep templates with their knowledge collections, expose remote schema management, and make template resolution predictable.
+
+---
 
 ## Decision
 
@@ -79,14 +93,42 @@ We decide to formalize schema storage directly within the Gyrus persistence laye
    - CLI: `gyrus schema` offers explicit subcommands `get`, `set`, `list`, and `delete` with `--json` formatting, while preserving 100% backward compatibility for `gyrus schema <doc-type>`.
    - MCP: Exposes tools `gyrus_schema_get`, `gyrus_schema_set`, `gyrus_schema_list`, `gyrus_schema_delete`, and dynamic resources `memory://schema/{document_type}` and `memory://schemas`.
 
+### Key Rationale
+
+Persisting schemas with documents gives clients a shared override source while retaining embedded defaults.
+
+---
+
+## Alternatives Considered
+
+The original record did not separately record alternatives deliberations. These comparisons summarize the approaches described in its context.
+
+### Alternative 1: Use embedded templates only
+
+* **Pros:** Templates are distributed with the binary.
+* **Cons:** Shared collections cannot persist custom schema overrides.
+
+### Alternative 2: Resolve arbitrary local schema paths
+
+* **Pros:** Each client can customize its templates locally.
+* **Cons:** Clients can diverge and paths do not map predictably to remote storage.
+
+---
+
 ## Consequences
 
-### Positive
+### Positive / Gains
 - **Unified Remote Persistence**: All schemas live alongside documents in the active persistence backend.
 - **Zero Schema Drift**: All engineering agents and developers referencing the same storage backend share identical schema validation contracts.
 - **Full Backward Compatibility**: Legacy CLI commands and embedded templates continue to function seamlessly.
 - **100% Provider Coverage**: Supported uniformly across LocalFS, S3, Azure Blob, GCS, Git, and PostgreSQL.
 
-### Compliance & Verification
+* **Negative / Trade-offs:** The original record did not separately enumerate negative trade-offs.
+* **Risks:** The original record did not separately enumerate risks. It is superseded; use ADR 019 and the configuration reference for current provider coverage and failure behavior.
+
+---
+
+## Compliance & Verification
+
 - Unit and integration tests cover CRUD operations across all four storage providers.
 - Subcommand E2E tests verify CLI execution and MCP resource reading over Stdio.

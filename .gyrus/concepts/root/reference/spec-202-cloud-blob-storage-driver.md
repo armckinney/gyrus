@@ -4,9 +4,9 @@ id: spec-202-cloud-blob-storage-driver
 type: specification
 format: markdown
 category: technical
-version: 2
-status: completed
-last_updated: 2026-10-16T06:40:18Z
+version: 3
+status: archived
+last_updated: 2026-11-12T04:38:04Z
 last_modified_by: ""
 tenant: root
 tags:
@@ -16,6 +16,8 @@ tags:
     - azure
     - gcs
 ---
+
+> Historical record. This document describes earlier work and is not a current setup or capability contract. Use the current configuration reference and architecture index.
 
 # Cloud blob storage driver
 

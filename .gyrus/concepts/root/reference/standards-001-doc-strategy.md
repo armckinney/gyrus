@@ -4,121 +4,111 @@ id: standards-001-doc-strategy
 type: standards
 format: markdown
 category: technical
-version: 2
+version: 4
 status: active
-last_updated: 2026-10-16T17:01:29Z
+last_updated: 2026-11-12T05:49:34Z
 last_modified_by: ""
 tenant: root
 ---
 
----
-id: documentation-strategy
-title: Wiki & Documentation Strategy
-category: technical
-type: standards
-format: markdown
-tenant: engineering
-version: 1
-status: active
-last_modified_by: <author-username>
-last_updated: YYYY-MM-DD
-tags: [documentation, strategy, sdlc, gyrus]
+# Documentation architecture and strategy
+
+Gyrus documentation supports two connected journeys: how a team develops and governs engineering knowledge, and how a user discovers and applies it. Documents should retain the rationale and operating detail needed for those journeys while keeping current contracts consistent with the implementation.
+
+## Core documentation principles
+
+1. **Treat context as an engineering asset.** Requirements, decisions, standards, and setup procedures need clear ownership, review, lifecycle, and maintenance alongside code.
+2. **Update context when behavior changes.** A code change that invalidates a contract, command example, or runbook must update the affected documentation in the same change.
+3. **Serve humans and agents.** Use readable Markdown plus one structured YAML frontmatter block. Qualified identity and typed relationships let tools find the same knowledge that people read.
+4. **Keep each document's purpose clear.** Preserve useful explanations and examples in their owning document. Link to other documents for related subjects; avoid maintaining competing versions of the same contract.
+5. **Separate current contracts from historical intent.** Preserve superseded decisions and original proposals with an explicit status. Label planned capabilities so design sketches cannot be mistaken for implemented services.
+
+## Documentation lifecycles
+
+### Internal development flow
+
+```mermaid
+flowchart TD
+    PRD["1. PRD: needs and outcomes"] --> IP["2. Improvement proposal: design and alternatives"]
+    IP --> Spec["3. Specification: accepted contracts"]
+    IP --> ADR["4. ADR: decisions and trade-offs"]
+    IP --> Standards["5. Standards: engineering rules"]
+    Spec --> Reference["6. Technical reference: exact interfaces"]
+    Spec --> Guide["7. Guides: setup and operation"]
+    Reference --> Product["8. Product page: navigation and value"]
+    Guide --> Product
+    Product -. "when publishing a release" .-> Release["9. Release notes"]
+```
+
+- **Requirements:** A PRD states the user problem, audience, desired outcomes, constraints, and success criteria. The product roadmap tracks delivery work and its status.
+- **Design:** An improvement proposal develops alternatives, architecture, risks, and acceptance criteria before the implementation is settled.
+- **Blueprints:** Specifications establish current system behavior and boundaries. ADRs explain individual choices. Standards define repeatable engineering and documentation practices.
+- **Implementation and use:** References record exact public interfaces; guides explain how to install, configure, operate, validate, and troubleshoot them. A product page or README introduces value and directs readers to those details.
+- **Release:** Release notes describe verified changes for an actual publication milestone when needed. Routine fixes or documentation updates do not require a separate release note.
+
+Not every change needs a new document of every type. Update the existing owner of a contract; create a proposal or ADR when there is a material design choice to record. Keep routine code edits and diffs in source control rather than duplicating them in knowledge documents.
+
+### User discovery and consumption flow
+
+```mermaid
+flowchart LR
+    Awareness["Release announcement or repository discovery"] --> Product["Product page / README"]
+    Product --> Guide["Setup and task guides"]
+    Guide --> Reference["CLI, MCP and configuration references"]
+    Reference --> Architecture["Specifications and architecture guide"]
+    Architecture --> Decisions["ADRs and rationale"]
+```
+
+A new user first needs to understand the value and choose an implementation. Guides then provide a complete setup or task workflow. References answer precise syntax and parameter questions. Specifications and ADRs provide the deeper contracts and rationale needed for integration or architectural changes. Each document should make the next step easy to find.
+
+## Document types, owners, and audiences
+
+| Type / template | Primary owner | Audience | Purpose |
+| --- | --- | --- | --- |
+| [prd](../../../schemas/prd.md) | Product lead | Engineering, reviewers, users | What user need is addressed, why it matters, and what success means |
+| [improvement-proposal](../../../schemas/improvement-proposal.md) | Design lead | Implementers and reviewers | How a change might work, including alternatives and risks |
+| [specification](../../../schemas/specification.md) | Technical owner | Implementers and integrators | Current system contracts, data rules, and boundaries |
+| [adr](../../../schemas/adr.md) | Decision owner | Current/future maintainers | One architectural decision, rationale, alternatives, and consequences |
+| [standards](../../../schemas/standards.md) | Engineering lead | Contributors and agents | Reusable process and quality rules |
+| [technical-reference](../../../schemas/technical-reference.md) | Interface owner | Users and integrators | Exact CLI, MCP, configuration, or API details |
+| [guide](../../../schemas/guide.md) | Feature/support owner | Users and operators | A complete installation, operation, or troubleshooting workflow |
+| [product](../../../schemas/product.md) | Product lead | Prospective and current users | Product value and navigation to supporting documents |
+| [glossary](../../../schemas/glossary.md) | Domain owner | All readers | Shared definitions and terminology |
+| [release-note](../../../schemas/release-note.md) | Release owner | Users and maintainers | Verified changes and upgrade impact for a release |
+| [freeform](../../../schemas/freeform.md) | Note author | Relevant collaborators | Notes that do not yet fit a more structured document |
+
+Ownership is a documentation responsibility, not an implemented role-based authorization system. Select reference scope for shared standards/decisions and project scope for repository-specific work. The same local ID can exist in different projects; references must use complete qualified names.
+
+## Metadata, relationships, and lifecycle
+
+Each concept has one frontmatter block with its local `id`, title, category/type, tenant, version, status, and update metadata. The ID must match the filename. Keep it at its canonical location; derive `name`, project, and scope from that location instead of writing derived fields into frontmatter.
+
+```text
+.gyrus/concepts/<tenant>/reference/<id>.md
+.gyrus/concepts/<tenant>/projects/<project>/<id>.md
+```
+
+Persist source-owned links in the minimal form:
+
+```yaml
 links:
   - concept: root/reference/spec-001-contract-schema
     rel: depends_on
-  - concept: root/reference/spec-004-core-engine
-    rel: depends_on
----
-
-# Wiki & Documentation Strategy
-
-This document outlines the organization, lifecycles, and formatting strategies for the Gyrus context library. It details how documentation is created and consumed across the software development lifecycle (SDLC) from both developer and user perspectives.
-
----
-
-## 1. Core Documentation Principles
-
-1. **Treat Context as Code:** Changes to system specifications, database setups, and product rules are as critical as codebase changes.
-2. **Never Let Context Decay:** When code changes invalidate documentation, the corresponding wiki files must be updated in the same workflow.
-3. **Optimized for Humans & Agents:** Documents must remain highly structured, using frontmatter envelopes for machine processing and clean markdown for human readability.
-
----
-
-## 2. Documentation Lifecycles
-
-Documentation follows two distinct lifecycles depending on who is consuming or creating it.
-
-### 2.1 The Internal Development (SDLC) Flow
-This is the chronological order in which documentation is generated and consumed by product managers, engineers, and reviewers during a feature's development:
-
-```mermaid
-graph TD
-    PRD[1. PRD] -->|Motivation & Scope| IP[2. Improvement Proposal]
-    IP -->|Design Review & Acceptance| Specs[3. Specification]
-    IP -->|Micro-Decisions| ADR[4. ADRs]
-    IP -->|Team Rules| Std[5. Standards]
-    Specs -->|Implementation & Build| Ref[6. Technical Reference]
-    Specs -->|Portal Creation| Land[7. Product Page]
-    Specs -->|Education| Guide[8. User/Dev Guides]
-    Specs -->|Release Tracking| RN[9. Release Notes]
 ```
 
-1. **Requirements (`prd`)**: Product managers detail the business case, success metrics, and user stories.
-2. **Design (`improvement-proposal`)**: Engineers outline design alternatives, technical structures, testing plans, and system quality aspects.
-3. **蓝图 (Specs/Decisions/Standards)**: Upon design approval:
-   * **`specification`**: Holds final system architecture topologies, contracts, and data rules.
-   * **`adr`**: Short audit records of micro-decisions (e.g. choice of storage engine).
-   * **`standards`**: Establishes process-centric guidelines (e.g. Git workflows).
-4. **Interface & Usage (`technical-reference` / `product` / `guide`)**:
-   * **`technical-reference`**: Detailed lookup maps (APIs, CLI syntax, config parameters, and technical FAQs).
-   * **`product`**: The main homepage portal summarizing the product and linking resources.
-   * **`guide`**: Quickstart tutorials and runbooks.
-5. **Release (`release-note`)**: Announce updates and trace version changes.
+Use `depends_on`, `implements`, `supersedes`, or `mitigates` according to the relationship's meaning. Incoming graph queries provide backlinks without storing inverse copies. OKF can retain qualified references to concepts that have not been created yet.
 
----
+Living PRDs, specifications, standards, references, guides, products, and glossaries describe maintained knowledge. Historical ADRs and finalized proposals preserve why a choice was made. Follow the existing [ADR template](../../../schemas/adr.md), including Context/problem/objectives, Decision/rationale, Alternatives/pros/cons, Consequences, and Compliance & Verification.
 
-### 2.2 The User Story Flow (Discovery & Consumption)
-This flow maps how consumers and developers discover, learn, and integrate with a product:
+When a decision changes, create a focused replacement ADR, link it to the old record using `supersedes`, and update the old status. Preserve historical decision content and clearly label superseded records. Metadata-only edits remain distinct from protected body changes; the engine enforces the actual [lifecycle and immutability contract](spec-001-contract-schema.md).
 
-```mermaid
-graph TD
-    Discovery[1. Release Note / Changelog] -->|Awareness| Landing[2. Product Page]
-    Landing -->|Onboarding / Setup| Tutorial[3. Guides & Tutorials]
-    Tutorial -->|Integration & Syntax Lookup| Lookup[4. Technical Reference]
-    Lookup -->|Deep-Dive Engineering Details| UnderHood[5. Specification / Architecture]
-```
+## Review and maintenance workflow
 
-1. **Awareness (`release-note`)**: The user discovers a new release or update.
-2. **Discovery (`product`)**: The user visits the Product Page to learn its benefits and value.
-3. **Onboarding (`guide`)**: The user follows quickstarts or tutorials to configure their setup.
-4. **Integration (`technical-reference`)**: The user looks up specific API endpoints, parameters, and commands to write their integration code.
-5. **Deep-Dive (`specification` / `adr`)**: (Optional) The user reads the underlying technical specifications to understand constraints and design choices.
+1. Read the relevant PRD, specifications, ADRs, and standards before changing architectural behavior.
+2. Determine which documents own the affected contracts and user workflows. Preserve their useful explanations instead of replacing them with link-only summaries.
+3. Update contracts and examples against the actual CLI/MCP/configuration schemas. Include failure behavior and known limitations when they affect use.
+4. Check scope, metadata, version/update timestamps, relationships, and relative links. Use repository-relative links instead of machine-specific `file://` URLs.
+5. Validate concepts and representative examples. Keep test results and skips explicit in the change review; do not imply a live host or capability was exercised when it was not.
+6. Update the [product roadmap](prd-001-specification-roadmap.md) as work is completed or re-scoped. Archive or supersede historical records without silently turning their old examples into current instructions.
 
----
-
-## 3. Document Types Directory
-
-Below is the directory of all supported document types, their templates, owners, and purposes:
-
-| Type | Template Link | Primary Owner | Target Audience | Key Question Answered / Purpose |
-| :--- | :--- | :--- | :--- | :--- |
-| **`prd`** | [prd.md](file:///Users/armck/git/wiki/docs/types/prd.md) | Product Manager | Engineers / QA | *What* features are we building and *why*? Stores business goals and user stories. |
-| **`improvement-proposal`** | [improvement-proposal.md](file:///Users/armck/git/wiki/docs/types/improvement-proposal.md) | Lead Engineer | Team / Reviewers | *How* do we solve the design problem? Details solutions, limitations, and testing plans. |
-| **`specification`** | [specification.md](file:///Users/armck/git/wiki/docs/types/specification.md) | Architect / Lead | Team / Consumers | What are the final system blueprints, data structures, and protocols? |
-| **`adr`** | [adr.md](file:///Users/armck/git/wiki/docs/types/adr.md) | Team Engineers | Future Developers | Why did we make this micro-decision? (Immutable log of key choices). |
-| **`technical-reference`** | [technical-reference.md](file:///Users/armck/git/wiki/docs/types/technical-reference.md) | Team Engineers | Integrators / Devs | What are the API endpoints, CLI syntax, and configurations? (Includes FAQs). |
-| **`product`** | [product.md](file:///Users/armck/git/wiki/docs/types/product.md) | Product Lead | All Consumers | What is this product, its value, and how do I navigate its docs? |
-| **`guide`** | [guide.md](file:///Users/armck/git/wiki/docs/types/guide.md) | Support / Engs | Operations / Devs | How do I onboard, setup, or troubleshoot this system? |
-| **`standards`** | [standards.md](file:///Users/armck/git/wiki/docs/types/standards.md) | Tech Leads | All Engineers | What process guidelines, linting rules, and style policies must we follow? |
-| **`glossary`** | [glossary.md](file:///Users/armck/git/wiki/docs/types/glossary.md) | Tech / PM Leads | All Developers | What do specific **terms** and vocabulary mean in this domain? |
-| **`release-note`** | [release-note.md](file:///Users/armck/git/wiki/docs/types/release-note.md) | Product / Release | All Consumers | What changed in this version? (Features, fixes, and migration guides). |
-| **`freeform`** | [freeform.md](file:///Users/armck/git/wiki/docs/types/freeform.md) | Anyone | Anyone | Catch-all container for unstructured notes, logs, or brainstorming. |
-
----
-
-## 4. Enforcement & Validation
-
-To prevent formatting decays and broken links, Gyrus validates documents during ingestion:
-1. **Schema Check:** Verifies that the YAML frontmatter contains required fields (`id`, `title`, `category`, `type`, `status`, etc.).
-2. **Lifecycle Check:** Validates that status updates follow legal transitions (e.g. an ADR cannot go from `superseded` back to `proposed`).
-3. **Relationship Mapping:** Analyzes references (like `depends_on` or `implements`) to build the SQLite edge index for graph traversals.
+Runtime validation checks concept structure, safe identifiers, typed links, and lifecycle updates. OKF graph reads derive relationships from stored concepts; PostgreSQL maintains its graph in database tables. Documentation review additionally checks explanatory quality, completeness, and consistency—those are not guaranteed by passing schema validation alone.

@@ -4,9 +4,9 @@ id: guide-005-installation-and-initialization
 type: guide
 format: markdown
 category: operations
-version: 10
+version: 11
 status: active
-last_updated: 2026-10-18T00:00:28Z
+last_updated: 2026-11-12T04:38:04Z
 last_modified_by: antigravity
 tenant: root
 tags:
@@ -80,7 +80,7 @@ gyrus config init --global
 
 | Flag | Shorthand | Description | Default |
 | :--- | :--- | :--- | :--- |
-| `--profile` | `-p` | Configuration profile (`local`, `git`, `blob`, `s3`, `azure`, `gcs`, `postgres`). Unsupported values fail before writing files. | `local` |
+| `--profile` | `-p` | Configuration profile (`local`, `git`, `postgres`). Unsupported values fail before writing files. | `local` |
 | `--tenant` | `-t` | Default tenant for concepts. | `root` |
 | `--project` | `-P` | Default project for context concepts. | `default` |
 | `--global` | `-g` | Write user-wide configuration to `~/.gyrus.yaml`. | `false` |
@@ -91,18 +91,11 @@ gyrus config init --global
 ```bash
 gyrus config init --profile local     # LocalFS storage + OKF index/graph/search (default)
 gyrus config init --profile git       # Remote Git Repository Persistence
-gyrus config init --profile s3        # AWS S3 Bucket Storage
-gyrus config init --profile azure     # Azure Blob Container Storage
-gyrus config init --profile gcs       # Google Cloud Storage Bucket
-gyrus config init --profile blob      # Cloud Blob Storage
 gyrus config init --profile postgres  # PostgreSQL Database Backend
 ```
 
 ### Required Cloud Storage Permissions
-When using cloud object storage (`s3`, `azure`, `gcs`), ensure your environment has appropriate data plane access:
-- **AWS S3 (`s3`):** IAM policy must grant `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`, and `s3:ListBucket`.
-- **Azure Blob (`azure`):** Azure identity must be assigned `Storage Blob Data Contributor` or `Storage Blob Data Owner`.
-- **Google Cloud Storage (`gcs`):** Service account must be assigned `roles/storage.objectAdmin` or `roles/storage.objectUser`.
+For remote Git, configure your Git credential manager for HTTPS or SSH credentials and known hosts. See the [initiative walkthrough](guide-006-git-initiatives.md). PostgreSQL requires a connection string to your database.
 
 ---
 
@@ -156,3 +149,7 @@ The runtime does not support an automation configuration block or hook environme
 ## Qualified concepts and minimal links
 
 Creation retains a local id and returns its qualified name. Address existing concepts with tenant/reference/id or tenant/projects/project/id across SDK, CLI, MCP, and UI. API envelopes include name; YAML frontmatter does not persist it. Relationships use only links with concept and rel. Dependency arrays, old link keys, per-link creation metadata, and short lookup IDs are rejected. Local IDs may repeat across tenants/projects. Incoming neighbors provide backlinks; relationship types and general cycle-safe graph traversal remain unchanged. Use the migration skill for legacy concepts or SQLite graph exports; retain backups and rebuild obsolete identity databases explicitly. Restart cached MCP processes after upgrading.
+
+## Git commit strategies
+
+The Git profile defaults to `commit_strategy: direct` and `trunk_branch: main`. Choose `branching` for human review and supply `--git-branch initiative/name` at runtime. Branch selection is never saved. See [standard configurations](tech-ref-002-config-schema.md) for all three stacks and both Git strategies.

@@ -4,12 +4,14 @@ id: prd-002-implementation-plan
 type: prd
 format: ""
 category: product
-version: 1
-status: active
-last_updated: 2026-07-22T06:38:56Z
+version: 2
+status: archived
+last_updated: 2026-11-12T04:38:04Z
 last_modified_by: ""
 tenant: root
 ---
+
+> Historical record. This document describes earlier work and is not a current setup or capability contract. Use the current configuration reference and architecture index.
 
 # Gyrus Implementation Plan
 
@@ -95,20 +97,20 @@ All individual task tickets are maintained in the [`tickets/`](./) directory. Ea
 
 | Ticket ID | Phase | Title | Status |
 | :--- | :--- | :--- | :--- |
-| **[GYRUS-001](./GYRUS-001-repo-cleanup-bootstrap.md)** | Phase 0 | Repository Cleanup & Go Module Scaffolding | `COMPLETED` |
-| **[GYRUS-101](./GYRUS-101-core-sdk-interfaces.md)** | Phase 1 | Core SDK Public Interfaces & Domain Models | `COMPLETED` |
-| **[GYRUS-102](./GYRUS-102-okf-envelope-parser.md)** | Phase 1 | OKF Envelope Parser & Schema Validator | `COMPLETED` |
-| **[GYRUS-103](./GYRUS-103-lifecycle-state-machine.md)** | Phase 1 | Lifecycle State-Machine Validation Engine | `COMPLETED` |
-| **[GYRUS-201](./GYRUS-201-localfs-storage-provider.md)** | Phase 2 | Localfs Storage Provider & Path Resolution | `COMPLETED` |
-| **[GYRUS-202](./GYRUS-202-sqlite-index-fts-provider.md)** | Phase 2 | SQLite DDL, Indexing & FTS5 Search Engine | `COMPLETED` |
-| **[GYRUS-203](./GYRUS-203-sqlite-graph-sync.md)** | Phase 2 | SQLite Edge Graph & Incremental File Sync | `COMPLETED` |
-| **[GYRUS-301](./GYRUS-301-cli-command-framework.md)** | Phase 3 | CLI Command Framework & Exit Code Mapper | `COMPLETED` |
-| **[GYRUS-302](./GYRUS-302-cli-core-crud.md)** | Phase 3 | CLI Core Mutation Commands (`init`, `create`, `get`, `update`) | `COMPLETED` |
-| **[GYRUS-303](./GYRUS-303-cli-link-sync-validate.md)** | Phase 3 | CLI Relationship & Maintenance Commands (`link`, `unlink`, `sync`, `validate`) | `COMPLETED` |
-| **[GYRUS-304](./GYRUS-304-cli-search-suggest.md)** | Phase 3 | CLI Context Discovery Commands (`search`, `suggest-context`, `schema`) | `COMPLETED` |
-| **[GYRUS-401](./GYRUS-401-mcp-server-tools.md)** | Phase 4 | MCP Stdio Server & Memory Tools | `COMPLETED` |
-| **[GYRUS-402](./GYRUS-402-mcp-resources-prompts-skill.md)** | Phase 4 | MCP Resources, Prompts & Open Skill Format Shim | `COMPLETED` |
-| **[GYRUS-501](./GYRUS-501-testing-packaging.md)** | Phase 5 | Profile Verification Tests & GoReleaser Packaging | `COMPLETED` |
+| **[GYRUS-001](ticket-gyrus-001.md)** | Phase 0 | Repository Cleanup & Go Module Scaffolding | `COMPLETED` |
+| **[GYRUS-101](ticket-gyrus-101.md)** | Phase 1 | Core SDK Public Interfaces & Domain Models | `COMPLETED` |
+| **[GYRUS-102](ticket-gyrus-102.md)** | Phase 1 | OKF Envelope Parser & Schema Validator | `COMPLETED` |
+| **[GYRUS-103](ticket-gyrus-103.md)** | Phase 1 | Lifecycle State-Machine Validation Engine | `COMPLETED` |
+| **[GYRUS-201](ticket-gyrus-201.md)** | Phase 2 | Localfs Storage Provider & Path Resolution | `COMPLETED` |
+| **[GYRUS-202](ticket-gyrus-202.md)** | Phase 2 | SQLite DDL, Indexing & FTS5 Search Engine | `COMPLETED` |
+| **[GYRUS-203](ticket-gyrus-203.md)** | Phase 2 | SQLite Edge Graph & Incremental File Sync | `COMPLETED` |
+| **[GYRUS-301](ticket-gyrus-301.md)** | Phase 3 | CLI Command Framework & Exit Code Mapper | `COMPLETED` |
+| **[GYRUS-302](ticket-gyrus-302.md)** | Phase 3 | CLI Core Mutation Commands (`init`, `create`, `get`, `update`) | `COMPLETED` |
+| **[GYRUS-303](ticket-gyrus-303.md)** | Phase 3 | CLI Relationship & Maintenance Commands (`link`, `unlink`, `sync`, `validate`) | `COMPLETED` |
+| **[GYRUS-304](ticket-gyrus-304.md)** | Phase 3 | CLI Context Discovery Commands (`search`, `suggest-context`, `schema`) | `COMPLETED` |
+| **[GYRUS-401](ticket-gyrus-401.md)** | Phase 4 | MCP Stdio Server & Memory Tools | `COMPLETED` |
+| **[GYRUS-402](ticket-gyrus-402.md)** | Phase 4 | MCP Resources, Prompts & Open Skill Format Shim | `COMPLETED` |
+| **[GYRUS-501](ticket-gyrus-501.md)** | Phase 5 | Profile Verification Tests & GoReleaser Packaging | `COMPLETED` |
 
 ---
 

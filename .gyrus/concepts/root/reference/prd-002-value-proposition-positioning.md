@@ -4,9 +4,9 @@ id: prd-002-value-proposition-positioning
 type: prd
 format: ""
 category: technical
-version: 4
+version: 6
 status: active
-last_updated: 2026-10-16T16:47:49Z
+last_updated: 2026-11-12T05:49:34Z
 tenant: root
 tags:
     - product-positioning
@@ -16,155 +16,100 @@ tags:
 links: []
 ---
 
-# Gyrus Value Proposition & Strategic Product Positioning
+# Gyrus Intelligence Platform: value proposition and positioning
 
-## 1. Executive Summary
+## Strategic value
 
-**Gyrus** is a lightweight, provider-neutral **Context Control Plane** and knowledge engine designed for software development teams and AI agentic tools. While alternative market solutions specialize narrowly in workplace search, source-code retrieval, data catalogs, persistent agent memory, or vector databases, Gyrus provides a unified coordination layer where humans and heterogeneous AI tools collaboratively create, govern, resolve, and distribute portable engineering context.
+**Gyrus helps teams turn engineering knowledge into a durable, shared asset that humans and heterogeneous AI agents can discover, apply, review, and improve across repositories and sessions.** Its context-control foundation joins knowledge creation, structured relationships, lifecycle governance, and task-oriented retrieval behind consistent interfaces.
 
-Gyrus is built around the **Open Knowledge Format (OKF)** standard. It acts as a coordination layer between agent clients, documentation platforms, code repositories, storage backends, search engines, and human review workflows—guaranteeing that organizational context remains discoverable, structured, governed, portable, human-readable, and reliable enough to influence critical engineering decisions.
+The highest-value outcome is organizational continuity: a decision made during one initiative can inform another repository, a new teammate, or a different agent harness without being reconstructed from scattered conversations. As teams adopt more agents, Gyrus provides a common knowledge model and review workflow that can survive changes in tools, models, and storage choices.
 
----
+## The user problem
 
-## 2. Core Product Philosophy & Defining Pillars
+Engineering intent is spread across code, tickets, PR discussions, chat, guides, and individual memory. Source code records implementation, but it does not reliably explain every constraint, rejected alternative, operational lesson, or dependency behind that implementation. Agent sessions can produce useful insights that disappear when their conversations end.
 
-### 2.1 Core Product Philosophy
+Without a maintained knowledge layer, teams repeatedly rediscover decisions, provide inconsistent context to different tools, and struggle to distinguish a proposed observation from an accepted decision. Search can find text, but a useful engineering workflow also needs identity, scope, relationships, review, and continued maintenance.
 
-1. **Context Should Be a Managed Engineering Asset:** Engineering context must be treated with the same discipline as source code and system configuration—possessing explicit ownership, defined scope, known authority, version history, validation rules, review workflows, lifecycle status, and traceable provenance.
-2. **Humans and Agents Should Share the Same Canonical Knowledge:** Canonical knowledge must remain portable and human-readable (Markdown + YAML frontmatter contracts). Embeddings, vector indexes, full-text databases, and knowledge graphs are derived projections, not the canonical source of truth.
-3. **Context Resolution Is More Than Search:** Traditional search answers *"which documents appear relevant?"* Gyrus context resolution answers *"which information is applicable, current, authoritative, and required for this task within our token budget?"*
-4. **Agents Should Propose Knowledge, Not Silently Redefine It:** AI agents can discover patterns and propose updates, but high-authority context requires governed promotion (`Session Observation` ➔ `Candidate Memory` ➔ `Proposed Document` ➔ `Validated Review` ➔ `Published Knowledge`).
-5. **The System Must Remain Provider-Neutral:** Git repositories, Confluence wikis, local filesystems, S3 blob stores, PostgreSQL databases, SQLite FTS5, and vector stores are replaceable storage and publishing providers. Gyrus owns the common domain model and context invariants.
+Gyrus focuses on that coordination: representing knowledge clearly, connecting it to related concepts, exposing it through common interfaces, and making updates part of engineering work.
 
-### 2.2 Eight Defining Engineering Pillars
+## Highest-value capabilities and outcomes
 
-1. **Concept Data Contracts (OKF Schema Validation):** Validates structured software contracts (`adr`, `prd`, `specification`, `guide`, `standards`, `glossary`, `improvement-proposal`, `release-note`, `product`, `freeform`) rather than unstructured text dumps.
-2. **Standardized Concept Metadata & Knowledge Graphs:** Metadata explicitly captures directional relationships (`depends_on`, `supersedes`, `implements`, `mitigates`). Gyrus parses these links and maintains a directed SQLite knowledge graph for deep edge traversals.
-3. **Composable Service Providers:** Clean Go interface abstractions (`DocumentStore`, `IndexStore`, `GraphStore`, `SearchProvider`) decouple core domain rules from storage drivers, supporting zero-CGO local storage (`localfs` + SQLite FTS5) as well as enterprise cloud drivers (Git repos, AWS S3, Azure SA, PostgreSQL).
-4. **Unified Memory Persistence:** Serves as a single source of truth across CLI tools (`gyrus`), stdio Model Context Protocol (MCP) servers, agent skills (Open Skill Format), `AGENTS.md`, and web applications.
-5. **Composable Core SDK (`pkg/gyrus`):** Exposed as a pure, zero-dependency Go SDK package (`pkg/gyrus`), enabling developers to embed Gyrus directly into custom internal CLI tools, AI pipelines, background workers, or web app backends.
-6. **Token-Budgeted Context Linearization (`gyrus suggest-context`):** Combines BM25 keyword relevance, graph depth traversal, and configurable token budget constraints to synthesize a single, non-redundant context payload.
-7. **Lifecycle State Machine & Immutability Governance:** Enforces strict state transitions per document type (e.g. ADRs move `proposed` ➔ `accepted` ➔ `deprecated`/`superseded`) and runtime content immutability for decision logs (`immutable: true`).
-8. **Embedded Templates (`go:embed`) & Custom Overrides:** Pre-packages 11 standard Markdown templates inside the compiled binary via `go:embed`, with support for custom project overrides via `.gyrus.yaml` (`schemas_path`).
+| Value | What Gyrus provides today | Outcome for the team |
+| --- | --- | --- |
+| Shared organizational memory | Durable concepts with qualified tenant/project/reference identity | Knowledge remains available beyond an individual session or code repository |
+| Human/agent interoperability | The same lifecycle engine through CLI, local MCP, local UI, and Go contracts | Different tools can consume and maintain the same collection |
+| Traceable engineering intent | ADRs, specifications, PRDs, standards, guides, and typed relationships | Decisions and requirements can be connected to the work they inform |
+| Governed knowledge changes | Type-specific lifecycle, protected finalized bodies, versions, and Git initiative review | Teams can review knowledge updates and supersede decisions explicitly |
+| Applicable context | Project/reference filtering, keyword/FTS retrieval, and dependency-aware context assembly | Agents receive selected related concepts rather than an undifferentiated document collection |
+| Portable, inspectable knowledge | Markdown/frontmatter bundles for local/Git, explicit links, and a common database concept model | People can inspect knowledge and retain a stable model across supported storage implementations |
+| Practical adoption | Local, shared Git, and PostgreSQL complete stacks with embedded templates | Teams can start with a repository and choose shared infrastructure when needed |
 
----
+These are enabling capabilities, not guarantees of model correctness, automatic compliance, or reduced cost. Their value comes from teams maintaining relevant knowledge and using review and context-selection workflows consistently.
 
-## 3. Comprehensive Market Landscape Positioning & Categorized Comparisons
+## Product principles
 
-Gyrus is positioned across both **commercial marketplace products** and **architectural solution approaches**.
+### 1. Manage context with engineering discipline
 
-### 3.1 Market Category Classification
+Knowledge needs a clear identity, scope, lifecycle, relationships, and revision history. A proposed ADR should be distinguishable from an accepted one; an obsolete decision should link to its replacement. The knowledge collection is maintained alongside the product rather than treated as a one-time documentation export.
 
-Alternatives in the AI context space generally specialize in one of six product categories:
-1. **Governed Data & Semantic Definitions:** Atlan Context Engineering Studio
-2. **Enterprise Workplace Search & Knowledge Platforms:** Glean, Notion AI
-3. **Source Code Retrieval & Intelligence Engines:** Augment Context Engine, Sourcegraph
-4. **Persistent Agent Memory Platforms:** Mem0
-5. **Temporal Knowledge Graphs & Graph Infrastructure:** Zep, Graphiti, TrustGraph
-6. **Lightweight Instruction & File Frameworks:** Agent Skills, Doc MCPs (e.g. Confluence MCP), Repo-Local Files (`.cursorrules`, `AGENTS.md`)
+### 2. Give humans and agents the same canonical knowledge
 
----
+Humans should be able to read and review what agents retrieve and change. Structured Markdown and explicit relationships make the collection understandable without depending on one chat history or agent-specific private memory format. The local and Git stacks keep concepts directly in OKF files; PostgreSQL represents the same public concept model in database records.
 
-### 3.2 Master Market & Solution Comparison Matrix
+### 3. Use relationships and scope to improve task context
 
-| Solution / Product | Product Category / Design Center | Key Strengths | Gaps & Limitations | Why Choose Gyrus Context Control Plane Instead? |
-| :--- | :--- | :--- | :--- | :--- |
-| **Atlan Context Engineering Studio** | Governed Business & Data Context Layer | Versioned Context Repos, BI semantic models, data lineage, evaluation benchmarks | Specialized for data warehouse/catalog assets; lacks software architecture, ADRs, runbooks, and repo context | Choose Gyrus when context extends beyond data governance into architecture, ADRs, PRDs, code conventions, runbooks, and agent memory without requiring an enterprise data catalog foundation. |
-| **Glean** | Enterprise Search & Workplace Knowledge Platform | Broad SaaS application connectors, enterprise permissions search, managed AI assistants | Managed SaaS platform; lacks context-as-code, repository ownership, portable Markdown artifacts, and offline capability | Choose Gyrus when you need context-as-code, repository ownership, portable Markdown artifacts, custom lifecycle rules, offline execution, and freedom from a managed workplace-AI SaaS platform. |
-| **Augment Context Engine** | Source-Code Retrieval for Coding Agents | Deep semantic code indexing, cross-repository code retrieval, MCP integration | Focuses on selecting source code snippets; lacks artifact lifecycle, ADR governance, or team knowledge contracts | Choose Gyrus when context includes complete plans, decisions, standards, runbooks, and memories in addition to code selection. Augment retrieves code; Gyrus governs knowledge authority. |
-| **Sourcegraph** | Large-Scale Code Intelligence & Navigation | Multi-repository code search, symbol navigation, AST syntax understanding | Focuses on code search & symbol definitions; does not manage authority or lifecycle of engineering decisions and specs | Choose Gyrus when code intelligence is only one provider within a broader knowledge ecosystem. Gyrus manages the lifecycle, authority, and contracts of knowledge rather than specializing in source-code AST parsing. |
-| **Mem0** | Persistent Personal Agent Memory Platform | Long-term memory extraction across users, sessions, and chat applications | Breaks knowledge into unstructured facts/triples; loses narrative, human reviewability, and artifact contracts | Choose Gyrus when knowledge must remain coherent, reviewable, human-readable, and authoritative. Gyrus separates temporary memory observations from approved canonical knowledge artifacts. |
-| **Zep / Graphiti** | Temporal Knowledge Graph Engine for Agents | Dynamic entity relationship modeling, changing facts, temporal retrieval | Derived graph is the primary store; harder for humans to directly inspect, review, or version-control in Git | Choose Gyrus when the knowledge graph should be a derived index rather than the canonical representation. Humans and agents work with portable artifacts while graph relationships support retrieval behind the scenes. |
-| **TrustGraph & Graph Frameworks** | Self-Hosted Graph Construction Toolkit | Flexible infrastructure primitives for building custom graph context pipelines | Unopinionated toolkit; does not define artifact contracts, scope inheritance, lifecycle states, or review workflows | Choose Gyrus when you want an opinionated, ready-to-use context product rather than a complex infrastructure toolkit. Gyrus defines artifact types, scopes, lifecycle, validation, and review workflows. |
-| **Documentation Platforms & MCPs** *(e.g. Confluence)* | Enterprise Documentation Platform & Wiki MCP | Human-readable wiki pages, permissions, version history, familiar editing | Page-centric retrieval; lacks task-specific context resolution, scope inheritance, or contract schemas | Choose Gyrus when Confluence should remain a human publishing surface without dictating the entire context architecture. Gyrus adds provider-neutral contracts, resolution, and governance. |
-| **Agent Skills Only** *(e.g. `SKILL.md`)* | Instruction-Driven Behavioral Prompt Adapter | Portable instructions, easy to prototype, low operational overhead | Prompt instructions only; lacks persistent storage, stable identities, search index, authority rules, or enforcement | Choose Gyrus to convert recommended agent instructions into an enforceable Go core engine, storage persistence layer, and unified multi-agent context hub. |
-| **Agent Skills + Doc MCP** | Instruction-Driven Doc Retrieval Workflow | Low-cost combination of behavioral guidance and wiki persistence | Relies on LLMs to consistently follow search & update instructions; lacks deterministic resolution or state machines | Choose Gyrus to eliminate instruction drift. Gyrus converts search & validation conventions into a deterministic Go context resolution engine (`suggest-context`). |
-| **Repository-Local Files Only** *(e.g. `.cursorrules`, `AGENTS.md`)* | Repo-Local Static File Hints | Version-controlled, portable, close to code, reviewable via PRs | Fragmented per repo; lacks global discovery, cross-repo context inheritance, or central indexing | Choose Gyrus to combine local repository ownership with global context inheritance, search indexing, and unified multi-agent persistence. |
-| **Search, Vector, or Graph DB Primitives** *(e.g. Pinecone, Chroma)* | Search & Retrieval Infrastructure Primitive | High-dimensional semantic similarity, vector indexing, scalable retrieval | Infrastructure primitives; lack artifact contracts, human-readable canonical sources, scope inheritance, or approval workflows | Choose Gyrus to use vector/search/graph databases as replaceable derived indexes beneath a governed, contract-native context control plane. |
+Project knowledge belongs to an explicit project; shared references can support several projects. `depends_on`, `implements`, `supersedes`, and `mitigates` make engineering intent navigable. Current suggestions combine scoped retrieval with dependency expansion and concept-count limits. More advanced semantic reasoning, authority arbitration, and intelligence pipelines remain product evolution rather than implicit retrieval guarantees.
 
----
+### 4. Make review a workflow choice
 
-### 3.3 Evaluation of Structural Solution Alternatives
+Direct Git commits support autonomous knowledge maintenance where the team accepts that model. Initiative branches collect related changes across concepts and schemas for human PR review before merging to trunk. Branch selection belongs to the runtime session so parallel initiatives can remain independent. Gyrus supplies storage and session controls; humans own review/merge policy.
 
-Beyond commercial products, engineering organizations typically evaluate six structural architectural approaches. Gyrus fulfills the specific gaps of each:
+### 5. Keep contracts consistent across supported implementations
 
-#### Alternative 1: Agent Skills Only (`SKILL.md`)
-* **Strengths:** Lightweight, portable, easy to prototype, zero infra overhead, compatible with multiple agent clients.
-* **Gaps:** Provides prompt instructions, not shared state or enforcement. Lacks persistent storage, stable artifact IDs, search indexes, authority rules, scope inheritance, supersession, or review workflows.
-* **Gyrus Fulfillment:** Gyrus uses Agent Skills as an integration transport, while providing the durable state, validation, retrieval, lifecycle, and governance capabilities beneath them.
+Core concept, lifecycle, relationship, and query contracts are separate from storage mechanics. The current supported choices are three complete stacks, not arbitrary provider combinations. This gives users clear operating models while keeping the platform's knowledge representation and interfaces coherent.
 
-#### Alternative 2: Documentation Platform or Documentation MCP (Confluence)
-* **Strengths:** Human-readable pages, rich search, organization permissions, existing adoption, familiar editing.
-* **Gaps:** Focuses on storing and retrieving wiki pages. Lacks task-specific context resolution, scope inheritance, repository-local distribution, agent memory promotion, contract schemas, or multi-agent uniformity.
-* **Gyrus Fulfillment:** Gyrus uses documentation platforms as replaceable publishing providers while maintaining a provider-independent artifact model and context resolution layer.
+## Primary workflows
 
-#### Alternative 3: Agent Skills and Documentation MCP
-* **Strengths:** Combines behavioral guidance with wiki persistence. Low cost, human-readable, good for early experimentation.
-* **Gaps:** Relies on LLMs remembering to search, interpret, merge, and validate context correctly. Lacks deterministic context resolution, scope precedence, or state machine enforcement.
-* **Gyrus Fulfillment:** Gyrus replaces prompt-driven conventions with deterministic system invariants (`context.resolve` / `gyrus suggest-context`), ensuring context is resolved consistently regardless of the calling LLM or client.
+1. **Start an initiative:** Retrieve project knowledge and linked standards/decisions before planning a change.
+2. **Capture intent:** Record requirements, alternatives, decisions, and guides as the work progresses; retain implementation details in source code.
+3. **Review knowledge:** Validate concept structure and lifecycle, collect related Git changes on an initiative branch when review is required, and review them with the implementation.
+4. **Reuse across boundaries:** A teammate or another agent harness retrieves the same qualified knowledge from a different repository/session.
+5. **Maintain continuity:** Update living contracts and guides, supersede historical decisions when choices change, and preserve links explaining that change.
 
-#### Alternative 4: Agent Memory Platform (Mem0)
-* **Strengths:** Persistent memory across sessions, automated fact extraction, personalized user state.
-* **Gaps:** Treats knowledge as isolated key-value facts or message episodes. Weakens narrative structure, authority, reviewability, and human comprehension of engineering architecture.
-* **Gyrus Fulfillment:** Gyrus maintains coherent OKF Markdown documents as canonical sources of truth, using memory systems as derived indexes while enforcing a governed promotion workflow (`Observation` ➔ `Candidate Memory` ➔ `Published Document`).
+For example, a payments initiative can depend on shared authentication standards and an accepted storage decision. A billing initiative can reuse those same references without copying them into a second private memory store. Each initiative can propose its own guides or decision updates, with a human reviewing the combined knowledge diff before it becomes trunk knowledge.
 
-#### Alternative 5: Repository-Local Files Only (`.cursorrules`, `AGENTS.md`)
-* **Strengths:** Portable, version-controlled, close to code, reviewable in PRs, offline-ready.
-* **Gaps:** Isolated per repository. Cannot handle organization-wide standards, cross-repo discovery, scope inheritance, or central search indexing.
-* **Gyrus Fulfillment:** Gyrus treats repositories as first-class providers and materialization targets while resolving broader organizational context (`Organization` ➔ `Domain` ➔ `System` ➔ `Repository` ➔ `Task`).
+## Deployment and operating value
 
-#### Alternative 6: Build Directly on Search, Vector, or Knowledge Graph DBs (Pinecone, Chroma, Neo4j)
-* **Strengths:** High-dimensional semantic search, flexible queries, scalable retrieval primitives.
-* **Gaps:** Database primitives, not a complete context product. Lack artifact contracts, human-readable canonical representations, scope inheritance, approval workflows, or document lifecycle.
-* **Gyrus Fulfillment:** Gyrus uses vector, graph, and full-text databases as replaceable indexing projections while maintaining Markdown contracts as the portable source of truth.
+| Choose | When it fits | Operating implications |
+| --- | --- | --- |
+| local | Knowledge is maintained with one code repository | No separate database is required for OKF query/index/graph behavior; version control is managed with the repository |
+| git | Multiple repositories share a wiki and Git review/history | Gyrus authenticates to a remote and uses direct or runtime initiative commits; sessions coordinate through normal Git conflict checks |
+| postgres | A team needs shared database storage and native full-text search | The team operates a PostgreSQL service and its credentials; storage/index/graph/FTS use the complete database stack |
 
----
+Local use does not require an embedding service or hosted Gyrus service. Remote Git and PostgreSQL use the endpoints and access controls configured by the team. The host agent/model may have its own data handling requirements; choosing local knowledge storage alone does not establish that entire agent workflow's privacy properties.
 
-## 4. Operational, Security, Financial & Architectural Drivers
+## Position within an engineering toolchain
 
-### 🔒 4.1 Data Privacy, Air-Gapped Security & Zero SaaS Exfiltration
-* **Zero Third-Party Lock-In:** Cloud MCPs and SaaS vector databases require transmitting proprietary IP, internal architectural specs, and security vulnerability reports to external SaaS clouds.
-* **Air-Gapped Readiness:** Gyrus runs 100% locally with zero required external API calls or telemetry. Memory indices stay strictly inside your enterprise security perimeter (local disk, private Git repos, or internal cloud storage).
+| Existing capability | Gyrus's complementary role |
+| --- | --- |
+| Code repositories and code intelligence | Retain the rationale, constraints, standards, and relationships surrounding implementation |
+| Document authoring and wikis | Add qualified identity, concept lifecycle, typed links, and shared CLI/MCP access to curated engineering knowledge |
+| Search and databases | Coordinate the concept model and workflow while using the selected backend for storage/retrieval |
+| Agent skills and prompts | Give instructions a maintained knowledge collection to query and update across sessions |
+| Agent-specific memory | Provide a shared, inspectable collection with explicit human/agent review choices |
 
-### ⏳ 4.2 Deterministic Reproducibility & Contract Versioning
-* **Version-Locked Memory:** External wikis and SaaS memory stores drift continuously out of band. Prompting an agent today vs. next month yields inconsistent code generation if someone edited an unversioned wiki page.
-* **Standardized Contract Audit Trail:** Gyrus documents natively maintain envelope metadata (`version: 1`, `last_updated`, `last_modified_by`). Whether stored in Git, S3, or PostgreSQL, Gyrus provides deterministic contract versioning and auditability.
+The product's distinctive focus is the common engineering-knowledge workflow. It is not necessary to replace every existing authoring, code-search, model-hosting, or analytics tool to gain that value. Specific external-product comparisons need a separately dated assessment using current sources.
 
-### 🔄 4.3 Multi-Agent & Multi-IDE Interoperability
-* **Tool-Agnostic Context Hub:** Engineering teams use diverse AI tools (Cursor, Claude Code, GitHub Copilot, custom scripts).
-* **Single Source of Truth:** Gyrus simultaneously exposes stdio MCP, agent skills (Open Skill Format), CLI subcommands, and Go SDK bindings so all developers and AI agents query the exact same context engine.
+## Intelligence-platform direction
 
-### 💰 4.4 Optional Zero-Infra Deployment & Scalable TCO
-* **Mandatory Cloud Costs for Competitors:** Enterprise search platforms and vector DBs enforce database cluster provisioning, API usage fees, and per-seat SaaS subscriptions.
-* **Optional Zero-Infra Mode:** Gyrus gives teams the choice to run completely zero-infra locally (`localfs` + embedded SQLite FTS5) with zero setup costs, OR compose enterprise cloud backends (S3, Postgres, Git repos) when scaling infrastructure.
+The [architecture blueprint](guide-001-system-architecture.md) extends this foundation toward hosted team MCP/UI, Lakebase-backed knowledge/application state, agent chat through a model gateway, analytical storage, and context-intelligence processing. The enterprise drawing separates interactive coordination from queued execution and downstream intelligence pipelines.
 
----
+The strategic aim is a feedback loop: engineering work produces knowledge, maintained knowledge improves subsequent work, and evaluated intelligence helps teams identify missing relationships, stale context, and opportunities to improve their knowledge. Human validation and the authority of published knowledge need explicit policy as that loop becomes more automated.
 
-## 5. Build-versus-Buy Rationale
+Hosted Databricks applications, persistent caches/Redis coordination, distributed write processing, GraphRAG/evaluation pipelines, and governed promotion of automatically inferred knowledge are roadmap work. The present runtime does not implement the full organization/domain/system/task inheritance model or an automatic observation-to-approved-knowledge pipeline from earlier proposals. The [roadmap](prd-001-specification-roadmap.md) tracks the next steps.
 
-Organizations should not rebuild commodity infrastructure already provided by specialized vendors.
+## Success criteria
 
-### 5.1 What Existing Tools Handle
-* **Enterprise Connectors:** Glean, Confluence, Jira APIs
-* **Source Code Intelligence:** Sourcegraph, Augment, Tree-sitter
-* **Vector Search & Embeddings:** pgvector, Pinecone, Chroma
-* **Relational Storage:** PostgreSQL, SQLite
+Evaluate the platform through concrete workflows: can users find the applicable project/reference knowledge, share it across harnesses, trace decisions through relationships, review an initiative's knowledge changes, and retrieve the approved result from another session? Validate consistency and failure behavior before attributing reasoning quality or business outcomes to the platform.
 
-### 5.2 What Gyrus Provides (The Missing Coordination Layer)
-* **Canonical Artifact Contracts:** Standardized OKF frontmatter schemas (`adr`, `prd`, `spec`)
-* **Context Resolution Engine:** Determining applicable, authoritative context within token budgets (`context.resolve`)
-* **Hierarchical Scope & Inheritance:** `Organization` ➔ `Domain` ➔ `System` ➔ `Repository` ➔ `Task`
-* **Governed Promotion Workflows:** Converting temporary observations into approved organizational context
-* **Lifecycle State Machines & Immutability:** Enforcing status transitions (`proposed` ➔ `accepted`) and `immutable: true` locks
-* **Provider Neutrality:** Materializing context across local disk, Git, S3, and Postgres without changing API contracts
-* **Multi-Tool Compatibility Adapters:** CLI, stdio MCP, Agent Skills, `AGENTS.md`, and Go SDK (`pkg/gyrus`)
-
----
-
-## 6. Strategic Summary & Recommended Positioning
-
-Gyrus should be positioned as:
-
-> **The Context Control Plane that enables humans and heterogeneous AI agents to collaboratively create, discover, resolve, govern, and distribute portable engineering context.**
-
-By coordinating existing storage and search technologies around an open, contract-native artifact model, Gyrus allows engineering organizations to plug any AI agent into their codebase once—giving it a reliable, governed way to understand existing architecture, follow team standards, record decisions, and share knowledge across both human teammates and AI tools.
+See [setup](guide-002-setup-onboarding.md), [configuration examples](tech-ref-002-config-schema.md), [documentation strategy](standards-001-doc-strategy.md), and [testing standards](standards-002-testing-strategy.md).

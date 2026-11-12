@@ -4,9 +4,9 @@ id: tech-ref-001-cli-manual
 type: technical-reference
 format: markdown
 category: technical
-version: 7
+version: 9
 status: active
-last_updated: 2026-10-17T23:57:58Z
+last_updated: 2026-11-12T05:50:25Z
 last_modified_by: ""
 tenant: root
 ---
@@ -51,10 +51,10 @@ Initializes Gyrus workspace or global configuration, and displays resolved activ
 
 ```bash
 # Initialize workspace configuration (.gyrus.yaml in current repository)
-gyrus config init [-p <profile>] [-o <owner_group>] [-f]
+gyrus config init [-p <profile>] [-t <tenant>] [-P <project>] [-f]
 
 # Initialize global user configuration (~/.gyrus.yaml across all repositories)
-gyrus config init -g [-p <profile>] [-o <owner_group>] [-f]
+gyrus config init -g [-p <profile>] [-t <tenant>] [-P <project>] [-f]
 
 # Display resolved configuration and active storage root
 gyrus config show [--json]
@@ -113,7 +113,7 @@ gyrus unlink root/reference/adr-001-storage root/reference/prd-002-context --rel
 ```
 
 ### 7. `gyrus archive <id>`
-Archives (deletes) a document payload from storage and search index.
+Invokes the selected provider's archive operation. Localfs currently removes the concept file; Git and PostgreSQL retain it with status `archived`. Use `update --status archived` for an explicit lifecycle change where allowed. Archiving does not guarantee cascading link cleanup.
 
 ```bash
 gyrus archive root/reference/adr-001-storage [--json]
@@ -123,7 +123,7 @@ gyrus archive root/reference/adr-001-storage [--json]
 Validates an OKF Markdown file or JSON envelope schema without saving.
 
 ```bash
-gyrus validate docs/gyrus/okf/platform/reference/adr-001.md
+gyrus validate .gyrus/concepts/platform/reference/adr-001.md
 ```
 
 ### 9. `gyrus search`
@@ -142,8 +142,10 @@ gyrus search \
 ### 10. `gyrus suggest-context`
 Linearizes top context documents matching an agent prompt context.
 
+`--max-concepts` defaults to 5. `--scope`, `--project`, and `--category` filter selection. The existing `--max-tokens` flag defaults to 4000 but is currently ignored; it does not enforce token truncation.
+
 ```bash
-gyrus suggest-context --prompt "How is full-text search implemented?" [--max-tokens 4000]
+gyrus suggest-context --prompt "How is full-text search implemented?" [--max-concepts 5]
 ```
 
 ### 11. `gyrus schema <doc-type>`
@@ -173,10 +175,14 @@ File-backed profiles generate OKF index, graph, and search. The same defaults ap
 
 OKF keyword search returns the top ten matches; `gyrus search --query "" --scope all --json` browses the complete matching metadata collection. Keyword terms use case-insensitive Unicode substring matching with OR semantics; FTS expression syntax and stemming are not interpreted by OKF.
 
-OKF link/unlink persist source-owned {concept, rel} links with qualified concept names. Missing targets remain valid. Neighbors/traversal operate on persisted relationships. Version/Git/object-precondition conflicts map to exit code 4. Queries reject malformed collections with validation exit code 1. The sync command/tool has been removed; validate individual files with gyrus validate.
+OKF link/unlink persist source-owned {concept, rel} links with qualified concept names. Missing targets remain valid. Neighbors/traversal operate on persisted relationships. Version and Git push conflicts map to exit code 4. Queries reject malformed collections with validation exit code 1. The sync command/tool has been removed; validate individual files with gyrus validate.
 
 For legacy SQLite data, use the packaged gyrus-migrate-sqlite-to-okf skill to back up and export database-only edges, prove qualified tuple parity, choose OKF for all three providers, and restart MCP processes. There is no gyrus migrate command, and SQLite provider selections are no longer supported.
 
 ## Qualified-name arguments
 
 Create --id remains a local slug; tenant, scope, and project determine its canonical name. Existing-concept get/update/archive/link/unlink arguments must be fully qualified: root/reference/adr-example or root/projects/gyrus/ticket-003. There is no short-ID fallback. JSON concept envelopes and mutation references include name and local id. Text mutation/search output identifies concepts by name. Creation and update no longer accept --dependencies; manage relationships with link/unlink. The --rel-type flag retains its name; persisted link fields are concept and rel.
+
+## Runtime Git branches
+
+`--git-branch <initiative>` selects branching for one command and is accepted by `mcp serve` for a server session. It overrides the configured strategy for that invocation and is never saved. `gyrus git status --json` returns `strategy`, `trunk_branch`, `active_branch`, and `selection_required`. Supply the flag again on separate CLI calls. Trunk and initiative must differ. Only `direct` and `branching` are valid strategy values. See the [initiative guide](guide-006-git-initiatives.md).

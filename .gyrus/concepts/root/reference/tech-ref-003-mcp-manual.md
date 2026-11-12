@@ -4,9 +4,9 @@ id: tech-ref-003-mcp-manual
 type: technical-reference
 format: markdown
 category: technical
-version: 6
+version: 8
 status: active
-last_updated: 2026-10-17T23:57:58Z
+last_updated: 2026-11-12T05:50:25Z
 last_modified_by: ""
 tenant: root
 ---
@@ -38,7 +38,7 @@ Valid relationships are depends_on, supersedes, implements, and mitigates. Neigh
 
 File-backed profiles default to OKF index/graph/search. Keyword queries use case-insensitive Unicode substring terms with OR semantics and return ten matches by default. Positive max_results values pass to the selected provider and override the default. Empty-query metadata browsing returns all matching concepts unless capped. PostgreSQL applies scope/project filters with native full-text matching. SQLite and vector providers have been removed; no embedding configuration or service is required.
 
-Link/unlink persist typed source frontmatter links and use qualified concept names with concept and rel only. Targets may be unresolved. Metadata-only links remain editable on immutable concepts without changing the body. Mutations reject version/Git/object-precondition conflicts, and multi-source batches report any already-applied sources.
+With OKF, link/unlink persist typed source frontmatter links and use qualified concept names with concept and rel only. OKF targets may be unresolved; PostgreSQL graph persistence requires existing endpoints. Metadata-only links remain editable on immutable concepts without changing the body. Mutations reject version and Git push conflicts, and multi-source batches report any already-applied sources.
 
 PostgreSQL version mismatches return the shared typed conflict inside the locked transaction, with the qualified concept name and expected/actual revisions. CLI maps these conflicts to exit code 4; MCP updates return isError=true. Rejected updates roll back without concept/history writes.
 
@@ -48,8 +48,16 @@ Use the packaged gyrus-migrate-sqlite-to-okf skill to back up, export, and verif
 
 ## Resources and prompts
 
+`gyrus_archive` delegates to provider behavior: localfs removes the concept file, while Git and PostgreSQL retain it with status `archived`. It does not guarantee cascading relationship cleanup. Suggestions are capped by `max_concepts`; MCP exposes no token-budget parameter.
+
 Concept resources use `memory://concept/{id}` with a qualified name and return Markdown. Schema resources expose active persisted templates or embedded fallbacks. The prepare-adr prompt uses that same active ADR template and serializes the supplied title safely in canonical metadata order, without obsolete dependencies. Use tool/resource discovery for the precise installed schema.
 
 ## Qualified-name contract
 
 The id arguments of gyrus_get, gyrus_update, and gyrus_archive, from_id/to_id of gyrus_link and gyrus_unlink, id of gyrus_neighbors, and start_id of gyrus_traverse require complete names such as root/reference/adr-example or root/projects/gyrus/ticket-003. Argument names are retained; short values are rejected. gyrus_create still takes a local id with tenant/scope/project and returns name plus local id. Search concept envelopes include name. Markdown resources keep a local frontmatter id and omit derived name; use memory://concept/root/reference/adr-example to address one. rel_type remains a tool argument; persisted links contain only concept and rel. Incoming queries derive backlinks without writing inverse records.
+
+## Git session tools
+
+`gyrus_git_status` takes no arguments and reports `strategy`, `trunk_branch`, `active_branch`, and `selection_required`. `gyrus_git_switch` takes required `strategy: direct | branching` and optional `branch`, required for branching and omitted for direct. Both tools report an error on non-Git profiles.
+
+Each stdio server process owns its selection. `--git-branch <initiative>` selects branching at startup; an unselected branching server permits status/switch but rejects knowledge tools/resources/prompts. Switching is live, waits for in-flight requests, and never changes configuration. New branches read trunk until the first mutation; existing branches are reused. Restarting requires selecting the initiative again. Review/merge occurs externally.

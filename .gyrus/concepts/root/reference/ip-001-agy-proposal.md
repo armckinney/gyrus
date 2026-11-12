@@ -4,12 +4,14 @@ id: ip-001-agy-proposal
 type: improvement-proposal
 format: ""
 category: architecture
-version: 1
-status: active
-last_updated: 2026-07-22T06:38:56Z
+version: 2
+status: abandoned
+last_updated: 2026-11-12T04:38:04Z
 last_modified_by: ""
 tenant: root
 ---
+
+> Historical record. This document describes earlier work and is not a current setup or capability contract. Use the current configuration reference and architecture index.
 
 # Unified Context Layer (UCL) Specification Index
 
@@ -17,16 +19,16 @@ This directory contains the modular design specifications for the Unified Contex
 
 ## Modular Specifications
 
-1. **[01. JSON Contract Specification](file:///Users/armck/git/wiki/docs/specs/01_contract_schema.md):** Defines the metadata schema envelope for all context documents.
-2. **[02. CLI Interface & Authentication](file:///Users/armck/git/wiki/docs/specs/02_cli_interface.md):** Outlines the `ucl` CLI subcommands, caching, and Azure AD / Device Code auth pipelines.
-3. **[03. Human Web Wiki & Sitemap](file:///Users/armck/git/wiki/docs/specs/03_web_wiki.md):** Details the Go/Python server rendering Markdown/JSON, and the dynamic `/llms.txt` crawler endpoint.
-4. **[04. Architectural Trade-offs](file:///Users/armck/git/wiki/docs/specs/04_tradeoffs.md):** Matrices explaining the reasoning behind CosmosDB vs. Git, CLI vs. MCP, and Go/HTMX vs. React.
-5. **[05. Composability & Portability](file:///Users/armck/git/wiki/docs/specs/05_composability.md):** The Repository Pattern for swappable database backends and agent shims (Claude Code, Cursor/MCP).
-6. **[06. Security Architecture](file:///Users/armck/git/wiki/docs/specs/06_security.md):** Explains Entra ID AuthN, ABAC AuthZ query isolation, input shielding, and edit auditing.
-7. **[07. Reliability & Fault Tolerance](file:///Users/armck/git/wiki/docs/specs/07_reliability.md):** Resiliency mechanisms including local offline caching, backoffs, and defensive agent exit coding.
-8. **[08. Technical Specifications & Endpoints](file:///Users/armck/git/wiki/docs/specs/08_technical_specs.md):** Cosmos DB partitioning keys, collection layouts, and REST API endpoints.
-9. **[09. Implementation Roadmap](file:///Users/armck/git/wiki/docs/specs/09_roadmap.md):** Complete WBS showing Epics and JIRA tickets for development engineering teams.
-10. **[10. Product Mapping & Repository Layout](file:///Users/armck/git/wiki/docs/specs/10_product_mapping.md):** Product naming, monorepo design benefits, and project folder structures.
+1. **[01. JSON Contract Specification](#specification-01-json-contract-schema):** Defines the metadata schema envelope for all context documents.
+2. **[02. CLI Interface & Authentication](#specification-02-cli-interface--authentication):** Outlines the `ucl` CLI subcommands, caching, and Azure AD / Device Code auth pipelines.
+3. **[03. Human Web Wiki & Sitemap](#specification-03-human-web-wiki--sitemap):** Details the Go/Python server rendering Markdown/JSON, and the dynamic `/llms.txt` crawler endpoint.
+4. **[04. Architectural Trade-offs](#specification-04-architectural-trade-offs--decisions):** Matrices explaining the reasoning behind CosmosDB vs. Git, CLI vs. MCP, and Go/HTMX vs. React.
+5. **[05. Composability & Portability](#specification-05-composability--portability):** The Repository Pattern for swappable database backends and agent shims (Claude Code, Cursor/MCP).
+6. **[06. Security Architecture](#specification-06-security-architecture--access-control):** Explains Entra ID AuthN, ABAC AuthZ query isolation, input shielding, and edit auditing.
+7. **[07. Reliability & Fault Tolerance](#specification-07-reliability--fault-tolerance):** Resiliency mechanisms including local offline caching, backoffs, and defensive agent exit coding.
+8. **[08. Technical Specifications & Endpoints](#specification-08-technical-specifications--endpoints):** Cosmos DB partitioning keys, collection layouts, and REST API endpoints.
+9. **[09. Implementation Roadmap](#specification-09-implementation-milestones--tickets):** Complete WBS showing Epics and JIRA tickets for development engineering teams.
+10. **[10. Product Mapping & Repository Layout](#specification-10-product-mapping--repository-structure):** Product naming, monorepo design benefits, and project folder structures.
 
 ---
 
@@ -183,10 +185,10 @@ The Web Wiki hosts a text/plain sitemap endpoint at the root domain (`/llms.txt`
    # Company Wiki Index (Scoped to Group A/B)
    
    ## business-logic
-   - [billing-rules](/api/v1/documents/billing-rules): Billing logic and tax rules.
+   - billing-rules (`/api/v1/documents/billing-rules`, proposed endpoint): Billing logic and tax rules.
    
    ## architecture
-   - [db-schema](/api/v1/documents/db-schema): Database layout specs.
+   - db-schema (`/api/v1/documents/db-schema`, proposed endpoint): Database layout specs.
    ```
 5. **Efficiency Payload:** This allows remote agents (Slack bots, support assistants) to map the entire library structure in a single network call.
 # Specification 04: Architectural Trade-offs & Decisions

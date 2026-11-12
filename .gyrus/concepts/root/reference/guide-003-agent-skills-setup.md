@@ -4,9 +4,9 @@ id: guide-003-agent-skills-setup
 type: guide
 format: markdown
 category: technical
-version: 7
+version: 8
 status: active
-last_updated: 2026-10-16T16:57:36Z
+last_updated: 2026-11-12T04:38:04Z
 last_modified_by: antigravity
 tenant: root
 tags:
@@ -139,3 +139,7 @@ All plugin manifestations configure the native Gyrus stdio Model Context Protoco
 ## Qualified concepts and minimal links
 
 Creation retains a local id and returns its qualified name. Address existing concepts with tenant/reference/id or tenant/projects/project/id across SDK, CLI, MCP, and UI. API envelopes include name; YAML frontmatter does not persist it. Relationships use only links with concept and rel. Dependency arrays, old link keys, per-link creation metadata, and short lookup IDs are rejected. Local IDs may repeat across tenants/projects. Incoming neighbors provide backlinks; relationship types and general cycle-safe graph traversal remain unchanged. Use the migration skill for legacy concepts or SQLite graph exports; retain backups and rebuild obsolete identity databases explicitly. Restart cached MCP processes after upgrading.
+
+## Git initiative sessions
+
+MCP startup accepts `--git-branch initiative/name`; each process owns its selection independently. Use `gyrus_git_status` and `gyrus_git_switch` to inspect or change it without editing configuration. For `commit_strategy: branching`, an unselected server starts but rejects knowledge operations until an initiative is selected. Restarting requires selecting the branch again. See the [initiative walkthrough](guide-006-git-initiatives.md).
