@@ -18,16 +18,14 @@ Choose how knowledge changes are reviewed: commit directly to a Git trunk branch
 
 ## Get started
 
-Build from source with the Go version specified in `go.mod`:
+Install the `gyrus` CLI binary:
 
 ```bash
-git clone https://github.com/armckinney/gyrus.git
-cd gyrus
-make build
-./gyrus --help
+curl -sSL https://raw.githubusercontent.com/armckinney/gyrus/main/packaging/install.sh | bash
+gyrus --help
 ```
 
-Place the compiled binary on your `PATH`, then initialize configuration in your code repository:
+Initialize configuration in your code repository:
 
 ```bash
 gyrus config init --profile local --tenant root --project my-project
@@ -95,7 +93,7 @@ HTTPS authentication uses your configured Git credential manager through noninte
 
 ## Agent integration
 
-The agent plugin is packaged under `packaging/plugins/gyrus`. Install it using your client's native plugin manager; see the [installation guide](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/guide-005-installation-and-initialization.md). MCP runs locally over stdio. Each parallel initiative should use its own server process or explicit runtime selection.
+The Gyrus agent plugin (skills, rules, and MCP server configuration) is distributed through the centralized [ai-marketplace](https://github.com/armckinney/ai-marketplace) repository; see the [`gyrus` plugin guide](https://github.com/armckinney/ai-marketplace/blob/main/docs/plugins/gyrus.md) and [installation guide](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/guide-005-installation-and-initialization.md). MCP runs locally over stdio. Each parallel initiative should use its own server process or explicit runtime selection.
 
 ## Documentation
 
@@ -106,6 +104,7 @@ This repository uses [armckinney/wiki](https://github.com/armckinney/wiki) as it
 - [CLI reference](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/tech-ref-001-cli-manual.md)
 - [MCP reference](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/tech-ref-003-mcp-manual.md)
 - [Architecture index](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/spec-000-overview.md)
+- [Product roadmap](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/prd-001-specification-roadmap.md)
 - [Value proposition](https://github.com/armckinney/wiki/blob/main/.gyrus/concepts/root/projects/gyrus/prd-002-value-proposition-positioning.md)
 
 See [LICENSE](LICENSE) for licensing terms.
