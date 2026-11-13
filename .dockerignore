@@ -2,7 +2,6 @@
 .github
 .devcontainer
 .gyrus
-.agents
 bin/
 dist/
 coverage.out
